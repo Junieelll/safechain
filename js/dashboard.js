@@ -432,17 +432,17 @@ const incidentData = {
         setTimeout(() => map.invalidateSize(), 300);
       });
 
-      document.querySelectorAll(".nav-link").forEach((link) => {
-        link.addEventListener("click", (e) => {
-          if (link.id !== "darkModeToggle") {
-            e.preventDefault();
-            document
-              .querySelectorAll(".nav-link")
-              .forEach((l) => l.classList.remove("active"));
-            link.classList.add("active");
-          }
-        });
-      });
+      // document.querySelectorAll(".nav-link").forEach((link) => {
+      //   link.addEventListener("click", (e) => {
+      //     if (link.id !== "darkModeToggle") {
+      //       e.preventDefault();
+      //       document
+      //         .querySelectorAll(".nav-link")
+      //         .forEach((l) => l.classList.remove("active"));
+      //       link.classList.add("active");
+      //     }
+      //   });
+      // });
 
       document.querySelectorAll(".nav-item").forEach((item) => {
         item.addEventListener("mouseenter", () => {
