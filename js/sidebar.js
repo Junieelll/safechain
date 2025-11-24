@@ -2,11 +2,12 @@ const sidebar = document.getElementById("sidebar");
 const sidebarToggler = document.getElementById("sidebarToggler");
 const primaryNav = document.getElementById("primaryNav");
 const mainContent = document.getElementById("mainContent");
-let isCollapsed = false;
 
-sidebarToggler.addEventListener("click", () => {
-  isCollapsed = !isCollapsed;
+// Load saved state from localStorage
+let isCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
 
+// Function to apply collapse state
+function applySidebarState() {
   if (isCollapsed) {
     sidebar.classList.remove("w-[270px]");
     sidebar.classList.add("w-[80px]", "sidebar-collapsed");
@@ -49,6 +50,19 @@ sidebarToggler.addEventListener("click", () => {
     }
     link.querySelector(".nav-label").classList.toggle("hidden", isCollapsed);
   });
+}
+
+// Apply initial state on page load
+applySidebarState();
+
+// Toggle sidebar and save state
+sidebarToggler.addEventListener("click", () => {
+  isCollapsed = !isCollapsed;
+  
+  // Save to localStorage
+  localStorage.setItem("sidebarCollapsed", isCollapsed);
+  
+  applySidebarState();
 });
 
 document.querySelectorAll(".nav-item").forEach((item) => {

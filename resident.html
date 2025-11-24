@@ -4,11 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SafeChain | Residents</title>
-    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+    <link
+      rel="stylesheet"
+      href="https://unicons.iconscout.com/release/v4.0.8/css/line.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
+    />
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindplus/elements@1" type="module"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@tailwindplus/elements@1"
+      type="module"
+    ></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
     <link rel="stylesheet" href="css/sidebar.css" />
   </head>
@@ -61,7 +73,7 @@
           <li class="relative nav-item text-sm">
             <a
               href="incident.html"
-              class="nav-link text-white/85 flex gap-3.5 whitespace-nowrap rounded-xl py-3 px-3.5 items-center border border-transparent transition-all duration-200 ease-in-out hover:text-white hover:bg-white/15 "
+              class="nav-link text-white/85 flex gap-3.5 whitespace-nowrap rounded-xl py-3 px-3.5 items-center border border-transparent transition-all duration-200 ease-in-out hover:text-white hover:bg-white/15"
             >
               <i class="nav-icon uil uil-file-alt text-xl"></i>
               <span class="nav-label">Incident Log</span>
@@ -198,11 +210,483 @@
       </nav>
     </aside>
 
-    <main id="mainContent" class="transition-all duration-500 ease-in-out ml-[302px] flex-1 p-8">
-      
+    <main
+      id="mainContent"
+      class="transition-all duration-500 ease-in-out ml-[302px] flex-1 p-8"
+    >
+      <div class="header mb-5">
+        <h4 class="text-bs font-semibold text-[#4b4b4b]">Manage Residents</h4>
+        <p class="text-sm text-neutral-500">
+          Manage Registered barangay residents
+        </p>
+      </div>
+
+      <!-- Stats Widget -->
+      <div class="bg-white rounded-2xl p-6 py-8 mb-6">
+        <div class="grid grid-cols-3 divide-x divide-gray-200">
+          <!-- Total Residents -->
+          <div class="flex items-center gap-4 px-8">
+            <div
+              class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0"
+            >
+              <i class="uil uil-users-alt text-2xl text-emerald-500"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-2xl font-semibold text-gray-800">11</span>
+                <i class="uil uil-arrow-growth text-sm text-emerald-500"></i>
+              </div>
+              <p class="text-xs text-gray-500 mt-1 font-medium">
+                Total Residents
+              </p>
+            </div>
+          </div>
+
+          <!-- Registered This Month -->
+          <div class="flex items-center gap-4 px-8">
+            <div
+              class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0"
+            >
+              <i class="uil uil-calendar-alt text-2xl text-emerald-500"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-2xl font-semibold text-gray-800">2</span>
+                <i class="uil uil-arrow-growth text-sm text-emerald-500"></i>
+              </div>
+              <p class="text-xs text-gray-500 mt-1 font-medium">
+                Registered This Month
+              </p>
+            </div>
+          </div>
+
+          <!-- Last Registration -->
+          <div class="flex items-center gap-4 px-8">
+            <div
+              class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0"
+            >
+              <i class="uil uil-clock text-2xl text-emerald-500"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-2xl font-semibold text-gray-800">2h</span>
+              </div>
+              <p class="text-xs text-gray-500 mt-1 font-medium">
+                Last Registration
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Residents Table Section -->
+      <section class="residents">
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden p-5">
+          <!-- Filter Control -->
+          <div class="flex justify-between items-center mb-7 gap-4">
+            <!-- Search -->
+            <div class="search flex flex-col gap-1 w-full max-w-[400px]">
+              <label for="search" class="text-xs text-gray-700">Search</label>
+              <div class="search-input relative w-full">
+                <i
+                  class="uil uil-search absolute top-1/2 -translate-y-1/2 left-2 text-xl"
+                ></i>
+                <input
+                  type="text"
+                  name="search"
+                  id="search"
+                  placeholder="Search incidents..."
+                  class="py-3 pl-9 bg-[#F1F5F9] rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                />
+              </div>
+            </div>
+
+            <div class="right-control flex gap-5">
+              <!-- Sort By -->
+              <div class="sort flex flex-col gap-1 min-w-[250px]">
+                <label for="sort" class="text-xs text-gray-700">Sort By</label>
+                <div class="relative max-h-[46px]">
+                  <!-- Dropdown Button -->
+                  <button
+                    id="sortDropdownButton"
+                    class="w-full h-full bg-[#F1F5F9] rounded-lg px-4 py-[10px] text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  >
+                    <span id="sortSelectedText" class="text-gray-700 text-xs"
+                      >Newest First</span
+                    >
+                    <i
+                      id="sortDropdownIcon"
+                      class="uil uil-angle-down text-xl text-gray-400 transition-transform duration-200"
+                    ></i>
+                  </button>
+
+                  <!-- Dropdown Menu -->
+                  <div
+                    id="sortDropdownMenu"
+                    class="hidden absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+                  >
+                    <div class="py-1">
+                      <button
+                        class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                        data-value="newest"
+                      >
+                        Newest First
+                      </button>
+                      <button
+                        class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                        data-value="oldest"
+                      >
+                        Oldest First
+                      </button>
+                      <button
+                        class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                        data-value="ascending"
+                      >
+                        Name (A-Z)
+                      </button>
+                      <button
+                        class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                        data-value="descending"
+                      >
+                        Name (Z-A)
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="clear-filter-btn flex flex-col justify-end">
+                <button
+                  id="clearFilterBtn"
+                  class="py-2 px-4 font-medium flex gap-2 items-center whitespace-nowrap border border-[#01AF78] rounded-lg text-[#01AF78] text-xs hover:bg-emerald-50 transition ease-in-out duration-200"
+                >
+                  <i class="uil uil-download-alt text-lg"></i>Export
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-[#F1F5F9]">
+                <tr>
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                  >
+                    Resident Name
+                  </th>
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                  >
+                    User ID
+                  </th>
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                  >
+                    Address
+                  </th>
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                  >
+                    Contact No.
+                  </th>
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                  >
+                    Device ID
+                  </th>
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                  >
+                    Registered Date
+                  </th>
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                  >
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <!-- Sample Row -->
+                <tr class="hover:bg-gray-50 transition">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                      >
+                        MS
+                      </div>
+                      <span class="text-xs font-medium text-gray-800"
+                        >Maria Santos</span
+                      >
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">USR-2025-009</td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    SAMPLE ADDRESS
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    +63 910 123 4567
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">SC-KC-009</td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    SEPTEMBER 15, 2024
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                      <button
+                        class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-eye text-xl"></i>
+                      </button>
+                      <button
+                        class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-pen text-xl"></i>
+                      </button>
+                      <button
+                        class="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-trash-alt text-xl"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <!-- Repeat rows as needed -->
+
+                <tr class="hover:bg-gray-50 transition">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                      >
+                        MS
+                      </div>
+                      <span class="text-xs font-medium text-gray-800"
+                        >Maria Santos</span
+                      >
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">USR-2025-009</td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    SAMPLE ADDRESS
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    +63 910 123 4567
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">SC-KC-009</td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    SEPTEMBER 15, 2024
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                      <button
+                        class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-eye text-xl"></i>
+                      </button>
+                      <button
+                        class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-pen text-xl"></i>
+                      </button>
+                      <button
+                        class="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-trash-alt text-xl"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr class="hover:bg-gray-50 transition">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                      >
+                        MS
+                      </div>
+                      <span class="text-xs font-medium text-gray-800"
+                        >Maria Santos</span
+                      >
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">USR-2025-009</td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    SAMPLE ADDRESS
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    +63 910 123 4567
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">SC-KC-009</td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    SEPTEMBER 15, 2024
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                      <button
+                        class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-eye text-xl"></i>
+                      </button>
+                      <button
+                        class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-pen text-xl"></i>
+                      </button>
+                      <button
+                        class="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-trash-alt text-xl"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                
+                <tr class="hover:bg-gray-50 transition">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                      >
+                        MS
+                      </div>
+                      <span class="text-xs font-medium text-gray-800"
+                        >Maria Santos</span
+                      >
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">USR-2025-009</td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    SAMPLE ADDRESS
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    +63 910 123 4567
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">SC-KC-009</td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    SEPTEMBER 15, 2024
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                      <button
+                        class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-eye text-xl"></i>
+                      </button>
+                      <button
+                        class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-pen text-xl"></i>
+                      </button>
+                      <button
+                        class="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-trash-alt text-xl"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr class="hover:bg-gray-50 transition">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                      >
+                        MS
+                      </div>
+                      <span class="text-xs font-medium text-gray-800"
+                        >Maria Santos</span
+                      >
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">USR-2025-009</td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    SAMPLE ADDRESS
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    +63 910 123 4567
+                  </td>
+                  <td class="px-6 py-4 text-xs text-gray-600">SC-KC-009</td>
+                  <td class="px-6 py-4 text-xs text-gray-600">
+                    SEPTEMBER 15, 2024
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                      <button
+                        class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-eye text-xl"></i>
+                      </button>
+                      <button
+                        class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-pen text-xl"></i>
+                      </button>
+                      <button
+                        class="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
+                      >
+                        <i class="uil uil-trash-alt text-xl"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="flex items-center justify-center gap-2 mt-6">
+            <button
+              class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition"
+            >
+              <i class="uil uil-angle-left text-xl"></i>
+            </button>
+
+            <div class="bg-[#F1F5F9] rounded-full p-1 flex items-center gap-1">
+              <button
+                class="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-500 text-white text-sm font-medium"
+              >
+                1
+              </button>
+              <button
+                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white text-gray-600 text-sm font-medium transition"
+              >
+                2
+              </button>
+              <button
+                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white text-gray-600 text-sm font-medium transition"
+              >
+                3
+              </button>
+              <button
+                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white text-gray-600 text-sm font-medium transition"
+              >
+                4
+              </button>
+              <span class="px-2 text-gray-500">...</span>
+              <button
+                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white text-gray-600 text-sm font-medium transition"
+              >
+                10
+              </button>
+            </div>
+
+            <button
+              class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition"
+            >
+              <i class="uil uil-angle-right text-xl"></i>
+            </button>
+          </div>
+        </div>
+      </section>
     </main>
 
-
     <script src="js/sidebar.js"></script>
+    <script src="js/resident.js"></script>
   </body>
 </html>

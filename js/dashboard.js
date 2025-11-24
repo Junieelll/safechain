@@ -1,148 +1,148 @@
 const incidentData = {
-        fire: [
-          {
-            id: "EMG-2024-1047",
-            type: "Fire Emergency",
-            icon: "uil-fire",
-            color: "red",
-            time: "2:34 PM",
-            user: {
-              name: "Maria Santos",
-              contact: "+63 912 345 6789",
-              id: "USR-45821",
-            },
-            location: {
-              address: "63 San Nicasio St., Villaflor",
-              barangay: "Gulod",
-              city: "Quezon City",
-              coords: "14.6837° N, 121.0253° E",
-            },
-            lat: 14.716412,
-            lng: 121.040834,
-            timeline: [
-              { time: "2:34 PM", event: "Emergency reported by Maria Santos" },
-              { time: "2:35 PM", event: "Location verified" },
-              {
-                time: "2:36 PM",
-                event: "Awaiting response team dispatch",
-                pending: true,
-              },
-            ],
-          },
-          {
-            id: "EMG-2024-1048",
-            type: "Fire Alert",
-            icon: "uil-fire",
-            color: "red",
-            time: "3:15 PM",
-            user: {
-              name: "Juan Cruz",
-              contact: "+63 923 456 7890",
-              id: "USR-45822",
-            },
-            location: {
-              address: "45 Santol St., Bagong Silang",
-              barangay: "Gulod",
-              city: "Quezon City",
-              coords: "14.6845° N, 121.0240° E",
-            },
-            lat: 14.711874,
-            lng: 121.038715,
-            timeline: [
-              { time: "3:15 PM", event: "Smoke detected by Juan Cruz" },
-              { time: "3:16 PM", event: "Fire department notified" },
-            ],
-          },
-        ],
-        crime: [
-          {
-            id: "EMG-2024-1049",
-            type: "Crime Report",
-            icon: "uil-shield-plus",
-            color: "yellow",
-            time: "1:20 PM",
-            user: {
-              name: "Pedro Reyes",
-              contact: "+63 934 567 8901",
-              id: "USR-45823",
-            },
-            location: {
-              address: "28 Mahogany St., Villa Rosa",
-              barangay: "Gulod",
-              city: "Quezon City",
-              coords: "14.6842° N, 121.0248° E",
-            },
-            lat: 14.714923,
-            lng: 121.040745,
-            timeline: [
-              { time: "1:20 PM", event: "Theft reported by Pedro Reyes" },
-              { time: "1:22 PM", event: "Police dispatch requested" },
-            ],
-          },
-        ],
-        flood: [
-          {
-            id: "EMG-2024-1050",
-            type: "Flood Warning",
-            icon: "uil-water",
-            color: "blue",
-            time: "4:05 PM",
-            user: {
-              name: "Ana Lopez",
-              contact: "+63 945 678 9012",
-              id: "USR-45824",
-            },
-            location: {
-              address: "12 Riverside Ave., San Roque",
-              barangay: "Gulod",
-              city: "Quezon City",
-              coords: "14.6830° N, 121.0265° E",
-            },
-            lat: 14.71162,
-            lng: 121.043019,
-            timeline: [
-              { time: "4:05 PM", event: "Water level rising reported" },
-              { time: "4:07 PM", event: "Evacuation alert issued" },
-            ],
-          },
-          {
-            id: "EMG-2024-1051",
-            type: "Flood Alert",
-            icon: "uil-water",
-            color: "blue",
-            time: "4:30 PM",
-            user: {
-              name: "Carlos Mendoza",
-              contact: "+63 956 789 0123",
-              id: "USR-45825",
-            },
-            location: {
-              address: "89 Creek Lane, Nueva Vista",
-              barangay: "Gulod",
-              city: "Quezon City",
-              coords: "14.6850° N, 121.0230° E",
-            },
-            lat: 14.714173,
-            lng: 121.036679,
-            timeline: [
-              {
-                time: "4:30 PM",
-                event: "Heavy rainfall reported by Carlos Mendoza",
-              },
-              { time: "4:31 PM", event: "Monitoring in progress" },
-            ],
-          },
-        ],
-      };
+  fire: [
+    {
+      id: "EMG-2024-1047",
+      type: "Fire Emergency",
+      icon: "uil-fire",
+      color: "red",
+      time: "2:34 PM",
+      user: {
+        name: "Maria Santos",
+        contact: "+63 912 345 6789",
+        id: "USR-45821",
+      },
+      location: {
+        address: "63 San Nicasio St., Villaflor",
+        barangay: "Gulod",
+        city: "Quezon City",
+        coords: "14.6837° N, 121.0253° E",
+      },
+      lat: 14.716412,
+      lng: 121.040834,
+      timeline: [
+        { time: "2:34 PM", event: "Emergency reported by Maria Santos" },
+        { time: "2:35 PM", event: "Location verified" },
+        {
+          time: "2:36 PM",
+          event: "Awaiting response team dispatch",
+          pending: true,
+        },
+      ],
+    },
+    {
+      id: "EMG-2024-1048",
+      type: "Fire Alert",
+      icon: "uil-fire",
+      color: "red",
+      time: "3:15 PM",
+      user: {
+        name: "Juan Cruz",
+        contact: "+63 923 456 7890",
+        id: "USR-45822",
+      },
+      location: {
+        address: "45 Santol St., Bagong Silang",
+        barangay: "Gulod",
+        city: "Quezon City",
+        coords: "14.6845° N, 121.0240° E",
+      },
+      lat: 14.711874,
+      lng: 121.038715,
+      timeline: [
+        { time: "3:15 PM", event: "Smoke detected by Juan Cruz" },
+        { time: "3:16 PM", event: "Fire department notified" },
+      ],
+    },
+  ],
+  crime: [
+    {
+      id: "EMG-2024-1049",
+      type: "Crime Report",
+      icon: "uil-shield-plus",
+      color: "yellow",
+      time: "1:20 PM",
+      user: {
+        name: "Pedro Reyes",
+        contact: "+63 934 567 8901",
+        id: "USR-45823",
+      },
+      location: {
+        address: "28 Mahogany St., Villa Rosa",
+        barangay: "Gulod",
+        city: "Quezon City",
+        coords: "14.6842° N, 121.0248° E",
+      },
+      lat: 14.714923,
+      lng: 121.040745,
+      timeline: [
+        { time: "1:20 PM", event: "Theft reported by Pedro Reyes" },
+        { time: "1:22 PM", event: "Police dispatch requested" },
+      ],
+    },
+  ],
+  flood: [
+    {
+      id: "EMG-2024-1050",
+      type: "Flood Warning",
+      icon: "uil-water",
+      color: "blue",
+      time: "4:05 PM",
+      user: {
+        name: "Ana Lopez",
+        contact: "+63 945 678 9012",
+        id: "USR-45824",
+      },
+      location: {
+        address: "12 Riverside Ave., San Roque",
+        barangay: "Gulod",
+        city: "Quezon City",
+        coords: "14.6830° N, 121.0265° E",
+      },
+      lat: 14.71162,
+      lng: 121.043019,
+      timeline: [
+        { time: "4:05 PM", event: "Water level rising reported" },
+        { time: "4:07 PM", event: "Evacuation alert issued" },
+      ],
+    },
+    {
+      id: "EMG-2024-1051",
+      type: "Flood Alert",
+      icon: "uil-water",
+      color: "blue",
+      time: "4:30 PM",
+      user: {
+        name: "Carlos Mendoza",
+        contact: "+63 956 789 0123",
+        id: "USR-45825",
+      },
+      location: {
+        address: "89 Creek Lane, Nueva Vista",
+        barangay: "Gulod",
+        city: "Quezon City",
+        coords: "14.6850° N, 121.0230° E",
+      },
+      lat: 14.714173,
+      lng: 121.036679,
+      timeline: [
+        {
+          time: "4:30 PM",
+          event: "Heavy rainfall reported by Carlos Mendoza",
+        },
+        { time: "4:31 PM", event: "Monitoring in progress" },
+      ],
+    },
+  ],
+};
 
-      function renderIncidentDetails(incident) {
-        const colorClasses = {
-          red: "bg-red-50 text-red-600",
-          yellow: "bg-yellow-50 text-yellow-600",
-          blue: "bg-blue-50 text-blue-600",
-        };
+function renderIncidentDetails(incident) {
+  const colorClasses = {
+    red: "bg-red-50 text-red-600",
+    yellow: "bg-yellow-50 text-yellow-600",
+    blue: "bg-blue-50 text-blue-600",
+  };
 
-        return `
+  return `
           <div class="mb-6">
             <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm">
               <div class="inline-flex items-center gap-2 ${
@@ -247,485 +247,323 @@ const incidentData = {
             </div>
           </div>
         `;
+}
+
+const rightPanel = document.getElementById("rightPanel");
+const rightPanelToggle = document.getElementById("rightPanelToggle");
+const incidentContent = document.getElementById("incidentContent");
+let isRightPanelCollapsed = false;
+
+var map = L.map("map").setView([14.7158532, 121.0403842], 16);
+
+L.tileLayer(
+  "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  {
+    attribution:
+      '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+  }
+).addTo(map);
+
+const fireIcon = L.divIcon({
+  className:
+    "custom-marker marker-fire rounded-full flex items-center justify-center",
+  html: '<i class="uil uil-fire"></i>',
+  iconSize: [35, 35],
+  iconAnchor: [17, 17],
+});
+
+const crimeIcon = L.divIcon({
+  className:
+    "custom-marker marker-crime rounded-full flex items-center justify-center",
+  html: '<i class="uil uil-shield-plus"></i>',
+  iconSize: [35, 35],
+  iconAnchor: [17, 17],
+});
+
+const floodIcon = L.divIcon({
+  className:
+    "custom-marker marker-flood rounded-full flex items-center justify-center",
+  html: '<i class="uil uil-water"></i>',
+  iconSize: [35, 35],
+  iconAnchor: [17, 17],
+});
+
+const markers = {
+  fire: [],
+  crime: [],
+  flood: [],
+};
+
+const iconMap = {
+  fire: fireIcon,
+  crime: crimeIcon,
+  flood: floodIcon,
+};
+
+// Add all markers
+Object.keys(incidentData).forEach((type) => {
+  incidentData[type].forEach((incident) => {
+    const marker = L.marker([incident.lat, incident.lng], {
+      icon: iconMap[type],
+    })
+      .addTo(map)
+      .bindPopup(`<strong>${incident.type}</strong><br>${incident.user.name}`);
+
+    marker.on("click", () => {
+      incidentContent.innerHTML = renderIncidentDetails(incident);
+      if (isRightPanelCollapsed) {
+        rightPanelToggle.click();
       }
+    });
 
-      const sidebar = document.getElementById("sidebar");
-      const sidebarToggler = document.getElementById("sidebarToggler");
-      const primaryNav = document.getElementById("primaryNav");
-      const mainContent = document.getElementById("mainContent");
-      const rightPanel = document.getElementById("rightPanel");
-      const rightPanelToggle = document.getElementById("rightPanelToggle");
-      const incidentContent = document.getElementById("incidentContent");
-      let isCollapsed = false;
-      let isRightPanelCollapsed = false;
+    markers[type].push(marker);
+  });
+});
 
-      var map = L.map("map").setView([14.7158532, 121.0403842], 16);
+// Load default incident
+incidentContent.innerHTML = renderIncidentDetails(incidentData.fire[0]);
 
-      L.tileLayer(
-        "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
-        {
-          attribution:
-            '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-        }
-      ).addTo(map);
+document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
+document
+  .getElementById("zoomOut")
+  .addEventListener("click", () => map.zoomOut());
 
-      const fireIcon = L.divIcon({
-        className:
-          "custom-marker marker-fire rounded-full flex items-center justify-center",
-        html: '<i class="uil uil-fire"></i>',
-        iconSize: [35, 35],
-        iconAnchor: [17, 17],
-      });
+document.getElementById("locate").addEventListener("click", () => {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((position) => {
+      map.setView([position.coords.latitude, position.coords.longitude], 15);
+    });
+  } else {
+    alert("Geolocation is not supported by your browser");
+  }
+});
 
-      const crimeIcon = L.divIcon({
-        className:
-          "custom-marker marker-crime rounded-full flex items-center justify-center",
-        html: '<i class="uil uil-shield-plus"></i>',
-        iconSize: [35, 35],
-        iconAnchor: [17, 17],
-      });
+const filterButtons = document.querySelectorAll("[data-filter]");
+filterButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const filter = btn.dataset.filter;
+    btn.classList.toggle("active");
 
-      const floodIcon = L.divIcon({
-        className:
-          "custom-marker marker-flood rounded-full flex items-center justify-center",
-        html: '<i class="uil uil-water"></i>',
-        iconSize: [35, 35],
-        iconAnchor: [17, 17],
-      });
+    markers[filter].forEach((marker) => {
+      if (btn.classList.contains("active")) {
+        marker.addTo(map);
+      } else {
+        map.removeLayer(marker);
+      }
+    });
+  });
+});
 
-      const markers = {
-        fire: [],
-        crime: [],
-        flood: [],
-      };
+rightPanelToggle.addEventListener("click", () => {
+  isRightPanelCollapsed = !isRightPanelCollapsed;
 
-      const iconMap = {
-        fire: fireIcon,
-        crime: crimeIcon,
-        flood: floodIcon,
-      };
+  if (isRightPanelCollapsed) {
+    rightPanel.style.transform = "translateX(100%)";
+    mainContent.classList.remove("mr-[360px]");
+    mainContent.classList.add("mr-0");
+  } else {
+    rightPanel.style.transform = "translateX(0)";
+    mainContent.classList.remove("mr-0");
+    mainContent.classList.add("mr-[360px]");
+  }
 
-      // Add all markers
-      Object.keys(incidentData).forEach((type) => {
-        incidentData[type].forEach((incident) => {
-          const marker = L.marker([incident.lat, incident.lng], {
-            icon: iconMap[type],
-          })
-            .addTo(map)
-            .bindPopup(
-              `<strong>${incident.type}</strong><br>${incident.user.name}`
-            );
+  const icon = rightPanelToggle.querySelector("i");
+  icon.classList.toggle("uil-angle-right", !isRightPanelCollapsed);
+  icon.classList.toggle("uil-angle-left", isRightPanelCollapsed);
 
-          marker.on("click", () => {
-            incidentContent.innerHTML = renderIncidentDetails(incident);
-            if (isRightPanelCollapsed) {
-              rightPanelToggle.click();
-            }
-          });
+  setTimeout(() => map.invalidateSize(), 300);
+});
 
-          markers[type].push(marker);
-        });
-      });
-
-      // Load default incident
-      incidentContent.innerHTML = renderIncidentDetails(incidentData.fire[0]);
-
-      document
-        .getElementById("zoomIn")
-        .addEventListener("click", () => map.zoomIn());
-      document
-        .getElementById("zoomOut")
-        .addEventListener("click", () => map.zoomOut());
-
-      document.getElementById("locate").addEventListener("click", () => {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition((position) => {
-            map.setView(
-              [position.coords.latitude, position.coords.longitude],
-              15
-            );
-          });
-        } else {
-          alert("Geolocation is not supported by your browser");
-        }
-      });
-
-      const filterButtons = document.querySelectorAll("[data-filter]");
-      filterButtons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const filter = btn.dataset.filter;
-          btn.classList.toggle("active");
-
-          markers[filter].forEach((marker) => {
-            if (btn.classList.contains("active")) {
-              marker.addTo(map);
-            } else {
-              map.removeLayer(marker);
-            }
-          });
-        });
-      });
-
-      sidebarToggler.addEventListener("click", () => {
-        isCollapsed = !isCollapsed;
-
-        if (isCollapsed) {
-          sidebar.classList.remove("w-[270px]");
-          sidebar.classList.add("w-[80px]", "sidebar-collapsed");
-          mainContent.classList.remove("ml-[302px]");
-          mainContent.classList.add("ml-[112px]");
-        } else {
-          sidebar.classList.remove("w-[80px]", "sidebar-collapsed");
-          sidebar.classList.add("w-[270px]");
-          mainContent.classList.remove("ml-[112px]");
-          mainContent.classList.add("ml-[302px]");
-        }
-
-        document.querySelectorAll("#logoText, #userInfo").forEach((el) => {
-          el.classList.toggle("hidden", isCollapsed);
-        });
-
-        const icon = sidebarToggler.querySelector("i");
-        icon.style.transform = isCollapsed ? "rotate(180deg)" : "rotate(0deg)";
-        sidebarToggler.style.transform = isCollapsed
-          ? "translate(-4px, 65px)"
-          : "translate(0, 0)";
-        primaryNav.style.transform = isCollapsed
-          ? "translateY(65px)"
-          : "translateY(15px)";
-
-        const userBtn = document.getElementById("userProfileBtn");
-        if (isCollapsed) {
-          userBtn.classList.add(
-            "justify-center",
-            "p-2",
-            "w-[50px]",
-            "h-[50px]"
-          );
-          userBtn.classList.remove("gap-3", "py-3", "px-3.5");
-        } else {
-          userBtn.classList.remove(
-            "justify-center",
-            "p-2",
-            "w-[50px]",
-            "h-[50px]"
-          );
-          userBtn.classList.add("gap-3", "py-3", "px-3.5");
-        }
-
-        document.querySelectorAll(".nav-link").forEach((link) => {
-          if (isCollapsed) {
-            link.classList.add("w-[50px]", "h-[50px]", "p-0", "justify-center");
-          } else {
-            link.classList.remove(
-              "w-[50px]",
-              "h-[50px]",
-              "p-0",
-              "justify-center"
-            );
-          }
-          link
-            .querySelector(".nav-label")
-            .classList.toggle("hidden", isCollapsed);
-        });
-
-        setTimeout(() => map.invalidateSize(), 300);
-      });
-
-      // document.querySelectorAll(".nav-link").forEach((link) => {
-      //   link.addEventListener("click", (e) => {
-      //     if (link.id !== "darkModeToggle") {
-      //       e.preventDefault();
-      //       document
-      //         .querySelectorAll(".nav-link")
-      //         .forEach((l) => l.classList.remove("active"));
-      //       link.classList.add("active");
-      //     }
-      //   });
-      // });
-
-      document.querySelectorAll(".nav-item").forEach((item) => {
-        item.addEventListener("mouseenter", () => {
-          if (isCollapsed) {
-            const tooltip = item.querySelector(".nav-tooltip");
-            if (tooltip) {
-              tooltip.style.opacity = "1";
-              tooltip.style.left = "calc(100% + 15px)";
-            }
-          }
-        });
-
-        item.addEventListener("mouseleave", () => {
-          if (isCollapsed) {
-            const tooltip = item.querySelector(".nav-tooltip");
-            if (tooltip) {
-              tooltip.style.opacity = "0";
-              tooltip.style.left = "calc(100% + 20px)";
-            }
-          }
-        });
-      });
-
-      document
-        .getElementById("darkModeToggle")
-        .addEventListener("click", (e) => {
-          e.preventDefault();
-          const body = document.body;
-          body.classList.toggle("dark-mode");
-
-          const icon = document.getElementById("darkModeIcon");
-          const label = document.getElementById("darkModeLabel");
-          icon.classList.add("rotate");
-
-          if (body.classList.contains("dark-mode")) {
-            icon.classList.replace("uil-moon", "uil-sun");
-            label.textContent = "Light Mode";
-          } else {
-            icon.classList.replace("uil-sun", "uil-moon");
-            label.textContent = "Dark Mode";
-          }
-
-          setTimeout(() => icon.classList.remove("rotate"), 500);
-        });
-
-      const userProfileBtn = document.getElementById("userProfileBtn");
-      const userDropdown = document.getElementById("userDropdown");
-
-      userProfileBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        userDropdown.classList.toggle("hidden");
-
-        if (isCollapsed) {
-          userDropdown.style.left = "100%";
-          userDropdown.style.marginLeft = "10px";
-          userDropdown.style.bottom = "0";
-          userDropdown.style.marginBottom = "0";
-        } else {
-          userDropdown.style.left = "0";
-          userDropdown.style.marginLeft = "0";
-          userDropdown.style.bottom = "100%";
-          userDropdown.style.marginBottom = "8px";
-        }
-      });
-
-      document.addEventListener("click", () =>
-        userDropdown.classList.add("hidden")
-      );
-      userDropdown.addEventListener("click", (e) => e.stopPropagation());
-
-      rightPanelToggle.addEventListener("click", () => {
-        isRightPanelCollapsed = !isRightPanelCollapsed;
-
-        if (isRightPanelCollapsed) {
-          rightPanel.style.transform = "translateX(100%)";
-          mainContent.classList.remove("mr-[360px]");
-          mainContent.classList.add("mr-0");
-        } else {
-          rightPanel.style.transform = "translateX(0)";
-          mainContent.classList.remove("mr-0");
-          mainContent.classList.add("mr-[360px]");
-        }
-
-        const icon = rightPanelToggle.querySelector("i");
-        icon.classList.toggle("uil-angle-right", !isRightPanelCollapsed);
-        icon.classList.toggle("uil-angle-left", isRightPanelCollapsed);
-
-        setTimeout(() => map.invalidateSize(), 300);
-      });
-
-      // Chart.js Configuration
+// Chart.js Configuration
 setTimeout(() => {
-  const ctx = document.getElementById('emergencyChart').getContext('2d');
-      const emergencyChart = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
-          ],
-          datasets: [
-            {
-              label: "Fire",
-              data: [28, 35, 32, 38, 30, 22, 48, 47, 35, 15, 32, 38],
-              borderColor: "#ff4444",
-              backgroundColor: "rgba(255, 68, 68, 0.1)",
-              tension: 0.4,
-              fill: true,
-              borderWidth: 3,
-              pointRadius: 5,
-              pointHoverRadius: 7,
-              pointBackgroundColor: "#ff4444",
-              pointBorderColor: "#fff",
-              pointBorderWidth: 2,
-              pointHoverBackgroundColor: "#ff4444",
-              pointHoverBorderColor: "#fff",
-              pointHoverBorderWidth: 3,
-            },
-            {
-              label: "Flood",
-              data: [32, 42, 38, 28, 12, 8, 28, 22, 18, 35, 38, 42],
-              borderColor: "#3B82F6",
-              backgroundColor: "rgba(59, 130, 246, 0.1)",
-              tension: 0.4,
-              fill: true,
-              borderWidth: 3,
-              pointRadius: 5,
-              pointHoverRadius: 7,
-              pointBackgroundColor: "#3B82F6",
-              pointBorderColor: "#fff",
-              pointBorderWidth: 2,
-              pointHoverBackgroundColor: "#3B82F6",
-              pointHoverBorderColor: "#fff",
-              pointHoverBorderWidth: 3,
-            },
-            {
-              label: "Crime",
-              data: [25, 12, 22, 18, 12, 25, 22, 25, 22, 15, 25, 18, 28],
-              borderColor: "#FBBF24",
-              backgroundColor: "rgba(251, 191, 36, 0.1)",
-              tension: 0.4,
-              fill: true,
-              borderWidth: 3,
-              pointRadius: 5,
-              pointHoverRadius: 7,
-              pointBackgroundColor: "#FBBF24",
-              pointBorderColor: "#fff",
-              pointBorderWidth: 2,
-              pointHoverBackgroundColor: "#FBBF24",
-              pointHoverBorderColor: "#fff",
-              pointHoverBorderWidth: 3,
-            },
-          ],
+  const ctx = document.getElementById("emergencyChart").getContext("2d");
+  const emergencyChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ],
+      datasets: [
+        {
+          label: "Fire",
+          data: [28, 35, 32, 38, 30, 22, 48, 47, 35, 15, 32, 38],
+          borderColor: "#ff4444",
+          backgroundColor: "rgba(255, 68, 68, 0.1)",
+          tension: 0.4,
+          fill: true,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: "#ff4444",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+          pointHoverBackgroundColor: "#ff4444",
+          pointHoverBorderColor: "#fff",
+          pointHoverBorderWidth: 3,
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: "index",
-            intersect: false,
+        {
+          label: "Flood",
+          data: [32, 42, 38, 28, 12, 8, 28, 22, 18, 35, 38, 42],
+          borderColor: "#3B82F6",
+          backgroundColor: "rgba(59, 130, 246, 0.1)",
+          tension: 0.4,
+          fill: true,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: "#3B82F6",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+          pointHoverBackgroundColor: "#3B82F6",
+          pointHoverBorderColor: "#fff",
+          pointHoverBorderWidth: 3,
+        },
+        {
+          label: "Crime",
+          data: [25, 12, 22, 18, 12, 25, 22, 25, 22, 15, 25, 18, 28],
+          borderColor: "#FBBF24",
+          backgroundColor: "rgba(251, 191, 36, 0.1)",
+          tension: 0.4,
+          fill: true,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: "#FBBF24",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+          pointHoverBackgroundColor: "#FBBF24",
+          pointHoverBorderColor: "#fff",
+          pointHoverBorderWidth: 3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: true,
+        },
+        tooltip: {
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          padding: 12,
+          cornerRadius: 8,
+          titleFont: {
+            size: 14,
+            weight: "600",
           },
-          plugins: {
-            legend: {
-              display: true,
-            },
-            tooltip: {
-              backgroundColor: "rgba(0, 0, 0, 0.8)",
-              padding: 12,
-              cornerRadius: 8,
-              titleFont: {
-                size: 14,
-                weight: "600",
-              },
-              bodyFont: {
-                size: 13,
-              },
-              displayColors: true,
-              boxWidth: 10,
-              boxHeight: 10,
-              usePointStyle: true,
+          bodyFont: {
+            size: 13,
+          },
+          displayColors: true,
+          boxWidth: 10,
+          boxHeight: 10,
+          usePointStyle: true,
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            stepSize: 25,
+            color: "#94a3b8",
+            font: {
+              size: 12,
             },
           },
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-              ticks: {
-                stepSize: 25,
-                color: "#94a3b8",
-                font: {
-                  size: 12,
-                },
-              },
-              grid: {
-                color: "rgba(148, 163, 184, 0.15)",
-                drawBorder: false,
-              },
-            },
-            x: {
-              ticks: {
-                color: "#94a3b8",
-                font: {
-                  size: 12,
-                },
-              },
-              grid: {
-                display: false,
-                drawBorder: false,
-              },
-            },
+          grid: {
+            color: "rgba(148, 163, 184, 0.15)",
+            drawBorder: false,
           },
         },
-      });
-      }, 100);
+        x: {
+          ticks: {
+            color: "#94a3b8",
+            font: {
+              size: 12,
+            },
+          },
+          grid: {
+            display: false,
+            drawBorder: false,
+          },
+        },
+      },
+    },
+  });
+}, 100);
 
-      // Year Dropdown Functionality
-      const yearDropdownBtn = document.getElementById("yearDropdownBtn");
-      const yearDropdownMenu = document.getElementById("yearDropdownMenu");
-      const yearDropdownIcon = document.getElementById("yearDropdownIcon");
-      const selectedYearSpan = document.getElementById("selectedYear");
-      const yearOptions = document.querySelectorAll(".year-option");
+// Year Dropdown Functionality
+const yearDropdownBtn = document.getElementById("yearDropdownBtn");
+const yearDropdownMenu = document.getElementById("yearDropdownMenu");
+const yearDropdownIcon = document.getElementById("yearDropdownIcon");
+const selectedYearSpan = document.getElementById("selectedYear");
+const yearOptions = document.querySelectorAll(".year-option");
 
-      yearDropdownBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        yearDropdownMenu.classList.toggle("hidden");
-        yearDropdownIcon.style.transform = yearDropdownMenu.classList.contains(
-          "hidden"
-        )
-          ? "rotate(0deg)"
-          : "rotate(180deg)";
-      });
+yearDropdownBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  yearDropdownMenu.classList.toggle("hidden");
+  yearDropdownIcon.style.transform = yearDropdownMenu.classList.contains(
+    "hidden"
+  )
+    ? "rotate(0deg)"
+    : "rotate(180deg)";
+});
 
-      yearOptions.forEach((option) => {
-        option.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const year = option.dataset.year;
+yearOptions.forEach((option) => {
+  option.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const year = option.dataset.year;
 
-          // Update selected year
-          selectedYearSpan.textContent = year;
+    // Update selected year
+    selectedYearSpan.textContent = year;
 
-          // Update active state
-          yearOptions.forEach((opt) => {
-            opt.classList.remove("active", "bg-[#01af78]/10", "font-medium");
-          });
-          option.classList.add("active", "bg-[#01af78]/10", "font-medium");
+    // Update active state
+    yearOptions.forEach((opt) => {
+      opt.classList.remove("active", "bg-[#01af78]/10", "font-medium");
+    });
+    option.classList.add("active", "bg-[#01af78]/10", "font-medium");
 
-          // Close dropdown
-          yearDropdownMenu.classList.add("hidden");
-          yearDropdownIcon.style.transform = "rotate(0deg)";
+    // Close dropdown
+    yearDropdownMenu.classList.add("hidden");
+    yearDropdownIcon.style.transform = "rotate(0deg)";
 
-          // Generate random data for selected year
-          const generateRandomData = () =>
-            Array.from(
-              { length: 12 },
-              () => Math.floor(Math.random() * 50) + 10
-            );
+    // Generate random data for selected year
+    const generateRandomData = () =>
+      Array.from({ length: 12 }, () => Math.floor(Math.random() * 50) + 10);
 
-          emergencyChart.data.datasets[0].data = generateRandomData();
-          emergencyChart.data.datasets[1].data = generateRandomData();
-          emergencyChart.data.datasets[2].data = generateRandomData();
-          emergencyChart.update();
+    emergencyChart.data.datasets[0].data = generateRandomData();
+    emergencyChart.data.datasets[1].data = generateRandomData();
+    emergencyChart.data.datasets[2].data = generateRandomData();
+    emergencyChart.update();
 
-          console.log("Selected year:", year);
-        });
-      });
+    console.log("Selected year:", year);
+  });
+});
 
-      // Close dropdown when clicking outside
-      document.addEventListener("click", (e) => {
-        if (
-          !yearDropdownBtn.contains(e.target) &&
-          !yearDropdownMenu.contains(e.target)
-        ) {
-          yearDropdownMenu.classList.add("hidden");
-          yearDropdownIcon.style.transform = "rotate(0deg)";
-        }
-      });
+// Close dropdown when clicking outside
+document.addEventListener("click", (e) => {
+  if (
+    !yearDropdownBtn.contains(e.target) &&
+    !yearDropdownMenu.contains(e.target)
+  ) {
+    yearDropdownMenu.classList.add("hidden");
+    yearDropdownIcon.style.transform = "rotate(0deg)";
+  }
+});
