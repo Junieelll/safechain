@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SafeChain | Archive</title>
+    <link
+      rel="stylesheet"
+      href="https://unicons.iconscout.com/release/v4.0.8/css/line.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@tailwindplus/elements@1"
+      type="module"
+    ></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="css/sidebar.css" />
+
+    <style>
+      /* Slide animations for tab switching */
+      .slide-out-left {
+        animation: slideOutLeft 0.3s ease-out forwards;
+      }
+
+      .slide-out-right {
+        animation: slideOutRight 0.3s ease-out forwards;
+      }
+
+      .slide-in-left {
+        animation: slideInLeft 0.3s ease-out forwards;
+      }
+
+      .slide-in-right {
+        animation: slideInRight 0.3s ease-out forwards;
+      }
+
+      .slide-up {
+        animation: slideUp 0.3s ease-out;
+      }
+
+      .slide-down {
+        animation: slideDown 0.3s ease-out;
+      }
+
+      @keyframes slideDown {
+        from {
+          transform: translate(-50%, 0);
+          opacity: 1;
+        }
+        to {
+          transform: translate(-50%, 100%);
+          opacity: 0;
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translate(-50%, 100%);
+          opacity: 0;
+        }
+        to {
+          transform: translate(-50%, 0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideOutLeft {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(-30px);
+          opacity: 0;
+        }
+      }
+
+      @keyframes slideOutRight {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(30px);
+          opacity: 0;
+        }
+      }
+
+      @keyframes slideInLeft {
+        from {
+          transform: translateX(-30px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideInRight {
+        from {
+          transform: translateX(30px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      /* Smooth tab indicator animation */
+      .tab-btn {
+        position: relative;
+      }
+
+      .tab-indicator {
+        position: absolute;
+        bottom: -3px;
+        left: 0;
+        height: 3px;
+        background: #414141;
+        border-radius: 99px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex transition-all duration-300">
+    <aside
+      id="sidebar"
+      class="fixed w-[270px] m-4 rounded-[20px] sidebar-gradient h-[calc(100vh-32px)] transition-all duration-500 ease-in-out shadow-[0_10px_40px_rgba(0,0,0,0.3)] z-50"
+    >
+      <header class="flex relative p-5 items-center justify-between">
+        <a href="#" class="flex items-center gap-3 no-underline text-white">
+          <div
+            class="w-[46px] h-[46px] bg-white/20 rounded-full flex items-center justify-center backdrop-blur-[10px] border border-white/30"
+          >
+            <i class="uil uil-shield-check"></i>
+          </div>
+          <span
+            id="logoText"
+            class="text-lg font-semibold whitespace-nowrap transition-opacity duration-300"
+            >SafeChain</span
+          >
+        </a>
+        <button
+          id="sidebarToggler"
+          class="h-[35px] w-[35px] text-white cursor-pointer flex bg-white/20 backdrop-blur-[10px] border border-white/30 items-center justify-center rounded-[10px] transition-all duration-400 shadow-[0_2px_8px_rgba(0,0,0,0.1)] absolute right-5 hover:bg-white/50"
+        >
+          <i
+            class="uil uil-angle-left text-[1.75rem] transition-all duration-400"
+          ></i>
+        </button>
+      </header>
+
+      <nav class="h-[calc(100%-86px)] flex flex-col justify-between">
+        <ul
+          id="primaryNav"
+          class="list-none flex gap-1.5 px-[15px] flex-col translate-y-[15px] transition-all duration-500 ease-in-out"
+        >
+          <li class="relative nav-item text-sm">
+            <a
+              href="dashboard.html"
+              class="nav-link text-white/85 flex gap-3.5 whitespace-nowrap rounded-xl py-3 px-3.5 items-center border border-transparent transition-all duration-200 ease-in-out hover:text-white hover:bg-white/15"
+            >
+              <i class="nav-icon uil uil-apps text-xl"></i>
+              <span class="nav-label">Dashboard</span>
+            </a>
+            <span
+              class="nav-tooltip py-2 px-3.5 rounded-xl whitespace-nowrap bg-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] font-medium text-sm text-[#01AF78] z-[9999]"
+              >Dashboard</span
+            >
+          </li>
+          <li class="relative nav-item text-sm">
+            <a
+              href="incident.html"
+              class="nav-link text-white/85 flex gap-3.5 whitespace-nowrap rounded-xl py-3 px-3.5 items-center border border-transparent transition-all duration-200 ease-in-out hover:text-white hover:bg-white/15"
+            >
+              <i class="nav-icon uil uil-file-alt text-xl"></i>
+              <span class="nav-label">Incident Log</span>
+            </a>
+            <span
+              class="nav-tooltip py-2 px-3.5 rounded-xl whitespace-nowrap bg-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] font-medium text-sm text-[#01AF78] z-[9999]"
+              >Incident Log</span
+            >
+          </li>
+          <li class="relative nav-item text-sm">
+            <a
+              href="resident.html"
+              class="nav-link text-white/85 flex gap-3.5 whitespace-nowrap rounded-xl py-3 px-3.5 items-center border border-transparent transition-all duration-200 ease-in-out hover:text-white hover:bg-white/15"
+            >
+              <i class="nav-icon uil uil-users-alt text-xl"></i>
+              <span class="nav-label">Residents</span>
+            </a>
+            <span
+              class="nav-tooltip py-2 px-3.5 rounded-xl whitespace-nowrap bg-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] font-medium text-sm text-[#01AF78] z-[9999]"
+              >Residents</span
+            >
+          </li>
+          <li class="relative nav-item text-sm">
+            <a
+              href="devices.html"
+              class="nav-link text-white/85 flex gap-3.5 whitespace-nowrap rounded-xl py-3 px-3.5 items-center border border-transparent transition-all duration-200 ease-in-out hover:text-white hover:bg-white/15"
+            >
+              <i class="nav-icon uil uil-mobile-android text-xl"></i>
+              <span class="nav-label">Devices</span>
+            </a>
+            <span
+              class="nav-tooltip py-2 px-3.5 rounded-xl whitespace-nowrap bg-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] font-medium text-sm text-[#01AF78] z-[9999]"
+              >Devices</span
+            >
+          </li>
+          <li class="relative nav-item text-sm">
+            <a
+              href="statistics.html"
+              class="nav-link text-white/85 flex gap-3.5 whitespace-nowrap rounded-xl py-3 px-3.5 items-center border border-transparent transition-all duration-200 ease-in-out hover:text-white hover:bg-white/15"
+            >
+              <i class="nav-icon uil uil-chart-bar text-xl"></i>
+              <span class="nav-label">Statistics</span>
+            </a>
+            <span
+              class="nav-tooltip py-2 px-3.5 rounded-xl whitespace-nowrap bg-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] font-medium text-sm text-[#01AF78] z-[9999]"
+              >Statistics</span
+            >
+          </li>
+          <li class="relative nav-item text-sm">
+            <a
+              href="archive.html"
+              class="nav-link text-white/85 flex gap-3.5 whitespace-nowrap rounded-xl py-3 px-3.5 items-center border border-transparent transition-all duration-200 ease-in-out hover:text-white hover:bg-white/15 active"
+            >
+              <i class="nav-icon uil uil-archive-alt text-2xl"></i>
+              <span class="nav-label">Archive</span>
+            </a>
+            <span
+              class="nav-tooltip py-2 px-3.5 rounded-xl whitespace-nowrap bg-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] font-medium text-sm text-[#01AF78] z-[9999]"
+              >Archive</span
+            >
+          </li>
+        </ul>
+
+        <ul class="list-none flex gap-1.5 px-[15px] flex-col relative pb-5">
+          <li class="relative mb-2.5 nav-item text-sm">
+            <a
+              href="#"
+              id="darkModeToggle"
+              class="nav-link text-white/85 flex gap-3.5 whitespace-nowrap rounded-xl py-3 px-3.5 items-center no-underline border border-transparent transition-all duration-200 ease-in-out hover:text-white hover:bg-white/15"
+            >
+              <i id="darkModeIcon" class="nav-icon uil uil-moon text-xl"></i>
+              <span id="darkModeLabel" class="nav-label">Dark Mode</span>
+            </a>
+            <span
+              class="nav-tooltip py-2 px-3.5 rounded-xl whitespace-nowrap bg-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] font-medium text-sm text-[#01AF78] z-[9999]"
+              >Dark Mode</span
+            >
+          </li>
+          <li class="relative">
+            <button
+              id="userProfileBtn"
+              class="w-full flex items-center gap-3 py-3 px-3.5 mb-0 rounded-xl text-white no-underline transition-all duration-300 hover:bg-white/15 border-0 cursor-pointer bg-transparent"
+            >
+              <div
+                class="w-[38px] h-[38px] rounded-full avatar-gradient flex items-center justify-center flex-shrink-0 font-semibold text-[0.95rem] border-2 border-white/30"
+              >
+                JD
+              </div>
+              <div
+                id="userInfo"
+                class="flex flex-col transition-opacity duration-300 text-left"
+              >
+                <span class="font-semibold text-[0.95rem]">John Doe</span>
+                <span class="text-xs opacity-80">user@email.example</span>
+              </div>
+            </button>
+
+            <div
+              id="userDropdown"
+              class="hidden absolute bottom-full left-0 mb-2 w-[240px] bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.25)] overflow-hidden z-50"
+            >
+              <a
+                href="#"
+                class="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors duration-200 no-underline"
+              >
+                <i class="uil uil-user text-xl text-[#01AF78]"></i>
+                <span class="text-sm font-medium">My Profile</span>
+              </a>
+              <a
+                href="#"
+                class="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors duration-200 no-underline"
+              >
+                <i class="uil uil-setting text-xl text-[#01AF78]"></i>
+                <span class="text-sm font-medium">Settings</span>
+              </a>
+              <a
+                href="#"
+                class="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors duration-200 no-underline"
+              >
+                <i class="uil uil-question-circle text-xl text-[#01AF78]"></i>
+                <span class="text-sm font-medium">Help & Support</span>
+              </a>
+              <div class="border-t border-gray-200"></div>
+              <a
+                href="#"
+                class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors duration-200 no-underline"
+              >
+                <i class="uil uil-signout text-xl"></i>
+                <span class="text-sm font-medium">Logout</span>
+              </a>
+            </div>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main
+      id="mainContent"
+      class="transition-all duration-500 ease-in-out ml-[302px] flex-1 p-8"
+    >
+      <div class="header flex items-center justify-between mb-5">
+        <div class="title">
+          <h4 class="text-bs font-semibold text-[#4b4b4b]">Archive</h4>
+          <p class="text-sm text-neutral-500">
+            Access and restore archived items.
+          </p>
+        </div>
+      </div>
+
+      <div class="w-full">
+        <!-- Tabs Section -->
+        <div class="rounded-lg mb-4">
+          <div class="flex border-b relative">
+            <!-- Animated tab indicator -->
+            <div id="tabIndicator" class="tab-indicator"></div>
+
+            <button
+              class="tab-btn px-6 py-3 text-sm font-medium transition-all"
+              data-tab="all"
+            >
+              All Items
+              <span class="ml-2 px-2 py-0.5 text-xs rounded-full tab-count"
+                >6</span
+              >
+            </button>
+            <button
+              class="tab-btn px-6 py-3 text-sm font-medium transition-all"
+              data-tab="incidents"
+            >
+              Incidents
+              <span class="ml-2 px-2 py-0.5 text-xs rounded-full tab-count"
+                >2</span
+              >
+            </button>
+            <button
+              class="tab-btn px-6 py-3 text-sm font-medium transition-all"
+              data-tab="users"
+            >
+              Users
+              <span class="ml-2 px-2 py-0.5 text-xs rounded-full tab-count"
+                >2</span
+              >
+            </button>
+            <button
+              class="tab-btn px-6 py-3 text-sm font-medium transition-all"
+              data-tab="devices"
+            >
+              Devices
+              <span class="ml-2 px-2 py-0.5 text-xs rounded-full tab-count"
+                >2</span
+              >
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Controls Section -->
+        <div class="bg-white rounded-xl flex justify-between mb-4">
+          <div class="p-4 flex gap-4 items-center">
+            <!-- Search -->
+            <div class="search flex flex-col gap-1 min-w-[400px]">
+              <div class="search-input relative w-full">
+                <i
+                  class="uil uil-search absolute top-1/2 -translate-y-1/2 left-2 text-xl"
+                ></i>
+                <input
+                  type="text"
+                  name="search"
+                  id="search"
+                  autocomplete="off"
+                  placeholder="Search incidents..."
+                  class="py-3 pl-9 pr-5 bg-[#F1F5F9] rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="action flex gap-4 p-4">
+            <button
+              class="px-4 py-2 border border-[#D4D9E0] text-xs text-gray-600 font-medium rounded-lg hover:bg-gray-50 flex items-center gap-2 transition-colors"
+            >
+              <i class="uil uil-sync text-lg text-gray-600"></i>
+              Restore All
+            </button>
+            <button
+              class="px-4 py-2 font-medium bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 flex items-center gap-2 transition-colors"
+            >
+              <i class="uil uil-trash-alt text-lg"></i>
+              Empty Archive
+            </button>
+          </div>
+        </div>
+
+        <!-- Items List Section -->
+        <div id="itemsContainer" class="bg-white rounded-xl p-4">
+          <!-- Items Header -->
+          <div
+            class="px-6 py-4 flex items-center gap-3 bg-[#F1F5F9] rounded-t-lg"
+          >
+            <h3 class="text-sm font-semibold text-gray-700">Archived Items</h3>
+            <label class="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                id="selectAll"
+                class="w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]"
+              />
+              <span
+                class="text-sm text-gray-600 group-hover:text-gray-900 transition-colors"
+                >Select All</span
+              >
+            </label>
+          </div>
+
+          <!-- Items List -->
+          <div id="itemsList" class="divide-y">
+            <!-- Items will be rendered here -->
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div
+          id="actionBar"
+          class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 rounded-full shadow-2xl p-3 pl-5 flex items-center gap-4 hidden slide-up z-50"
+        >
+          <span class="text-white text-sm font-medium"
+            ><span id="selectedCount">0</span> items selected</span
+          >
+          <button
+            id="restoreBtn"
+            class="px-4 py-2.5 bg-white text-sm text-gray-900 rounded-full hover:bg-gray-100 flex items-center gap-2 transition-all transform hover:scale-105"
+          >
+            <i class="uil uil-redo"></i>
+            Restore
+          </button>
+          <button
+            id="deleteBtn"
+            class="px-4 py-2.5 bg-red-500 text-sm text-white rounded-full hover:bg-red-600 flex items-center gap-2 transition-all transform hover:scale-105"
+          >
+            <i class="uil uil-trash-alt"></i>
+            Delete Permanently
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <script src="js/sidebar.js"></script>
+    <script src="js/archive.js"></script>
+  </body>
+</html>

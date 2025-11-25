@@ -174,7 +174,8 @@ const statusDropdownButton = document.getElementById("statusDropdownButton");
 const statusDropdownMenu = document.getElementById("statusDropdownMenu");
 const statusDropdownIcon = document.getElementById("statusDropdownIcon");
 const statusSelectedText = document.getElementById("statusSelectedText");
-const statusDropdownItems = statusDropdownMenu.querySelectorAll(".dropdown-item");
+const statusDropdownItems =
+  statusDropdownMenu.querySelectorAll(".dropdown-item");
 
 // Date Dropdown
 const dateButton = document.getElementById("dateButton");
@@ -195,7 +196,9 @@ const searchInput = document.getElementById("search");
 const clearFilterBtn = document.getElementById("clearFilterBtn");
 
 // Pagination
-const paginationContainer = document.querySelector(".inline-flex.items-center.justify-center");
+const paginationContainer = document.querySelector(
+  ".inline-flex.items-center.justify-center"
+);
 
 // Filter States
 let selectedDateRange = null;
@@ -230,38 +233,38 @@ function parseDate(dateStr) {
   const [year, month, day] = datePart.split("-");
   let [hours, minutes] = timePart.split(":");
   hours = parseInt(hours);
-  
+
   if (period === "PM" && hours !== 12) hours += 12;
   if (period === "AM" && hours === 12) hours = 0;
-  
+
   return new Date(year, month - 1, day, hours, minutes);
 }
 
 function filterByDateRange(incident) {
   if (!selectedDateRange) return true;
-  
+
   const incidentDate = parseDate(incident.dateTime);
   const today = new Date();
   today.setHours(23, 59, 59, 999);
-  
+
   if (selectedDateRange === "Today") {
     const startOfDay = new Date(today);
     startOfDay.setHours(0, 0, 0, 0);
     return incidentDate >= startOfDay && incidentDate <= today;
   }
-  
+
   if (selectedDateRange === "Last 7 Days") {
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(today.getDate() - 7);
     return incidentDate >= sevenDaysAgo && incidentDate <= today;
   }
-  
+
   if (selectedDateRange === "Last 30 Days") {
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
     return incidentDate >= thirtyDaysAgo && incidentDate <= today;
   }
-  
+
   // Custom date range
   if (startDate.value && endDate.value) {
     const start = new Date(startDate.value);
@@ -270,7 +273,7 @@ function filterByDateRange(incident) {
     end.setHours(23, 59, 59, 999);
     return incidentDate >= start && incidentDate <= end;
   }
-  
+
   return true;
 }
 
@@ -280,12 +283,12 @@ function filterIncidents() {
     if (selectedType !== "all" && incident.type !== selectedType) {
       return false;
     }
-    
+
     // Status filter
     if (selectedStatus !== "all" && incident.status !== selectedStatus) {
       return false;
     }
-    
+
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -297,12 +300,12 @@ function filterIncidents() {
         incident.status.toLowerCase().includes(query)
       );
     }
-    
+
     // Date filter
     if (!filterByDateRange(incident)) {
       return false;
     }
-    
+
     return true;
   });
 }
@@ -310,24 +313,26 @@ function filterIncidents() {
 function renderTable() {
   const filteredData = filterIncidents();
   const tbody = document.querySelector("tbody");
-  
+
   // Calculate pagination
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const pageData = filteredData.slice(startIndex, endIndex);
-  
+
   // Update incident count
-  document.querySelector(".incidents h1 .count").textContent = `(${filteredData.length})`;
-  
+  document.querySelector(
+    ".incidents h1 .count"
+  ).textContent = `(${filteredData.length})`;
+
   // Add fade out effect
   tbody.style.opacity = "0";
   tbody.style.transition = "opacity 0.3s ease-in-out";
-  
+
   setTimeout(() => {
     // Clear table
     tbody.innerHTML = "";
-    
+
     // Populate table
     if (pageData.length === 0) {
       tbody.innerHTML = `
@@ -344,10 +349,16 @@ function renderTable() {
         row.className = "hover:bg-gray-50 transition-colors";
         row.innerHTML = `
           <td class="px-6 py-4">
-            <span class="text-xs font-medium text-blue-600">${incident.id}</span>
+            <span class="text-xs font-medium text-blue-600">${
+              incident.id
+            }</span>
           </td>
           <td class="px-6 py-4">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(incident.type)}">${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)}</span>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(
+              incident.type
+            )}">${
+          incident.type.charAt(0).toUpperCase() + incident.type.slice(1)
+        }</span>
           </td>
           <td class="px-6 py-4">
             <span class="text-xs text-gray-700">${incident.location}</span>
@@ -359,15 +370,21 @@ function renderTable() {
             <span class="text-xs text-gray-700">${incident.dateTime}</span>
           </td>
           <td class="px-6 py-4">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(incident.status)}">${incident.status.charAt(0).toUpperCase() + incident.status.slice(1)}</span>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+              incident.status
+            )}">${
+          incident.status.charAt(0).toUpperCase() + incident.status.slice(1)
+        }</span>
           </td>
           <td class="px-6 py-4">
             <div class="flex items-center gap-3">
-              <button class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center">
+              <button class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center transition-all transform hover:scale-105">
                 <i class="uil uil-eye text-xl"></i>
               </button>
-              <button class="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center">
-                <i class="uil uil-trash-alt text-xl"></i>
+              <button onclick="archiveIncident('${
+                incident.id
+              }')" class="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center transition-all transform hover:scale-105">
+                <i class="uil uil-archive-alt text-xl"></i>
               </button>
             </div>
           </td>
@@ -375,10 +392,10 @@ function renderTable() {
         tbody.appendChild(row);
       });
     }
-    
+
     // Add fade in effect
     tbody.style.opacity = "1";
-    
+
     // Render pagination
     renderPagination(totalPages);
   }, 300);
@@ -387,17 +404,17 @@ function renderTable() {
 function renderPagination(totalPages) {
   const paginationNumbers = paginationContainer.querySelector("div");
   paginationNumbers.innerHTML = "";
-  
+
   if (totalPages <= 1) {
     paginationContainer.style.display = "none";
     return;
   }
-  
+
   paginationContainer.style.display = "flex";
-  
+
   // Show first page
   paginationNumbers.appendChild(createPageButton(1, currentPage === 1));
-  
+
   if (totalPages <= 7) {
     // Show all pages
     for (let i = 2; i <= totalPages; i++) {
@@ -408,40 +425,43 @@ function renderPagination(totalPages) {
     if (currentPage > 3) {
       paginationNumbers.appendChild(createEllipsis());
     }
-    
+
     let start = Math.max(2, currentPage - 1);
     let end = Math.min(totalPages - 1, currentPage + 1);
-    
+
     if (currentPage <= 3) {
       end = 4;
     }
-    
+
     if (currentPage >= totalPages - 2) {
       start = totalPages - 3;
     }
-    
+
     for (let i = start; i <= end; i++) {
       paginationNumbers.appendChild(createPageButton(i, currentPage === i));
     }
-    
+
     if (currentPage < totalPages - 2) {
       paginationNumbers.appendChild(createEllipsis());
     }
-    
-    paginationNumbers.appendChild(createPageButton(totalPages, currentPage === totalPages));
+
+    paginationNumbers.appendChild(
+      createPageButton(totalPages, currentPage === totalPages)
+    );
   }
-  
+
   // Update prev/next buttons
   const prevButton = paginationContainer.querySelector("#prevBtn");
   const nextButton = paginationContainer.querySelector("#nextBtn");
-  
+
   prevButton.disabled = currentPage === 1;
   prevButton.style.opacity = currentPage === 1 ? "0.5" : "1";
   prevButton.style.cursor = currentPage === 1 ? "not-allowed" : "pointer";
-  
+
   nextButton.disabled = currentPage === totalPages;
   nextButton.style.opacity = currentPage === totalPages ? "0.5" : "1";
-  nextButton.style.cursor = currentPage === totalPages ? "not-allowed" : "pointer";
+  nextButton.style.cursor =
+    currentPage === totalPages ? "not-allowed" : "pointer";
 }
 
 function createPageButton(pageNum, isActive) {
@@ -758,27 +778,109 @@ startDate.addEventListener("change", () => {
 
 function updateWidgetCounts() {
   const totalIncidents = incidentsData.length;
-  const activeIncidents = incidentsData.filter(i => i.status === "responding").length;
-  const resolvedIncidents = incidentsData.filter(i => i.status === "resolved").length;
-  const pendingIncidents = incidentsData.filter(i => i.status === "pending").length;
-  
+  const activeIncidents = incidentsData.filter(
+    (i) => i.status === "responding"
+  ).length;
+  const resolvedIncidents = incidentsData.filter(
+    (i) => i.status === "resolved"
+  ).length;
+  const pendingIncidents = incidentsData.filter(
+    (i) => i.status === "pending"
+  ).length;
+
   // Calculate resolution rate
-  const resolutionRate = totalIncidents > 0 
-    ? Math.round((resolvedIncidents / totalIncidents) * 100) 
-    : 0;
-  
+  const resolutionRate =
+    totalIncidents > 0
+      ? Math.round((resolvedIncidents / totalIncidents) * 100)
+      : 0;
+
   // Update the DOM
   document.getElementById("incidentCount").textContent = totalIncidents;
   document.getElementById("activeCount").textContent = activeIncidents;
   document.getElementById("resolvedCount").textContent = resolvedIncidents;
   document.getElementById("pendingCount").textContent = pendingIncidents;
-  
+
   // Update resolution rate
-  const resolutionRateElement = document.querySelector('.card:nth-child(3) .subtitle');
+  const resolutionRateElement = document.querySelector(
+    ".card:nth-child(3) .subtitle"
+  );
   resolutionRateElement.innerHTML = `<i class="uil uil-arrow-up"></i> ${resolutionRate}% resolution rate`;
 }
 
+// Archive Modal Functions
+function showArchiveModal(id) {
+  const incident = incidentsData.find((i) => i.id === id);
+  if (!incident) return;
+
+  // Update incident name in modal
+  document.getElementById("incidentArchive").textContent = incident.id;
+  
+  // Store current archiving ID
+  window.currentArchivingId = id;
+
+  const modal = document.getElementById("incidentArchiveModal");
+  const overlay = document.getElementById("archiveModalOverlay");
+
+  if (modal && overlay) {
+    overlay.classList.remove("hidden");
+    modal.classList.remove("hidden");
+
+    // Trigger animation
+    setTimeout(() => {
+      overlay.classList.add("opacity-100");
+      modal.classList.add("scale-100", "opacity-100");
+    }, 10);
+  }
+}
+
+function closeArchiveModal() {
+  const modal = document.getElementById("incidentArchiveModal");
+  const overlay = document.getElementById("archiveModalOverlay");
+
+  if (modal && overlay) {
+    overlay.classList.remove("opacity-100");
+    modal.classList.remove("scale-100", "opacity-100");
+
+    setTimeout(() => {
+      overlay.classList.add("hidden");
+      modal.classList.add("hidden");
+      window.currentArchivingId = null;
+    }, 300);
+  }
+}
+
+function confirmArchiveIncident() {
+  const id = window.currentArchivingId;
+  if (!id) return;
+
+  const index = incidentsData.findIndex((i) => i.id === id);
+  if (index !== -1) {
+    incidentsData.splice(index, 1);
+    currentPage = 1;
+    updateWidgetCounts();
+    renderTable();
+  }
+
+  closeArchiveModal();
+}
+
+// Update the archiveResident function
+function archiveIncident(id) {
+  showArchiveModal(id);
+}
+
+// Close modal when clicking overlay
+document.addEventListener("click", (e) => {
+  if (e.target.id === "archiveModalOverlay") {
+    closeArchiveModal();
+  }
+});
+
+// Make functions global
+window.closeArchiveModal = closeArchiveModal;
+window.confirmArchiveIncident = confirmArchiveIncident;
+
 // Initialize
-updateWidgetCounts(); 
+updateWidgetCounts();
 renderTable();
 updateClearFilterButton();

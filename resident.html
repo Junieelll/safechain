@@ -23,6 +23,51 @@
     />
 
     <link rel="stylesheet" href="css/sidebar.css" />
+
+    <style>
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+
+    @keyframes countdown {
+        from {
+            stroke-dashoffset: 0;
+        }
+        to {
+            stroke-dashoffset: 138.23;
+        }
+    }
+
+    .toast-enter {
+        animation: slideIn 0.3s ease-out forwards;
+    }
+
+    .toast-exit {
+        animation: slideOut 0.3s ease-out forwards;
+    }
+
+    .countdown-circle {
+        animation: countdown 5s linear forwards;
+    }
+</style>
   </head>
   <body class="min-h-screen flex transition-all duration-300">
     <aside
@@ -233,7 +278,11 @@
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-2xl font-semibold text-gray-800">11</span>
+                <span
+                  class="text-2xl font-semibold text-gray-800"
+                  id="totalCount"
+                  ><i class="uil uil-ellipsis-h"></i
+                ></span>
                 <i class="uil uil-arrow-growth text-sm text-emerald-500"></i>
               </div>
               <p class="text-xs text-gray-500 mt-1 font-medium">
@@ -251,7 +300,11 @@
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-2xl font-semibold text-gray-800">2</span>
+                <span
+                  class="text-2xl font-semibold text-gray-800"
+                  id="registeredCount"
+                  ><i class="uil uil-ellipsis-h"></i
+                ></span>
                 <i class="uil uil-arrow-growth text-sm text-emerald-500"></i>
               </div>
               <p class="text-xs text-gray-500 mt-1 font-medium">
@@ -269,7 +322,11 @@
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-2xl font-semibold text-gray-800">2h</span>
+                <span
+                  class="text-2xl font-semibold text-gray-800"
+                  id="lastHourCount"
+                  ><i class="uil uil-ellipsis-h"></i
+                ></span>
               </div>
               <p class="text-xs text-gray-500 mt-1 font-medium">
                 Last Registration
@@ -295,8 +352,9 @@
                   type="text"
                   name="search"
                   id="search"
+                  autocomplete="off"
                   placeholder="Search incidents..."
-                  class="py-3 pl-9 bg-[#F1F5F9] rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  class="py-3 pl-9 bg-[#F1F5F9] rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border-2 border-transparent focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition"
                 />
               </div>
             </div>
@@ -309,7 +367,7 @@
                   <!-- Dropdown Button -->
                   <button
                     id="sortDropdownButton"
-                    class="w-full h-full bg-[#F1F5F9] rounded-lg px-4 py-[10px] text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                    class="w-full h-full bg-[#F1F5F9] rounded-lg px-4 py-[10px] border-2 border-transparent text-left flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition"
                   >
                     <span id="sortSelectedText" class="text-gray-700 text-xs"
                       >Newest First</span
@@ -357,7 +415,7 @@
 
               <div class="clear-filter-btn flex flex-col justify-end">
                 <button
-                  id="clearFilterBtn"
+                  id="exportBtn"
                   class="py-2 px-4 font-medium flex gap-2 items-center whitespace-nowrap border border-[#01AF78] rounded-lg text-[#01AF78] text-xs hover:bg-emerald-50 transition ease-in-out duration-200"
                 >
                   <i class="uil uil-download-alt text-lg"></i>Export
@@ -409,281 +467,401 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
-                <!-- Sample Row -->
-                <tr class="hover:bg-gray-50 transition">
-                  <td class="px-6 py-4">
-                    <div class="flex items-center gap-3">
-                      <div
-                        class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                      >
-                        MS
-                      </div>
-                      <span class="text-xs font-medium text-gray-800"
-                        >Maria Santos</span
-                      >
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">USR-2025-009</td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    SAMPLE ADDRESS
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    +63 910 123 4567
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">SC-KC-009</td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    SEPTEMBER 15, 2024
-                  </td>
-                  <td class="px-6 py-4">
-                    <div class="flex items-center gap-2">
-                      <button
-                        class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-eye text-xl"></i>
-                      </button>
-                      <button
-                        class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-pen text-xl"></i>
-                      </button>
-                      <button
-                        class="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-trash-alt text-xl"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <!-- Repeat rows as needed -->
-
-                <tr class="hover:bg-gray-50 transition">
-                  <td class="px-6 py-4">
-                    <div class="flex items-center gap-3">
-                      <div
-                        class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                      >
-                        MS
-                      </div>
-                      <span class="text-xs font-medium text-gray-800"
-                        >Maria Santos</span
-                      >
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">USR-2025-009</td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    SAMPLE ADDRESS
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    +63 910 123 4567
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">SC-KC-009</td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    SEPTEMBER 15, 2024
-                  </td>
-                  <td class="px-6 py-4">
-                    <div class="flex items-center gap-2">
-                      <button
-                        class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-eye text-xl"></i>
-                      </button>
-                      <button
-                        class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-pen text-xl"></i>
-                      </button>
-                      <button
-                        class="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-trash-alt text-xl"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-
-                <tr class="hover:bg-gray-50 transition">
-                  <td class="px-6 py-4">
-                    <div class="flex items-center gap-3">
-                      <div
-                        class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                      >
-                        MS
-                      </div>
-                      <span class="text-xs font-medium text-gray-800"
-                        >Maria Santos</span
-                      >
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">USR-2025-009</td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    SAMPLE ADDRESS
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    +63 910 123 4567
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">SC-KC-009</td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    SEPTEMBER 15, 2024
-                  </td>
-                  <td class="px-6 py-4">
-                    <div class="flex items-center gap-2">
-                      <button
-                        class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-eye text-xl"></i>
-                      </button>
-                      <button
-                        class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-pen text-xl"></i>
-                      </button>
-                      <button
-                        class="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-trash-alt text-xl"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                
-                <tr class="hover:bg-gray-50 transition">
-                  <td class="px-6 py-4">
-                    <div class="flex items-center gap-3">
-                      <div
-                        class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                      >
-                        MS
-                      </div>
-                      <span class="text-xs font-medium text-gray-800"
-                        >Maria Santos</span
-                      >
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">USR-2025-009</td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    SAMPLE ADDRESS
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    +63 910 123 4567
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">SC-KC-009</td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    SEPTEMBER 15, 2024
-                  </td>
-                  <td class="px-6 py-4">
-                    <div class="flex items-center gap-2">
-                      <button
-                        class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-eye text-xl"></i>
-                      </button>
-                      <button
-                        class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-pen text-xl"></i>
-                      </button>
-                      <button
-                        class="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-trash-alt text-xl"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-
-                <tr class="hover:bg-gray-50 transition">
-                  <td class="px-6 py-4">
-                    <div class="flex items-center gap-3">
-                      <div
-                        class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                      >
-                        MS
-                      </div>
-                      <span class="text-xs font-medium text-gray-800"
-                        >Maria Santos</span
-                      >
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">USR-2025-009</td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    SAMPLE ADDRESS
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    +63 910 123 4567
-                  </td>
-                  <td class="px-6 py-4 text-xs text-gray-600">SC-KC-009</td>
-                  <td class="px-6 py-4 text-xs text-gray-600">
-                    SEPTEMBER 15, 2024
-                  </td>
-                  <td class="px-6 py-4">
-                    <div class="flex items-center gap-2">
-                      <button
-                        class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-eye text-xl"></i>
-                      </button>
-                      <button
-                        class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-pen text-xl"></i>
-                      </button>
-                      <button
-                        class="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center"
-                      >
-                        <i class="uil uil-trash-alt text-xl"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <!-- Table Row will appear here dynamically-->
               </tbody>
             </table>
           </div>
 
           <!-- Pagination -->
           <div class="flex items-center justify-center gap-2 mt-6">
-            <button
-              class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition"
-            >
-              <i class="uil uil-angle-left text-xl"></i>
-            </button>
-
-            <div class="bg-[#F1F5F9] rounded-full p-1 flex items-center gap-1">
-              <button
-                class="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-500 text-white text-sm font-medium"
-              >
-                1
-              </button>
-              <button
-                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white text-gray-600 text-sm font-medium transition"
-              >
-                2
-              </button>
-              <button
-                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white text-gray-600 text-sm font-medium transition"
-              >
-                3
-              </button>
-              <button
-                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white text-gray-600 text-sm font-medium transition"
-              >
-                4
-              </button>
-              <span class="px-2 text-gray-500">...</span>
-              <button
-                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white text-gray-600 text-sm font-medium transition"
-              >
-                10
-              </button>
-            </div>
-
-            <button
-              class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition"
-            >
-              <i class="uil uil-angle-right text-xl"></i>
-            </button>
+            
           </div>
         </div>
       </section>
+
+      <!-- Export Modal -->
+      <div
+        id="modalOverlay"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300 opacity-0"
+      ></div>
+
+      <div
+        id="exportModal"
+        class="hidden fixed top-1/2 left-1/2 overflow-hidden transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl shadow-2xl z-50 max-content transition-all duration-300 opacity-0 scale-95"
+      >
+        <!-- Modal Header -->
+        <div
+          class="flex items-center border-b border-gray-200 justify-between p-6 pb-4"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center"
+            >
+              <i class="uil uil-download-alt text-xl text-emerald-500"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-800">
+                Export Residents
+              </h3>
+              <p class="text-xs text-gray-500 mt-0.5">
+                Select fields to include in export
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 py-3 overflow-y-auto">
+          <div class="space-y-3">
+            <!-- Select All Option -->
+            <label
+              class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+            >
+              <input
+                type="checkbox"
+                id="selectAll"
+                class="w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]"
+                onchange="toggleSelectAll(this)"
+              />
+              <div class="flex-1">
+                <span class="text-xs font-semibold text-gray-800"
+                  >Select All</span
+                >
+              </div>
+            </label>
+
+            <div class="border-t border-gray-200 my-2"></div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Individual Fields -->
+              <label
+                class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  value="name"
+                  class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]"
+                  checked
+                  onchange="updateSelectAll()"
+                />
+                <div class="flex-1">
+                  <span class="text-xs font-medium text-gray-700"
+                    >Resident Name</span
+                  >
+                  <p class="text-xs text-gray-500">Full name of the resident</p>
+                </div>
+              </label>
+
+              <label
+                class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  value="userId"
+                  class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]"
+                  checked
+                  onchange="updateSelectAll()"
+                />
+                <div class="flex-1">
+                  <span class="text-xs font-medium text-gray-700">User ID</span>
+                  <p class="text-xs text-gray-500">Unique identifier</p>
+                </div>
+              </label>
+
+              <label
+                class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  value="address"
+                  class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]"
+                  checked
+                  onchange="updateSelectAll()"
+                />
+                <div class="flex-1">
+                  <span class="text-xs font-medium text-gray-700">Address</span>
+                  <p class="text-xs text-gray-500">Residential address</p>
+                </div>
+              </label>
+
+              <label
+                class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  value="contact"
+                  class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]"
+                  checked
+                  onchange="updateSelectAll()"
+                />
+                <div class="flex-1">
+                  <span class="text-xs font-medium text-gray-700"
+                    >Contact Number</span
+                  >
+                  <p class="text-xs text-gray-500">Phone number</p>
+                </div>
+              </label>
+
+              <label
+                class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  value="deviceId"
+                  class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]"
+                  checked
+                  onchange="updateSelectAll()"
+                />
+                <div class="flex-1">
+                  <span class="text-xs font-medium text-gray-700"
+                    >Device ID</span
+                  >
+                  <p class="text-xs text-gray-500">
+                    Associated device identifier
+                  </p>
+                </div>
+              </label>
+
+              <label
+                class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  value="registeredDate"
+                  class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]"
+                  checked
+                  onchange="updateSelectAll()"
+                />
+                <div class="flex-1">
+                  <span class="text-xs font-medium text-gray-700"
+                    >Registered Date</span
+                  >
+                  <p class="text-xs text-gray-500">Date of registration</p>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center gap-3 border-t border-gray-200 p-6 pt-4">
+          <button
+            onclick="closeExportModal()"
+            class="flex-1 px-4 py-3.5 min-h-[44px] text-xs font-medium text-[#64748B] bg-white border border-[#96A9C4] rounded-full hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onclick="exportResidents()"
+            class="flex-1 px-4 py-3.5 max-h-[44px] text-xs font-medium text-white bg-emerald-500 rounded-full hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+          >
+            <i class="uil uil-download-alt text-lg"></i>
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Edit Resident Modal -->
+      <div
+        id="editModalOverlay"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300 opacity-0"
+      ></div>
+
+      <div
+        id="residentEditModal"
+        class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl shadow-2xl z-50 w-full max-w-lg transition-all duration-300 opacity-0 scale-95"
+      >
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 pb-4">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center"
+            >
+              <i class="uil uil-pen text-2xl text-blue-500"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-800">Edit Resident</h3>
+              <p class="text-xs text-gray-500 mt-0.5">
+                Update resident information.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div
+          class="px-6 py-4 space-y-5 max-h-[calc(100vh-250px)] overflow-y-auto"
+        >
+          <!-- Resident Name -->
+          <div>
+            <label
+              for="editResidentName"
+              class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide"
+            >
+              Resident Name
+            </label>
+            <input
+              type="text"
+              id="editResidentName"
+              class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200"
+              placeholder="Enter resident name"
+            />
+          </div>
+
+          <!-- User ID (Read-only) -->
+          <div>
+            <label
+              for="editUserId"
+              class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide"
+            >
+              User ID
+            </label>
+            <input
+              type="text"
+              id="editUserId"
+              class="w-full px-4 py-3 bg-emerald-50 border focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 order-emerald-200 rounded-lg text-xs text-emerald-600 font-medium cursor-not-allowed transition-all ease-in-out duration-200"
+              readonly
+            />
+          </div>
+
+          <!-- Household/Address -->
+          <div>
+            <label
+              for="editAddress"
+              class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide"
+            >
+              Household / Address
+            </label>
+            <input
+              type="text"
+              id="editAddress"
+              class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200"
+              placeholder="Enter address"
+            />
+          </div>
+
+          <!-- Contact Number -->
+          <div>
+            <label
+              for="editContact"
+              class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide"
+            >
+              Contact Number
+            </label>
+            <input
+              type="tel"
+              id="editContact"
+              class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200"
+              placeholder="Enter contact number"
+            />
+          </div>
+
+          <!-- Device ID -->
+          <div>
+            <label
+              for="editDeviceId"
+              class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide"
+            >
+              Device ID
+            </label>
+            <input
+              type="text"
+              id="editDeviceId"
+              class="w-full px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition transition text-xs text-emerald-600 font-medium transition-all ease-in-out duration-200"
+              placeholder="Enter device ID"
+              readonly
+            />
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center gap-3 p-6 pt-4">
+          <button
+            onclick="closeEditModal()"
+            class="flex-1 px-4 py-3.5 min-h-[45px] text-xs font-medium text-[#64748B] bg-white border border-[#96A9C4] rounded-full hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onclick="saveResidentChanges()"
+            class="flex-1 px-4 py-3.5 max-h-[45px] text-xs font-medium text-white bg-emerald-500 rounded-full hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+          >
+            <i class="uil uil-save text-lg"></i>
+            Save Changes
+          </button>
+        </div>
+      </div>
+
+      <!-- Archive Resident Modal Overlay -->
+      <div
+        id="archiveModalOverlay"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300 opacity-0"
+      ></div>
+
+      <!-- Archive Resident Modal -->
+      <div
+        id="residentArchiveModal"
+        class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl shadow-2xl z-50 w-full max-w-lg transition-all duration-300 opacity-0 scale-95"
+      >
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 pb-4">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center"
+            >
+              <i class="uil uil-archive text-2xl" style="color: #27c291"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-800">
+                Move Resident to Archive
+              </h3>
+              <p class="text-xs text-gray-500 mt-0.5">
+                This resident can be restored anytime.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 py-4">
+          <p class="text-xs text-gray-600 text-center leading-relaxed">
+            Are you sure you want to move
+            <span
+              id="residentNameArchive"
+              class="font-semibold"
+              style="color: #27c291"
+              >Maria Santos</span
+            >
+            to Archive? You can restore this resident anytime from the archive.
+          </p>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center gap-3 p-6 pt-4">
+          <button
+            onclick="closeArchiveModal()"
+            class="flex-1 px-4 py-3.5 min-h-[45px] text-xs font-medium text-[#64748B] bg-white border border-[#96A9C4] rounded-full hover:bg-gray-200 transition-colors"
+          >
+            Close
+          </button>
+          <button
+            onclick="confirmArchiveResident()"
+            class="flex-1 px-4 py-3.5 max-h-[45px] text-xs font-medium text-white rounded-full transition-colors flex items-center justify-center gap-2"
+            style="background-color: #27c291"
+            onmouseover="this.style.backgroundColor='#22A87B'"
+            onmouseout="this.style.backgroundColor='#27C291'"
+          >
+            <i class="uil uil-archive text-lg"></i>
+            Move to Archive
+          </button>
+        </div>
+      </div>
+
+      <!-- Toast Container -->
+      <div
+        id="toastContainer"
+        class="fixed top-4 right-4 z-50 space-y-3 max-w-md w-full"
+      ></div>
     </main>
 
     <script src="js/sidebar.js"></script>

@@ -222,7 +222,7 @@
           </p>
         </div>
         <button
-          class="py-3 px-5 flex gap-2 bg-emerald-500 text-white text-xs rounded-xl hover:bg-emerald-600 transition-all ease-in-out duration-200 focus:ring-4 focus:ring-emerald-100"
+          class="py-3 px-5 flex gap-2 bg-emerald-500 text-white text-xs rounded-xl hover:bg-emerald-600 transition-all ease-in-out duration-200 focus:ring-4 focus:ring-emerald-200"
         >
           <i class="uil uil-sync"></i>
           Refresh
@@ -238,7 +238,12 @@
           >
             <i class="uil uil-exclamation-circle text-red-400 text-2xl"></i>
           </div>
-          <p id="incidentCount" class="count text-2xl font-semibold text-neutral-600"><i class="uil uil-ellipsis-h"></i></p>
+          <p
+            id="incidentCount"
+            class="count text-2xl font-semibold text-neutral-600"
+          >
+            <i class="uil uil-ellipsis-h"></i>
+          </p>
           <p class="title text-sm text-neutral-600 font-medium">
             Total Incidents
           </p>
@@ -255,7 +260,12 @@
           >
             <i class="uil uil-bolt-alt text-[#3B82F6] text-2xl"></i>
           </div>
-          <p id="activeCount" class="count text-2xl font-semibold text-neutral-600"><i class="uil uil-ellipsis-h"></i></p>
+          <p
+            id="activeCount"
+            class="count text-2xl font-semibold text-neutral-600"
+          >
+            <i class="uil uil-ellipsis-h"></i>
+          </p>
           <p class="title text-sm text-neutral-600 font-medium">
             Active Incidents
           </p>
@@ -272,7 +282,12 @@
           >
             <i class="uil uil-check-circle text-emerald-400 text-2xl"></i>
           </div>
-          <p id="resolvedCount" class="count text-2xl font-semibold text-neutral-600"><i class="uil uil-ellipsis-h"></i></p>
+          <p
+            id="resolvedCount"
+            class="count text-2xl font-semibold text-neutral-600"
+          >
+            <i class="uil uil-ellipsis-h"></i>
+          </p>
           <p class="title text-sm text-neutral-600 font-medium">Resolved</p>
           <p class="subtitle text-xs flex items-center text-emerald-400">
             <i class="uil uil-arrow-up"></i> 88% resolution rate
@@ -287,7 +302,12 @@
           >
             <i class="uil uil-clock text-[#ECA613] text-2xl"></i>
           </div>
-          <p id="pendingCount" class="count text-2xl font-semibold text-neutral-600"><i class="uil uil-ellipsis-h"></i></p>
+          <p
+            id="pendingCount"
+            class="count text-2xl font-semibold text-neutral-600"
+          >
+            <i class="uil uil-ellipsis-h"></i>
+          </p>
           <p class="title text-sm text-neutral-600 font-medium">Pending</p>
           <p class="subtitle text-xs flex items-center text-[#ECA613]">
             Awaiting Response
@@ -313,8 +333,9 @@
                 type="text"
                 name="search"
                 id="search"
+                autocomplete="off"
                 placeholder="Search incidents..."
-                class="py-3 pl-9 bg-[#F1F5F9] rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                class="py-3 pl-9 bg-[#F1F5F9] rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border-2 border-transparent focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition"
               />
             </div>
           </div>
@@ -326,7 +347,7 @@
                 <!-- Dropdown Button -->
                 <button
                   id="typeDropdownButton"
-                  class="w-full h-full bg-[#F1F5F9] rounded-lg px-4 py-[10px] text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  class="w-full h-full bg-[#F1F5F9] rounded-lg px-4 py-[10px] text-left flex border-2 border-transparent items-center justify-between focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition"
                 >
                   <span id="typeSelectedText" class="text-gray-700 text-xs"
                     >All Types</span
@@ -378,7 +399,7 @@
                 <!-- Dropdown Button -->
                 <button
                   id="statusDropdownButton"
-                  class="w-full h-full bg-[#F1F5F9] rounded-lg px-4 py-[10px] text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  class="w-full h-full bg-[#F1F5F9] rounded-lg px-4 py-[10px] text-left flex items-center justify-between focus:outline-none border-2 border-transparent focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition"
                 >
                   <span id="statusSelectedText" class="text-gray-700 text-xs"
                     >All Status</span
@@ -432,7 +453,7 @@
               <div class="relative max-h-[46px]">
                 <button
                   id="dateButton"
-                  class="bg-[#F1F5F9] w-full h-full whitespace-nowrap rounded-lg px-4 py-2.5 flex justify-between items-center gap-2 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  class="bg-[#F1F5F9] w-full h-full whitespace-nowrap rounded-lg px-4 py-2.5 flex justify-between items-center gap-2 focus:outline-none border-2 border-transparent focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition"
                 >
                   <i class="uil uil-calendar-alt text-lg text-gray-400"></i>
                   <span id="dateText" class="text-xs text-gray-700"
@@ -583,7 +604,9 @@
             </table>
 
             <!-- Pagination -->
-            <div class="inline-flex items-center justify-center w-full gap-2 mt-2">
+            <div
+              class="inline-flex items-center justify-center w-full gap-2 mt-2"
+            >
               <button
                 id="prevBtn"
                 class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition-colors shadow-sm"
@@ -593,9 +616,7 @@
 
               <div
                 class="bg-[#F1F5F9] rounded-full p-1 inline-flex items-center gap-2"
-              >
-               
-              </div>
+              ></div>
               <button
                 id="nextBtn"
                 class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition-colors shadow-sm"
@@ -606,6 +627,71 @@
           </div>
         </div>
       </section>
+
+      <!-- Archive Incident Modal Overlay -->
+      <div
+        id="archiveModalOverlay"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300 opacity-0"
+      ></div>
+
+      <!-- Archive Incident Modal -->
+      <div
+        id="incidentArchiveModal"
+        class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl shadow-2xl z-50 w-full max-w-lg transition-all duration-300 opacity-0 scale-95"
+      >
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 pb-4">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center"
+            >
+              <i class="uil uil-archive text-2xl" style="color: #27c291"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-800">
+                Move Incident to Archive
+              </h3>
+              <p class="text-xs text-gray-500 mt-0.5">
+                This incident can be restored anytime.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 py-4">
+          <p class="text-xs text-gray-600 text-center leading-relaxed">
+            Are you sure you want to move
+            <span
+              id="incidentArchive"
+              class="font-semibold"
+              style="color: #27c291"
+              >EMG-2024-1001</span
+            >
+            to Archive? You can restore this incident anytime from the archive.
+          </p>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center gap-3 p-6 pt-4">
+          <button
+            onclick="closeArchiveModal()"
+            class="flex-1 px-4 py-3.5 min-h-[45px] text-xs font-medium text-[#64748B] bg-white border border-[#96A9C4] rounded-full hover:bg-gray-200 transition-colors"
+          >
+            Close
+          </button>
+          <button
+            onclick="confirmArchiveIncident()"
+            class="flex-1 px-4 py-3.5 max-h-[45px] text-xs font-medium text-white rounded-full transition-colors flex items-center justify-center gap-2"
+            style="background-color: #27c291"
+            onmouseover="this.style.backgroundColor='#22A87B'"
+            onmouseout="this.style.backgroundColor='#27C291'"
+          >
+            <i class="uil uil-archive text-lg"></i>
+            Move to Archive
+          </button>
+        </div>
+      </div>
     </main>
 
     <script src="js/sidebar.js"></script>
