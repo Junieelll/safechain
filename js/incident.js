@@ -195,6 +195,8 @@ const searchInput = document.getElementById("search");
 // Clear Filter Button
 const clearFilterBtn = document.getElementById("clearFilterBtn");
 
+const tableBody = document.querySelector("tbody");
+
 // Pagination
 const paginationContainer = document.querySelector(
   ".inline-flex.items-center.justify-center"
@@ -207,6 +209,49 @@ let selectedStatus = "all";
 let searchQuery = "";
 let currentPage = 1;
 const itemsPerPage = 5;
+
+// Loading skeleton
+function showLoadingSkeleton() {
+  tableBody.style.opacity = "0";
+
+  setTimeout(() => {
+    tableBody.innerHTML = Array(itemsPerPage)
+      .fill(0)
+      .map(
+        () => `
+        <tr>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-24"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-6 w-[60px] rounded-full"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-40"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-28"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-32"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-6 w-24 rounded-full"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-3">
+              <div class="skeleton h-8 w-8 rounded-lg"></div>
+              <div class="skeleton h-8 w-8 rounded-lg"></div>
+            </div>
+          </td>
+        </tr>
+      `
+      )
+      .join("");
+
+    tableBody.style.opacity = "1";
+  }, 100);
+}
 
 // Helper Functions
 function getTypeColor(type) {
@@ -314,26 +359,25 @@ function renderTable() {
   const filteredData = filterIncidents();
   const tbody = document.querySelector("tbody");
 
-  // Calculate pagination
+  // Pagination
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const pageData = filteredData.slice(startIndex, endIndex);
 
-  // Update incident count
-  document.querySelector(
-    ".incidents h1 .count"
-  ).textContent = `(${filteredData.length})`;
+  // Update count
+  document.querySelector(".incidents h1 .count").textContent = `(${filteredData.length})`;
 
-  // Add fade out effect
+  // Fade out
   tbody.style.opacity = "0";
   tbody.style.transition = "opacity 0.3s ease-in-out";
 
+  // Skeleton
+  setTimeout(() => showLoadingSkeleton(), 300);
+
   setTimeout(() => {
-    // Clear table
     tbody.innerHTML = "";
 
-    // Populate table
     if (pageData.length === 0) {
       tbody.innerHTML = `
         <tr>
@@ -341,65 +385,51 @@ function renderTable() {
             <i class="uil uil-inbox text-4xl mb-2"></i>
             <p class="text-sm">No incidents found</p>
           </td>
-        </tr>
-      `;
+        </tr>`;
     } else {
-      pageData.forEach((incident) => {
+      pageData.forEach((incident, index) => {
         const row = document.createElement("tr");
-        row.className = "hover:bg-gray-50 transition-colors";
+
+        row.className = "hover:bg-gray-50 transition-colors item-enter";
+        row.style.animationDelay = `${index * 0.05}s`;
+
         row.innerHTML = `
+          <td class="px-6 py-4"><span class="text-xs font-medium text-blue-600">${incident.id}</span></td>
           <td class="px-6 py-4">
-            <span class="text-xs font-medium text-blue-600">${
-              incident.id
-            }</span>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(incident.type)}">
+              ${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)}
+            </span>
           </td>
+          <td class="px-6 py-4"><span class="text-xs text-gray-700">${incident.location}</span></td>
+          <td class="px-6 py-4"><span class="text-xs text-gray-700">${incident.reporter}</span></td>
+          <td class="px-6 py-4"><span class="text-xs text-gray-700">${incident.dateTime}</span></td>
           <td class="px-6 py-4">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(
-              incident.type
-            )}">${
-          incident.type.charAt(0).toUpperCase() + incident.type.slice(1)
-        }</span>
-          </td>
-          <td class="px-6 py-4">
-            <span class="text-xs text-gray-700">${incident.location}</span>
-          </td>
-          <td class="px-6 py-4">
-            <span class="text-xs text-gray-700">${incident.reporter}</span>
-          </td>
-          <td class="px-6 py-4">
-            <span class="text-xs text-gray-700">${incident.dateTime}</span>
-          </td>
-          <td class="px-6 py-4">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-              incident.status
-            )}">${
-          incident.status.charAt(0).toUpperCase() + incident.status.slice(1)
-        }</span>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(incident.status)}">
+              ${incident.status.charAt(0).toUpperCase() + incident.status.slice(1)}
+            </span>
           </td>
           <td class="px-6 py-4">
             <div class="flex items-center gap-3">
               <button class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center transition-all transform hover:scale-105">
                 <i class="uil uil-eye text-xl"></i>
               </button>
-              <button onclick="archiveIncident('${
-                incident.id
-              }')" class="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center transition-all transform hover:scale-105">
+              <button onclick="archiveIncident('${incident.id}')" 
+                      class="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center transition-all transform hover:scale-105">
                 <i class="uil uil-archive-alt text-xl"></i>
               </button>
             </div>
           </td>
         `;
+
         tbody.appendChild(row);
       });
     }
 
-    // Add fade in effect
     tbody.style.opacity = "1";
-
-    // Render pagination
     renderPagination(totalPages);
-  }, 300);
+  }, 800);
 }
+
 
 function renderPagination(totalPages) {
   const paginationNumbers = paginationContainer.querySelector("div");
@@ -814,7 +844,7 @@ function showArchiveModal(id) {
 
   // Update incident name in modal
   document.getElementById("incidentArchive").textContent = incident.id;
-  
+
   // Store current archiving ID
   window.currentArchivingId = id;
 
@@ -880,7 +910,33 @@ document.addEventListener("click", (e) => {
 window.closeArchiveModal = closeArchiveModal;
 window.confirmArchiveIncident = confirmArchiveIncident;
 
+// Page load animations
+function initPageAnimations() {
+  const header = document.querySelector(".header");
+  const statsWidget = document.querySelector(".widget");
+  const residentsSection = document.querySelector(".incidents");
+
+  if (header) {
+    header.classList.add("animate-fade-in-up", "stagger-1");
+  }
+  if (statsWidget) {
+    statsWidget.classList.add("animate-fade-in-up", "stagger-2");
+  }
+  if (residentsSection) {
+    residentsSection.classList.add("animate-fade-in-up", "stagger-3");
+  }
+}
+
 // Initialize
-updateWidgetCounts();
-renderTable();
-updateClearFilterButton();
+window.addEventListener("DOMContentLoaded", () => {
+  initPageAnimations();
+
+  updateWidgetCounts();
+  updateClearFilterButton();
+
+  showLoadingSkeleton();
+
+  setTimeout(() => {
+    renderTable();
+  }, 1000);
+});

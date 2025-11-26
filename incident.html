@@ -23,6 +23,7 @@
     />
 
     <link rel="stylesheet" href="css/sidebar.css" />
+    <link rel="stylesheet" href="css/page-load-animation.css" />
   </head>
   <body class="min-h-screen flex transition-all duration-300">
     <aside
@@ -214,7 +215,7 @@
       id="mainContent"
       class="transition-all duration-500 ease-in-out ml-[302px] flex-1 p-8"
     >
-      <div class="header flex items-center justify-between mb-5">
+      <div class="header flex items-center justify-between mb-5 animate-target">
         <div class="title">
           <h4 class="text-bs font-semibold text-[#4b4b4b]">Incident Log</h4>
           <p class="text-sm text-neutral-500">
@@ -229,7 +230,7 @@
         </button>
       </div>
 
-      <div class="widget flex gap-9 mb-7">
+      <div class="widget flex gap-9 mb-7 animate-target">
         <div
           class="card bg-white rounded-2xl p-8 flex flex-col gap-3 w-full shadow-[0_0_59px_rgba(0,0,0,0.1)] hover:scale-[1.02] transition-transform duration-300"
         >
@@ -315,7 +316,7 @@
         </div>
       </div>
 
-      <section class="incidents">
+      <section class="incidents animate-target">
         <h1 class="text-sm font-medium text-[#4b4b4b] mb-4">
           All Incidents <span class="count font-medium">(127)</span>
         </h1>
@@ -695,6 +696,7 @@
     </main>
 
     <script src="js/sidebar.js"></script>
+    <script src="js/modal.js"></script>
     <script src="js/incident.js"></script>
   </body>
 </html>

@@ -1,3 +1,4 @@
+//js/resident.js
 // Sample residents data
 const residentsData = [
   {
@@ -7,7 +8,7 @@ const residentsData = [
     address: "123 Rizal Street, Barangay 1",
     contact: "+63 910 123 4567",
     deviceId: "SC-KC-001",
-    registeredDate: new Date("2024-09-15"),
+    registeredDate: new Date("2025-09-15"),
     color: "bg-emerald-500",
   },
   {
@@ -118,7 +119,6 @@ let currentPage = 1;
 const itemsPerPage = 5;
 let searchQuery = "";
 let selectedSort = "newest";
-let toastId = 0;
 
 // DOM Elements
 const searchInput = document.getElementById("search");
@@ -151,6 +151,53 @@ function formatDate(date) {
     "DECEMBER",
   ];
   return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+}
+
+// Loading skeleton
+function showLoadingSkeleton() {
+  tableBody.style.opacity = "0";
+
+  setTimeout(() => {
+    tableBody.innerHTML = Array(itemsPerPage)
+      .fill(0)
+      .map(
+        () => `
+        <tr>
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-3">
+              <div class="skeleton w-10 h-10 rounded-full"></div>
+              <div class="skeleton h-4 w-24"></div>
+            </div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-20"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-36"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-24"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-16"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-28"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-2">
+              <div class="skeleton h-8 w-8 rounded-lg"></div>
+              <div class="skeleton h-8 w-8 rounded-lg"></div>
+              <div class="skeleton h-8 w-8 rounded-lg"></div>
+            </div>
+          </td>
+        </tr>
+      `
+      )
+      .join("");
+
+    tableBody.style.opacity = "1";
+  }, 100);
 }
 
 // Calculate statistics
@@ -214,8 +261,7 @@ function filterAndSortResidents() {
   }
 }
 
-// Render table with smooth transition
-// Render table with smooth transition
+// Render table
 function renderTable() {
   filterAndSortResidents();
 
@@ -225,6 +271,11 @@ function renderTable() {
 
   // Add fade-out effect
   tableBody.style.opacity = "0";
+
+  // Show skeleton loading
+  setTimeout(() => {
+    showLoadingSkeleton();
+  }, 300);
 
   setTimeout(() => {
     if (paginatedResidents.length === 0) {
@@ -245,8 +296,10 @@ function renderTable() {
 
     tableBody.innerHTML = paginatedResidents
       .map(
-        (resident) => `
-      <tr class="hover:bg-gray-50 transition">
+        (resident, index) => `
+      <tr class="hover:bg-gray-50 transition item-enter" style="animation-delay: ${
+        index * 0.05
+      }s">
         <td class="px-6 py-4">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 ${
@@ -254,9 +307,7 @@ function renderTable() {
             } rounded-full flex items-center justify-center text-white font-semibold text-sm">
               ${resident.initials}
             </div>
-            <span class="text-xs font-medium text-gray-800">${
-              resident.name
-            }</span>
+            <span class="text-xs font-medium text-gray-800">${resident.name}</span>
           </div>
         </td>
         <td class="px-6 py-4 text-xs text-gray-600">${resident.id}</td>
@@ -293,7 +344,7 @@ function renderTable() {
     // Fade in
     tableBody.style.opacity = "1";
     renderPagination();
-  }, 300);
+  }, 800); // Show skeleton for 800ms total
 }
 
 // Render pagination
@@ -457,34 +508,97 @@ exportBtn.addEventListener("click", () => {
 
 // Export Modal Functions
 function showExportModal() {
-  const modal = document.getElementById("exportModal");
-  const overlay = document.getElementById("modalOverlay");
+  const exportBody = `
+    <div class="space-y-3">
+      <!-- Select All Option -->
+      <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+        <input type="checkbox" id="selectAll" class="w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" onchange="toggleSelectAll(this)" />
+        <div class="flex-1">
+          <span class="text-xs font-semibold text-gray-800">Select All</span>
+        </div>
+      </label>
 
-  if (modal && overlay) {
-    overlay.classList.remove("hidden");
-    modal.classList.remove("hidden");
+      <div class="border-t border-gray-200 my-2"></div>
 
-    // Trigger animation
-    setTimeout(() => {
-      overlay.classList.add("opacity-100");
-      modal.classList.add("scale-100", "opacity-100");
-    }, 10);
-  }
-}
+      <div class="grid grid-cols-2 gap-3">
+        <!-- Individual Fields -->
+        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+          <input type="checkbox" value="name" class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" checked onchange="updateSelectAll()" />
+          <div class="flex-1">
+            <span class="text-xs font-medium text-gray-700">Resident Name</span>
+            <p class="text-xs text-gray-500">Full name of the resident</p>
+          </div>
+        </label>
 
-function closeExportModal() {
-  const modal = document.getElementById("exportModal");
-  const overlay = document.getElementById("modalOverlay");
+        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+          <input type="checkbox" value="userId" class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" checked onchange="updateSelectAll()" />
+          <div class="flex-1">
+            <span class="text-xs font-medium text-gray-700">User ID</span>
+            <p class="text-xs text-gray-500">Unique identifier</p>
+          </div>
+        </label>
 
-  if (modal && overlay) {
-    overlay.classList.remove("opacity-100");
-    modal.classList.remove("scale-100", "opacity-100");
+        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+          <input type="checkbox" value="address" class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" checked onchange="updateSelectAll()" />
+          <div class="flex-1">
+            <span class="text-xs font-medium text-gray-700">Address</span>
+            <p class="text-xs text-gray-500">Residential address</p>
+          </div>
+        </label>
 
-    setTimeout(() => {
-      overlay.classList.add("hidden");
-      modal.classList.add("hidden");
-    }, 300);
-  }
+        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+          <input type="checkbox" value="contact" class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" checked onchange="updateSelectAll()" />
+          <div class="flex-1">
+            <span class="text-xs font-medium text-gray-700">Contact Number</span>
+            <p class="text-xs text-gray-500">Phone number</p>
+          </div>
+        </label>
+
+        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+          <input type="checkbox" value="deviceId" class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" checked onchange="updateSelectAll()" />
+          <div class="flex-1">
+            <span class="text-xs font-medium text-gray-700">Device ID</span>
+            <p class="text-xs text-gray-500">Associated device identifier</p>
+          </div>
+        </label>
+
+        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+          <input type="checkbox" value="registeredDate" class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" checked onchange="updateSelectAll()" />
+          <div class="flex-1">
+            <span class="text-xs font-medium text-gray-700">Registered Date</span>
+            <p class="text-xs text-gray-500">Date of registration</p>
+          </div>
+        </label>
+      </div>
+    </div>
+  `;
+
+  modalManager.create({
+    id: "exportModal",
+    icon: "uil-download-alt",
+    iconColor: "text-emerald-500",
+    iconBg: "bg-emerald-50",
+    title: "Export Residents",
+    subtitle: "Select fields to include in export",
+    body: exportBody,
+    primaryButton: {
+      text: "Export CSV",
+      icon: "uil-download-alt",
+      class: "bg-emerald-500 hover:bg-emerald-600",
+    },
+    secondaryButton: {
+      text: "Cancel",
+    },
+    onPrimary: exportResidents,
+    onSecondary: () => modalManager.close("exportModal"),
+  });
+
+  modalManager.show("exportModal");
+
+  // Initialize select all state
+  setTimeout(() => {
+    updateSelectAll();
+  }, 10);
 }
 
 function exportResidents() {
@@ -507,7 +621,7 @@ function exportResidents() {
   });
 
   if (selectedFields.length === 0) {
-    alert("Please select at least one field to export");
+    showToast("error", "Please select at least one field to export");
     return;
   }
 
@@ -556,13 +670,10 @@ function exportResidents() {
   a.click();
   window.URL.revokeObjectURL(url);
 
-  // Close modal
-  closeExportModal();
+  // Close modal and show success
+  modalManager.close("exportModal");
+  showToast("success", "Residents exported successfully!");
 }
-
-// Make functions global
-window.closeExportModal = closeExportModal;
-window.exportResidents = exportResidents;
 
 // Close dropdown when clicking outside
 document.addEventListener("click", () => {
@@ -570,59 +681,78 @@ document.addEventListener("click", () => {
   sortDropdownIcon.style.transform = "rotate(0deg)";
 });
 
-function viewResident(id) {
-  console.log("View resident:", id);
-  alert(`Viewing resident ${id}`);
-}
-
 function editResident(id) {
   const resident = residentsData.find((r) => r.id === id);
   if (!resident) return;
 
-  // Populate modal fields
-  document.getElementById("editResidentName").value = resident.name;
-  document.getElementById("editUserId").value = resident.id;
-  document.getElementById("editAddress").value = resident.address;
-  document.getElementById("editContact").value = resident.contact;
-  document.getElementById("editDeviceId").value = resident.deviceId;
+  const editBody = `
+    <div class="space-y-5">
+      <!-- Resident Name -->
+      <div>
+        <label for="editResidentName" class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
+          Resident Name
+        </label>
+        <input type="text" id="editResidentName" value="${resident.name}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter resident name" />
+      </div>
+
+      <!-- User ID (Read-only) -->
+      <div>
+        <label for="editUserId" class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
+          User ID
+        </label>
+        <input type="text" id="editUserId" value="${resident.id}" class="w-full px-4 py-3 bg-emerald-50 border focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 order-emerald-200 rounded-lg text-xs text-emerald-600 font-medium cursor-not-allowed transition-all ease-in-out duration-200" readonly />
+      </div>
+
+      <!-- Household/Address -->
+      <div>
+        <label for="editAddress" class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
+          Household / Address
+        </label>
+        <input type="text" id="editAddress" value="${resident.address}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter address" />
+      </div>
+
+      <!-- Contact Number -->
+      <div>
+        <label for="editContact" class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
+          Contact Number
+        </label>
+        <input type="tel" id="editContact" value="${resident.contact}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter contact number" />
+      </div>
+
+      <!-- Device ID -->
+      <div>
+        <label for="editDeviceId" class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
+          Device ID
+        </label>
+        <input type="text" id="editDeviceId" value="${resident.deviceId}" class="w-full px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition transition text-xs text-emerald-600 font-medium transition-all ease-in-out duration-200" placeholder="Enter device ID" readonly />
+      </div>
+    </div>
+  `;
 
   // Store current editing ID
   window.currentEditingId = id;
 
-  // Show modal
-  showEditModal();
-}
+  modalManager.create({
+    id: "editModal",
+    icon: "uil-pen",
+    iconColor: "text-blue-500",
+    iconBg: "bg-blue-50",
+    title: "Edit Resident",
+    subtitle: "Update resident information.",
+    body: editBody,
+    primaryButton: {
+      text: "Save Changes",
+      icon: "uil-save",
+      class: "bg-emerald-500 hover:bg-emerald-600",
+    },
+    secondaryButton: {
+      text: "Cancel",
+    },
+    onPrimary: saveResidentChanges,
+    onSecondary: () => modalManager.close("editModal"),
+  });
 
-function showEditModal() {
-  const modal = document.getElementById("residentEditModal");
-  const overlay = document.getElementById("editModalOverlay");
-
-  if (modal && overlay) {
-    overlay.classList.remove("hidden");
-    modal.classList.remove("hidden");
-
-    // Trigger animation
-    setTimeout(() => {
-      overlay.classList.add("opacity-100");
-      modal.classList.add("scale-100", "opacity-100");
-    }, 10);
-  }
-}
-
-function closeEditModal() {
-  const modal = document.getElementById("residentEditModal");
-  const overlay = document.getElementById("editModalOverlay");
-
-  if (modal && overlay) {
-    overlay.classList.remove("opacity-100");
-    modal.classList.remove("scale-100", "opacity-100");
-
-    setTimeout(() => {
-      overlay.classList.add("hidden");
-      modal.classList.add("hidden");
-      window.currentEditingId = null;
-    }, 300);
-  }
+  modalManager.show("editModal");
 }
 
 function saveResidentChanges() {
@@ -640,7 +770,7 @@ function saveResidentChanges() {
 
   // Validate
   if (!name || !address || !contact || !deviceId) {
-    alert("Please fill in all fields");
+    showToast("error", "Please fill in all fields");
     return;
   }
 
@@ -659,58 +789,49 @@ function saveResidentChanges() {
   resident.initials = resident.initials.toUpperCase();
 
   // Close modal and refresh table
-  closeEditModal();
+  modalManager.close("editModal");
   renderTable();
-  showToast('success', `${resident.name}'s details have been updated successfully!`);
-
-  // Show success message (optional)
-  console.log("Resident updated successfully");
+  showToast(
+    "success",
+    `${resident.name}'s details have been updated successfully!`
+  );
 }
 
-// Make functions global
-window.closeEditModal = closeEditModal;
-window.saveResidentChanges = saveResidentChanges;
-
 // Archive Modal Functions
-function showArchiveModal(id) {
+function archiveResident(id) {
   const resident = residentsData.find((r) => r.id === id);
   if (!resident) return;
 
-  // Update resident name in modal
-  document.getElementById("residentNameArchive").textContent = resident.name;
-  
+  const archiveBody = `
+    <p class="text-xs text-gray-600 text-center leading-relaxed">
+      Are you sure you want to move <span class="font-semibold" style="color: #27c291">${resident.name}</span> to Archive? You can restore this resident anytime from the archive.
+    </p>
+  `;
+
   // Store current archiving ID
   window.currentArchivingId = id;
 
-  const modal = document.getElementById("residentArchiveModal");
-  const overlay = document.getElementById("archiveModalOverlay");
+  modalManager.create({
+    id: "archiveModal",
+    icon: "uil-archive",
+    iconColor: "text-emerald-500",
+    iconBg: "bg-emerald-50",
+    title: "Move Resident to Archive",
+    subtitle: "This resident can be restored anytime.",
+    body: archiveBody,
+    primaryButton: {
+      text: "Move to Archive",
+      icon: "uil-archive",
+      class: "bg-[#27C291] hover:bg-[#22A87B]",
+    },
+    secondaryButton: {
+      text: "Close",
+    },
+    onPrimary: confirmArchiveResident,
+    onSecondary: () => modalManager.close("archiveModal"),
+  });
 
-  if (modal && overlay) {
-    overlay.classList.remove("hidden");
-    modal.classList.remove("hidden");
-
-    // Trigger animation
-    setTimeout(() => {
-      overlay.classList.add("opacity-100");
-      modal.classList.add("scale-100", "opacity-100");
-    }, 10);
-  }
-}
-
-function closeArchiveModal() {
-  const modal = document.getElementById("residentArchiveModal");
-  const overlay = document.getElementById("archiveModalOverlay");
-
-  if (modal && overlay) {
-    overlay.classList.remove("opacity-100");
-    modal.classList.remove("scale-100", "opacity-100");
-
-    setTimeout(() => {
-      overlay.classList.add("hidden");
-      modal.classList.add("hidden");
-      window.currentArchivingId = null;
-    }, 300);
-  }
+  modalManager.show("archiveModal");
 }
 
 function confirmArchiveResident() {
@@ -719,36 +840,19 @@ function confirmArchiveResident() {
 
   const index = residentsData.findIndex((r) => r.id === id);
   if (index !== -1) {
-
     const residentName = residentsData[index].name;
-
     residentsData.splice(index, 1);
     currentPage = 1;
     updateStats();
     renderTable();
-
-     // Show success toast
-    showToast('success', `${residentName} has been moved to archive successfully!`);
+    showToast(
+      "success",
+      `${residentName} has been moved to archive successfully!`
+    );
   }
 
-  closeArchiveModal();
+  modalManager.close("archiveModal");
 }
-
-// Update the archiveResident function
-function archiveResident(id) {
-  showArchiveModal(id);
-}
-
-// Close modal when clicking overlay
-document.addEventListener("click", (e) => {
-  if (e.target.id === "archiveModalOverlay") {
-    closeArchiveModal();
-  }
-});
-
-// Make functions global
-window.closeArchiveModal = closeArchiveModal;
-window.confirmArchiveResident = confirmArchiveResident;
 
 // Select All functionality
 function toggleSelectAll(checkbox) {
@@ -765,119 +869,32 @@ function updateSelectAll() {
   selectAll.checked = allChecked;
 }
 
-// Close modal when clicking overlay
-document.addEventListener("click", (e) => {
-  if (e.target.id === "modalOverlay") {
-    closeExportModal();
+// Page load animations
+function initPageAnimations() {
+  const header = document.querySelector(".header");
+  const statsWidget = document.querySelector(".bg-white.rounded-2xl.p-6");
+  const residentsSection = document.querySelector(".residents");
+
+  if (header) {
+    header.classList.add("animate-fade-in-up", "stagger-1");
   }
-});
-
-document.addEventListener("click", (e) => {
-  if (e.target.id === "editModalOverlay") {
-    closeEditModal();
+  if (statsWidget) {
+    statsWidget.classList.add("animate-fade-in-up", "stagger-2");
   }
-});
-
-// Initialize select all state
-document.addEventListener("DOMContentLoaded", () => {
-  updateSelectAll();
-});
-
-function showToast(type, message, duration = 5000) {
-    const id = `toast-${toastId++}`;
-    const container = document.getElementById('toastContainer');
-
-    // Toast colors and icons
-    const config = {
-        success: {
-            bg: 'bg-[#27C291]',
-            iconColor: '#27C291',
-            icon: 'uil-check'
-        },
-        error: {
-            bg: 'bg-[#E4595C]',
-            iconColor: '#E4595C',
-            icon: 'uil-times'
-        },
-        info: {
-            bg: 'bg-[#2563EB]',
-            iconColor: '#2563EB',
-            icon: 'uil-info'
-        }
-    };
-
-    const { bg, iconColor, icon } = config[type] || config.info;
-
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.id = id;
-    toast.className = `${bg} rounded-2xl shadow-lg p-4 flex items-center justify-between gap-3 toast-enter`;
-    toast.innerHTML = `
-        <div class="flex items-center gap-3 flex-1">
-            <div class="relative w-12 h-12 flex items-center justify-center flex-shrink-0">
-                <!-- Outer Timer Circle (white stroke) -->
-                <svg class="absolute w-12 h-12 transform -rotate-90">
-                    <circle
-                        cx="24"
-                        cy="24"
-                        r="22"
-                        stroke="rgba(255, 255, 255, 0.3)"
-                        stroke-width="4"
-                        fill="none"
-                    />
-                    <circle
-                        cx="24"
-                        cy="24"
-                        r="22"
-                        stroke="white"
-                        stroke-width="4"
-                        fill="none"
-                        stroke-dasharray="138"
-                        stroke-dashoffset="0"
-                        class="countdown-circle"
-                        style="animation-duration: ${duration}ms;"
-                    />
-                </svg>
-                
-                <!-- Inner White Circle with Icon -->
-                <div class="absolute w-7 h-7 bg-white rounded-full flex items-center justify-center">
-                    <i class="${icon} text-xl" style="color: ${iconColor};"></i>
-                </div>
-            </div>
-            <span class="text-white text-sm font-medium flex-1">${message}</span>
-        </div>
-        <button
-            onclick="closeToast('${id}')"
-            class="text-white hover:bg-white/10 rounded-lg p-1 transition-colors flex-shrink-0"
-        >
-            <i class="uil uil-times text-xl"></i>
-        </button>
-    `;
-
-    container.appendChild(toast);
-
-    // Auto remove after duration
-    setTimeout(() => {
-        closeToast(id);
-    }, duration);
+  if (residentsSection) {
+    residentsSection.classList.add("animate-fade-in-up", "stagger-3");
+  }
 }
-
-function closeToast(id) {
-    const toast = document.getElementById(id);
-    if (!toast) return;
-
-    toast.classList.remove('toast-enter');
-    toast.classList.add('toast-exit');
-
-    setTimeout(() => {
-        toast.remove();
-    }, 300);
-}
-
-// Make functions global
-window.showToast = showToast;
-window.closeToast = closeToast;
 
 // Initialize
-updateStats();
-renderTable();
+window.addEventListener("DOMContentLoaded", () => {
+  initPageAnimations();
+
+  updateStats();
+
+  showLoadingSkeleton();
+
+  setTimeout(() => {
+    renderTable();
+  }, 1000);
+});
