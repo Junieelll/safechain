@@ -1,4 +1,5 @@
-//js/resident.js
+// js/resident.js
+
 // Sample residents data
 const residentsData = [
   {
@@ -9,7 +10,7 @@ const residentsData = [
     contact: "+63 910 123 4567",
     deviceId: "SC-KC-001",
     registeredDate: new Date("2025-09-15"),
-    color: "bg-emerald-500",
+    color: "bg-emerald-500 dark:bg-emerald-600/70",
   },
   {
     id: "USR-2025-002",
@@ -19,7 +20,7 @@ const residentsData = [
     contact: "+63 920 234 5678",
     deviceId: "SC-KC-002",
     registeredDate: new Date("2024-09-20"),
-    color: "bg-blue-500",
+    color: "bg-blue-500 dark:bg-blue-600/70",
   },
   {
     id: "USR-2025-003",
@@ -29,7 +30,7 @@ const residentsData = [
     contact: "+63 930 345 6789",
     deviceId: "SC-KC-003",
     registeredDate: new Date("2024-10-05"),
-    color: "bg-purple-500",
+    color: "bg-purple-500 dark:bg-purple-600/70",
   },
   {
     id: "USR-2025-004",
@@ -39,7 +40,7 @@ const residentsData = [
     contact: "+63 940 456 7890",
     deviceId: "SC-KC-004",
     registeredDate: new Date("2024-10-12"),
-    color: "bg-orange-500",
+    color: "bg-orange-500 dark:bg-orange-600/70",
   },
   {
     id: "USR-2025-005",
@@ -49,7 +50,7 @@ const residentsData = [
     contact: "+63 950 567 8901",
     deviceId: "SC-KC-005",
     registeredDate: new Date("2024-10-18"),
-    color: "bg-pink-500",
+    color: "bg-pink-500 dark:bg-pink-600/70",
   },
   {
     id: "USR-2025-006",
@@ -59,7 +60,7 @@ const residentsData = [
     contact: "+63 960 678 9012",
     deviceId: "SC-KC-006",
     registeredDate: new Date("2024-10-25"),
-    color: "bg-indigo-500",
+    color: "bg-indigo-500 dark:bg-indigo-600/70",
   },
   {
     id: "USR-2025-007",
@@ -69,7 +70,7 @@ const residentsData = [
     contact: "+63 970 789 0123",
     deviceId: "SC-KC-007",
     registeredDate: new Date("2024-11-01"),
-    color: "bg-teal-500",
+    color: "bg-teal-500 dark:bg-teal-600/70",
   },
   {
     id: "USR-2025-008",
@@ -79,7 +80,7 @@ const residentsData = [
     contact: "+63 980 890 1234",
     deviceId: "SC-KC-008",
     registeredDate: new Date("2024-11-08"),
-    color: "bg-red-500",
+    color: "bg-red-500 dark:bg-red-600/70",
   },
   {
     id: "USR-2025-009",
@@ -89,7 +90,7 @@ const residentsData = [
     contact: "+63 990 901 2345",
     deviceId: "SC-KC-009",
     registeredDate: new Date("2024-11-15"),
-    color: "bg-yellow-500",
+    color: "bg-yellow-500 dark:bg-yellow-600/70",
   },
   {
     id: "USR-2025-010",
@@ -99,7 +100,7 @@ const residentsData = [
     contact: "+63 915 012 3456",
     deviceId: "SC-KC-010",
     registeredDate: new Date("2024-11-20"),
-    color: "bg-cyan-500",
+    color: "bg-cyan-500 dark:bg-cyan-600/70",
   },
   {
     id: "USR-2025-011",
@@ -109,7 +110,7 @@ const residentsData = [
     contact: "+63 925 123 4567",
     deviceId: "SC-KC-011",
     registeredDate: new Date("2024-11-23"),
-    color: "bg-lime-500",
+    color: "bg-lime-500 dark:bg-lime-600/70",
   },
 ];
 
@@ -165,30 +166,30 @@ function showLoadingSkeleton() {
         <tr>
           <td class="px-6 py-4">
             <div class="flex items-center gap-3">
-              <div class="skeleton w-10 h-10 rounded-full"></div>
-              <div class="skeleton h-4 w-24"></div>
+              <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700/50 animate-pulse"></div>
+              <div class="h-4 w-24 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse"></div>
             </div>
           </td>
           <td class="px-6 py-4">
-            <div class="skeleton h-3 w-20"></div>
+            <div class="h-3 w-20 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse"></div>
           </td>
           <td class="px-6 py-4">
-            <div class="skeleton h-3 w-36"></div>
+            <div class="h-3 w-36 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse"></div>
           </td>
           <td class="px-6 py-4">
-            <div class="skeleton h-3 w-24"></div>
+            <div class="h-3 w-24 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse"></div>
           </td>
           <td class="px-6 py-4">
-            <div class="skeleton h-3 w-16"></div>
+            <div class="h-3 w-16 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse"></div>
           </td>
           <td class="px-6 py-4">
-            <div class="skeleton h-3 w-28"></div>
+            <div class="h-3 w-28 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse"></div>
           </td>
           <td class="px-6 py-4">
             <div class="flex items-center gap-2">
-              <div class="skeleton h-8 w-8 rounded-lg"></div>
-              <div class="skeleton h-8 w-8 rounded-lg"></div>
-              <div class="skeleton h-8 w-8 rounded-lg"></div>
+              <div class="h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700/50 animate-pulse"></div>
+              <div class="h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700/50 animate-pulse"></div>
+              <div class="h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700/50 animate-pulse"></div>
             </div>
           </td>
         </tr>
@@ -297,7 +298,7 @@ function renderTable() {
     tableBody.innerHTML = paginatedResidents
       .map(
         (resident, index) => `
-      <tr class="hover:bg-gray-50 transition item-enter" style="animation-delay: ${
+      <tr class="hover:bg-gray-50 dark:hover:bg-black/20 transition item-enter" style="animation-delay: ${
         index * 0.05
       }s">
         <td class="px-6 py-4">
@@ -307,31 +308,41 @@ function renderTable() {
             } rounded-full flex items-center justify-center text-white font-semibold text-sm">
               ${resident.initials}
             </div>
-            <span class="text-xs font-medium text-gray-800">${resident.name}</span>
+            <span class="text-xs font-medium text-gray-800 dark:text-gray-200">${
+              resident.name
+            }</span>
           </div>
         </td>
-        <td class="px-6 py-4 text-xs text-gray-600">${resident.id}</td>
-        <td class="px-6 py-4 text-xs text-gray-600">${resident.address}</td>
-        <td class="px-6 py-4 text-xs text-gray-600">${resident.contact}</td>
-        <td class="px-6 py-4 text-xs text-gray-600">${resident.deviceId}</td>
-        <td class="px-6 py-4 text-xs text-gray-600">${formatDate(
+        <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${
+          resident.id
+        }</td>
+        <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${
+          resident.address
+        }</td>
+        <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${
+          resident.contact
+        }</td>
+        <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${
+          resident.deviceId
+        }</td>
+        <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${formatDate(
           resident.registeredDate
         )}</td>
         <td class="px-6 py-4">
           <div class="flex items-center gap-2">
             <button onclick="viewResident('${
               resident.id
-            }')" class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center">
+            }')" class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-gray-900 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
               <i class="uil uil-eye text-xl"></i>
             </button>
             <button onclick="editResident('${
               resident.id
-            }')" class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center">
+            }')" class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] dark:hover:bg-blue-900/20 dark:hover:text-blue-500 dark:bg-gray-900 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
               <i class="uil uil-pen text-xl"></i>
             </button>
             <button onclick="archiveResident('${
               resident.id
-            }')" class="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center">
+            }')" class="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-gray-900 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
               <i class="uil uil-archive-alt text-xl"></i>
             </button>
           </div>
@@ -361,13 +372,13 @@ function renderPagination() {
 
   let paginationHTML = `
     <button onclick="changePage(${currentPage - 1})" 
-      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition ${
+      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-gray-900 dark:hover:bg-emerald-900/60 text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition ${
         currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
       }"
       ${currentPage === 1 ? "disabled" : ""}>
       <i class="uil uil-angle-left text-xl"></i>
     </button>
-    <div class="bg-[#F1F5F9] rounded-full p-1 flex items-center gap-1">
+    <div class="bg-[#F1F5F9] dark:bg-gray-900 rounded-full p-1 flex items-center gap-1">
   `;
 
   // Show pages with ellipsis logic
@@ -378,7 +389,7 @@ function renderPagination() {
           class="w-8 h-8 flex items-center justify-center rounded-full ${
             currentPage === i
               ? "bg-emerald-500 text-white"
-              : "hover:bg-white text-gray-600"
+              : "hover:bg-white dark:hover:bg-emerald-900/60 text-gray-600 dark:hover:text-emerald-500"
           } text-sm font-medium transition">
           ${i}
         </button>
@@ -438,7 +449,7 @@ function renderPagination() {
   paginationHTML += `
     </div>
     <button onclick="changePage(${currentPage + 1})" 
-      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition ${
+      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-gray-900 dark:hover:bg-emerald-900/60 text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition ${
         currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""
       }"
       ${currentPage === totalPages ? "disabled" : ""}>
@@ -465,6 +476,15 @@ searchInput.addEventListener("input", (e) => {
   renderTable();
 });
 
+const activeDropdownClasses = [
+  "bg-emerald-50",
+  "border-emerald-500",
+  "text-emerald-600",
+  "dark:bg-emerald-700/20",
+  "dark:border-emerald-700/20",
+  "dark:text-emerald-300",
+];
+
 // Sort Dropdown Toggle
 sortDropdownButton.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -489,9 +509,9 @@ sortDropdownItems.forEach((item) => {
     sortSelectedText.textContent = text;
 
     sortDropdownItems.forEach((i) =>
-      i.classList.remove("bg-emerald-50", "text-emerald-600")
+      i.classList.remove(...activeDropdownClasses)
     );
-    e.target.classList.add("bg-emerald-50", "text-emerald-600");
+    e.target.classList.add(...activeDropdownClasses);
 
     sortDropdownMenu.classList.add("hidden");
     sortDropdownIcon.style.transform = "rotate(0deg)";
@@ -511,62 +531,62 @@ function showExportModal() {
   const exportBody = `
     <div class="space-y-3">
       <!-- Select All Option -->
-      <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+      <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
         <input type="checkbox" id="selectAll" class="w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" onchange="toggleSelectAll(this)" />
         <div class="flex-1">
-          <span class="text-xs font-semibold text-gray-800">Select All</span>
+          <span class="text-xs font-semibold text-gray-800 dark:text-gray-300">Select All</span>
         </div>
       </label>
 
-      <div class="border-t border-gray-200 my-2"></div>
+      <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 
       <div class="grid grid-cols-2 gap-3">
         <!-- Individual Fields -->
-        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
           <input type="checkbox" value="name" class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" checked onchange="updateSelectAll()" />
           <div class="flex-1">
-            <span class="text-xs font-medium text-gray-700">Resident Name</span>
-            <p class="text-xs text-gray-500">Full name of the resident</p>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-200">Resident Name</span>
+            <p class="text-xs text-gray-500 dark:text-gray-300">Full name of the resident</p>
           </div>
         </label>
 
-        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
           <input type="checkbox" value="userId" class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" checked onchange="updateSelectAll()" />
           <div class="flex-1">
-            <span class="text-xs font-medium text-gray-700">User ID</span>
-            <p class="text-xs text-gray-500">Unique identifier</p>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-200">User ID</span>
+            <p class="text-xs text-gray-500 dark:text-gray-300">Unique identifier</p>
           </div>
         </label>
 
-        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
           <input type="checkbox" value="address" class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" checked onchange="updateSelectAll()" />
           <div class="flex-1">
-            <span class="text-xs font-medium text-gray-700">Address</span>
-            <p class="text-xs text-gray-500">Residential address</p>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-200">Address</span>
+            <p class="text-xs text-gray-500 dark:text-gray-300">Residential address</p>
           </div>
         </label>
 
-        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
           <input type="checkbox" value="contact" class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" checked onchange="updateSelectAll()" />
           <div class="flex-1">
-            <span class="text-xs font-medium text-gray-700">Contact Number</span>
-            <p class="text-xs text-gray-500">Phone number</p>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-200">Contact Number</span>
+            <p class="text-xs text-gray-500 dark:text-gray-300">Phone number</p>
           </div>
         </label>
 
-        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
           <input type="checkbox" value="deviceId" class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" checked onchange="updateSelectAll()" />
           <div class="flex-1">
-            <span class="text-xs font-medium text-gray-700">Device ID</span>
-            <p class="text-xs text-gray-500">Associated device identifier</p>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-200">Device ID</span>
+            <p class="text-xs text-gray-500 dark:text-gray-300">Associated device identifier</p>
           </div>
         </label>
 
-        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+        <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
           <input type="checkbox" value="registeredDate" class="export-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" checked onchange="updateSelectAll()" />
           <div class="flex-1">
-            <span class="text-xs font-medium text-gray-700">Registered Date</span>
-            <p class="text-xs text-gray-500">Date of registration</p>
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-200">Registered Date</span>
+            <p class="text-xs text-gray-500 dark:text-gray-300">Date of registration</p>
           </div>
         </label>
       </div>
@@ -577,7 +597,7 @@ function showExportModal() {
     id: "exportModal",
     icon: "uil-download-alt",
     iconColor: "text-emerald-500",
-    iconBg: "bg-emerald-50",
+    iconBg: "bg-emerald-50 dark:bg-emerald-900/60",
     title: "Export Residents",
     subtitle: "Select fields to include in export",
     body: exportBody,
@@ -689,42 +709,42 @@ function editResident(id) {
     <div class="space-y-5">
       <!-- Resident Name -->
       <div>
-        <label for="editResidentName" class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
+        <label for="editResidentName" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
           Resident Name
         </label>
-        <input type="text" id="editResidentName" value="${resident.name}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter resident name" />
+        <input type="text" id="editResidentName" value="${resident.name}" class="w-full px-4 py-3 bg-gray-50 dark:text-gray-200 dark:bg-gray-900 border border-gray-200 dark:border-gray-900 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter resident name" />
       </div>
 
       <!-- User ID (Read-only) -->
       <div>
-        <label for="editUserId" class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
+        <label for="editUserId" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
           User ID
         </label>
-        <input type="text" id="editUserId" value="${resident.id}" class="w-full px-4 py-3 bg-emerald-50 border focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 order-emerald-200 rounded-lg text-xs text-emerald-600 font-medium cursor-not-allowed transition-all ease-in-out duration-200" readonly />
+        <input type="text" id="editUserId" value="${resident.id}" class="w-full px-4 py-3 dark:bg-emerald-900/60 bg-emerald-50 border focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 border-emerald-200 dark:border-emerald-900 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 rounded-lg text-xs text-emerald-600 font-medium cursor-not-allowed transition-all ease-in-out duration-200" readonly />
       </div>
 
       <!-- Household/Address -->
       <div>
-        <label for="editAddress" class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
+        <label for="editAddress" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
           Household / Address
         </label>
-        <input type="text" id="editAddress" value="${resident.address}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter address" />
+        <input type="text" id="editAddress" value="${resident.address}" class="w-full px-4 py-3 bg-gray-50 dark:text-gray-200 dark:bg-gray-900 border border-gray-200 dark:border-gray-900 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter address" />
       </div>
 
       <!-- Contact Number -->
       <div>
-        <label for="editContact" class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
+        <label for="editContact" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
           Contact Number
         </label>
-        <input type="tel" id="editContact" value="${resident.contact}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter contact number" />
+        <input type="tel" id="editContact" value="${resident.contact}" class="w-full px-4 py-3 bg-gray-50 dark:text-gray-200 dark:bg-gray-900 border border-gray-200 dark:border-gray-900 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter contact number" />
       </div>
 
       <!-- Device ID -->
       <div>
-        <label for="editDeviceId" class="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
+        <label for="editDeviceId" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
           Device ID
         </label>
-        <input type="text" id="editDeviceId" value="${resident.deviceId}" class="w-full px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 transition transition text-xs text-emerald-600 font-medium transition-all ease-in-out duration-200" placeholder="Enter device ID" readonly />
+        <input type="text" id="editDeviceId" value="${resident.deviceId}" class="w-full px-4 py-3 bg-emerald-50 dark:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-900 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 focus:border-emerald-400 transition transition text-xs text-emerald-600 font-medium transition-all ease-in-out duration-200" placeholder="Enter device ID" readonly />
       </div>
     </div>
   `;
@@ -736,7 +756,7 @@ function editResident(id) {
     id: "editModal",
     icon: "uil-pen",
     iconColor: "text-blue-500",
-    iconBg: "bg-blue-50",
+    iconBg: "bg-blue-50 dark:bg-blue-900/60",
     title: "Edit Resident",
     subtitle: "Update resident information.",
     body: editBody,
@@ -803,7 +823,7 @@ function archiveResident(id) {
   if (!resident) return;
 
   const archiveBody = `
-    <p class="text-xs text-gray-600 text-center leading-relaxed">
+    <p class="text-xs text-gray-600 dark:text-gray-200 text-center leading-relaxed">
       Are you sure you want to move <span class="font-semibold" style="color: #27c291">${resident.name}</span> to Archive? You can restore this resident anytime from the archive.
     </p>
   `;
@@ -815,7 +835,7 @@ function archiveResident(id) {
     id: "archiveModal",
     icon: "uil-archive",
     iconColor: "text-emerald-500",
-    iconBg: "bg-emerald-50",
+    iconBg: "bg-emerald-50 dark:bg-emerald-900/60",
     title: "Move Resident to Archive",
     subtitle: "This resident can be restored anytime.",
     body: archiveBody,

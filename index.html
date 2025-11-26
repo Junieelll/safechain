@@ -23,8 +23,13 @@
     />
 
     <link rel="stylesheet" href="css/dashboard.css" />
+    <script>
+      tailwind.config = {
+        darkMode: ["class", '[data-theme="dark"]'],
+      };
+    </script>
   </head>
-  <body class="min-h-screen flex transition-all duration-300">
+  <body class="min-h-screen flex transition-all duration-300 dark:bg-gray-900">
     <aside
       id="sidebar"
       class="fixed w-[280px] m-4 rounded-[20px] sidebar-gradient h-[calc(100vh-32px)] transition-all duration-500 ease-in-out shadow-[0_10px_40px_rgba(0,0,0,0.3)] z-50"
@@ -59,7 +64,7 @@
         >
           <li class="relative nav-item text-sm">
             <a
-              href="dashboard.html"
+              href="index.html"
               class="nav-link text-white/85 flex gap-3.5 whitespace-nowrap rounded-xl py-3 px-3.5 items-center border border-transparent transition-all duration-200 ease-in-out hover:text-white hover:bg-white/15 active"
             >
               <i class="nav-icon uil uil-apps text-xl"></i>
@@ -216,27 +221,31 @@
     >
       <div class="left-panel w-full">
         <div class="header flex flex-col items-end">
-          <h1 class="text-sm font-medium mb-1">Brgy. Gulod, Novaliches, QC</h1>
-          <p class="text-black/70 text-xs">
+          <h1 class="text-sm font-medium mb-1 dark:text-white/90">
+            Brgy. Gulod, Novaliches, QC
+          </h1>
+          <p class="text-black/70 text-xs dark:text-white/70">
             Friday, October 18, 2025, 3:42:52 PM
           </p>
         </div>
 
-        <div class="border border-white rounded-2xl mt-4 relative">
+        <div
+          class="border border-white dark:border-gray-500 rounded-2xl mt-4 relative"
+        >
           <div id="map" class="rounded-2xl"></div>
           <div class="map-controls flex flex-col gap-3">
             <div
               class="zoom-controls flex flex-col gap-0.5 overflow-hidden p-0.5"
             >
               <button
-                class="map-btn flex items-center justify-center"
+                class="map-btn flex items-center justify-center dark:border-gray-600"
                 id="zoomIn"
                 title="Zoom in"
               >
                 <i class="uil uil-plus"></i>
               </button>
               <button
-                class="map-btn flex items-center justify-center"
+                class="map-btn flex items-center justify-center dark:border-gray-600"
                 id="zoomOut"
                 title="Zoom out"
               >
@@ -245,7 +254,7 @@
             </div>
 
             <div
-              class="filter-controls flex flex-col items-center text-white gap-0.5 rounded-[50px] py-1.5"
+              class="filter-controls flex flex-col items-center text-white gap-0.5 rounded-[50px] py-1.5 dark:border-gray-600"
             >
               <button
                 class="filter-btn active flex items-center justify-center"
@@ -274,7 +283,7 @@
             </div>
 
             <button
-              class="map-btn rounded-full w-12 h-12 text-2xl flex items-center justify-center"
+              class="map-btn rounded-full w-12 h-12 text-2xl flex items-center justify-center dark:border-gray-600"
               id="locate"
               title="My location"
             >
@@ -286,54 +295,49 @@
         <div class="chart mt-4 py-4 w-full">
           <div class="header flex items-center justify-between mb-4">
             <p
-              class="text-black/50 font-medium text-sm flex gap-3 items-center"
+              class="text-black/50 font-medium text-sm flex gap-3 items-center dark:text-white/85"
             >
-              <i class="uil uil-chart-line text-xl"></i> Emergency Histogram
+              <i class="uil uil-chart-line text-xl dark:text-white/85"></i>
+              Emergency Histogram
             </p>
 
             <div class="relative">
               <button
                 id="yearDropdownBtn"
-                class="bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm font-medium text-gray-700 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#01af78] focus:border-transparent transition-all flex items-center gap-2 min-w-[100px]"
+                class="bg-white dark:bg-gray-800 dark:border-gray-400 dark:text-gray-400 border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm font-medium text-gray-700 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#01af78] focus:border-transparent transition-all flex items-center gap-2 min-w-[100px]"
               >
                 <i class="uil uil-calendar-alt"></i>
                 <span id="selectedYear">2024</span>
                 <i
                   id="yearDropdownIcon"
-                  class="uil uil-angle-down absolute right-3 text-gray-600 transition-transform duration-200"
+                  class="uil uil-angle-down dark:text-gray-400 absolute right-3 text-gray-600 transition-transform duration-200"
                 ></i>
               </button>
 
               <div
                 id="yearDropdownMenu"
-                class="hidden absolute top-full right-0 mt-2 w-full bg-white rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.15)] overflow-hidden z-50 border border-gray-200"
+                class="hidden absolute top-full right-0 mt-2 w-full bg-white dark:bg-gray-800 dark:border-gray-600 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.15)] overflow-hidden z-50 border border-gray-200"
               >
                 <div
-                  class="year-option px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-colors"
-                  data-year="2025"
-                >
-                  2025
-                </div>
-                <div
-                  class="year-option px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-colors active bg-[#01af78]/10 font-medium"
+                  class="year-option px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300/80 hover:bg-gray-100 dark:hover:bg-emerald-700/20 cursor-pointer transition-colors active bg-[#01af78]/10 font-medium"
                   data-year="2024"
                 >
                   2024
                 </div>
                 <div
-                  class="year-option px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-colors"
+                  class="year-option px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300/80 hover:bg-gray-100 dark:hover:bg-emerald-700/20 cursor-pointer transition-colors"
                   data-year="2023"
                 >
                   2023
                 </div>
                 <div
-                  class="year-option px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-colors"
+                  class="year-option px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300/80 hover:bg-gray-100 dark:hover:bg-emerald-700/20 cursor-pointer transition-colors"
                   data-year="2022"
                 >
                   2022
                 </div>
                 <div
-                  class="year-option px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer transition-colors"
+                  class="year-option px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300/80 hover:bg-gray-100 dark:hover:bg-emerald-700/20 cursor-pointer transition-colors"
                   data-year="2021"
                 >
                   2021
@@ -342,7 +346,7 @@
             </div>
           </div>
 
-          <div class="chart-wrapper bg-white/90 rounded-2xl p-5">
+          <div class="chart-wrapper rounded-2xl p-5 bg-white dark:bg-gray-800">
             <canvas id="emergencyChart"></canvas>
           </div>
         </div>
@@ -351,17 +355,17 @@
 
     <aside
       id="rightPanel"
-      class="fixed right-0 top-0 w-[360px] h-screen bg-white/95 backdrop-blur-lg p-6 transition-all duration-500 ease-in-out flex flex-col z-40"
+      class="fixed right-0 top-0 w-[360px] h-screen bg-white dark:bg-gray-800 backdrop-blur-lg p-6 transition-all duration-500 ease-in-out flex flex-col z-40"
     >
       <div class="flex items-center justify-between mb-6 flex-shrink-0">
-        <h2 class="text-base font-semibold text-[#27C291]">
+        <h2 class="text-base font-semibold text-[#27C291] dark:text-emerald-600">
           Emergency Details
         </h2>
         <button
           id="rightPanelToggle"
-          class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors dark:bg-gray-700 dark:border-gray-700 dark:text-gray-300"
         >
-          <i class="uil uil-angle-right text-xl text-gray-600"></i>
+          <i class="uil uil-angle-right text-xl text-gray-600 dark:text-gray-300"></i>
         </button>
       </div>
 
@@ -371,9 +375,9 @@
 
       <div class="flex-shrink-0 pt-4">
         <button
-          class="w-full bg-white border border-gray-300 text-[#64748B] rounded-xl py-3 px-4 font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm"
+          class="w-full bg-white border border-gray-300 text-[#64748B] rounded-xl py-3 px-4 font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm dark:bg-gray-700 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
         >
-          <i class="uil uil-eye"></i>
+          <i class="uil uil-eye dark:text-gray-300"></i>
           View More Details
         </button>
       </div>
@@ -381,9 +385,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    
-    
-    <script src="js/dashboard.js"></script>
+
     <script src="js/sidebar.js"></script>
+    <script src="js/dashboard.js"></script>
   </body>
 </html>

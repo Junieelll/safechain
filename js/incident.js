@@ -221,27 +221,27 @@ function showLoadingSkeleton() {
         () => `
         <tr>
           <td class="px-6 py-4">
-            <div class="skeleton h-3 w-24"></div>
+            <div class="skeleton h-3 w-24 bg-gray-200 dark:bg-gray-700/50 rounded"></div>
           </td>
           <td class="px-6 py-4">
-            <div class="skeleton h-6 w-[60px] rounded-full"></div>
+            <div class="skeleton h-6 w-[60px] rounded-full bg-gray-200 dark:bg-gray-700/50"></div>
           </td>
           <td class="px-6 py-4">
-            <div class="skeleton h-3 w-40"></div>
+            <div class="skeleton h-3 w-40 bg-gray-200 dark:bg-gray-700/50 rounded"></div>
           </td>
           <td class="px-6 py-4">
-            <div class="skeleton h-3 w-28"></div>
+            <div class="skeleton h-3 w-28 bg-gray-200 dark:bg-gray-700/50 rounded"></div>
           </td>
           <td class="px-6 py-4">
-            <div class="skeleton h-3 w-32"></div>
+            <div class="skeleton h-3 w-32 bg-gray-200 dark:bg-gray-700/50 rounded"></div>
           </td>
           <td class="px-6 py-4">
-            <div class="skeleton h-6 w-24 rounded-full"></div>
+            <div class="skeleton h-6 w-24 rounded-full bg-gray-200 dark:bg-gray-700/50"></div>
           </td>
           <td class="px-6 py-4">
             <div class="flex items-center gap-3">
-              <div class="skeleton h-8 w-8 rounded-lg"></div>
-              <div class="skeleton h-8 w-8 rounded-lg"></div>
+              <div class="skeleton h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700/50"></div>
+              <div class="skeleton h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700/50"></div>
             </div>
           </td>
         </tr>
@@ -256,20 +256,30 @@ function showLoadingSkeleton() {
 // Helper Functions
 function getTypeColor(type) {
   const colors = {
-    fire: "bg-red-100 text-red-700",
-    flood: "bg-blue-100 text-blue-700",
-    crime: "bg-yellow-100 text-yellow-700",
+    fire: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+    flood: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+    crime:
+      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
   };
-  return colors[type] || "bg-gray-100 text-gray-700";
+  return (
+    colors[type] ||
+    "bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300"
+  );
 }
 
 function getStatusColor(status) {
   const colors = {
-    resolved: "bg-green-100 text-green-700",
-    responding: "bg-blue-100 text-blue-700",
-    pending: "bg-yellow-100 text-yellow-700",
+    resolved:
+      "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+    responding:
+      "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+    pending:
+      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
   };
-  return colors[status] || "bg-gray-100 text-gray-700";
+  return (
+    colors[status] ||
+    "bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300"
+  );
 }
 
 function parseDate(dateStr) {
@@ -366,7 +376,9 @@ function renderTable() {
   const pageData = filteredData.slice(startIndex, endIndex);
 
   // Update count
-  document.querySelector(".incidents h1 .count").textContent = `(${filteredData.length})`;
+  document.querySelector(
+    ".incidents h1 .count"
+  ).textContent = `(${filteredData.length})`;
 
   // Fade out
   tbody.style.opacity = "0";
@@ -390,31 +402,47 @@ function renderTable() {
       pageData.forEach((incident, index) => {
         const row = document.createElement("tr");
 
-        row.className = "hover:bg-gray-50 transition-colors item-enter";
+        row.className =
+          "hover:bg-gray-50 dark:hover:bg-black/20 transition-colors item-enter";
         row.style.animationDelay = `${index * 0.05}s`;
 
         row.innerHTML = `
-          <td class="px-6 py-4"><span class="text-xs font-medium text-blue-600">${incident.id}</span></td>
+          <td class="px-6 py-4"><span class="text-xs font-medium text-blue-600">${
+            incident.id
+          }</span></td>
           <td class="px-6 py-4">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(incident.type)}">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(
+              incident.type
+            )}">
               ${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)}
             </span>
           </td>
-          <td class="px-6 py-4"><span class="text-xs text-gray-700">${incident.location}</span></td>
-          <td class="px-6 py-4"><span class="text-xs text-gray-700">${incident.reporter}</span></td>
-          <td class="px-6 py-4"><span class="text-xs text-gray-700">${incident.dateTime}</span></td>
+          <td class="px-6 py-4"><span class="text-xs text-gray-700 dark:text-white/85">${
+            incident.location
+          }</span></td>
+          <td class="px-6 py-4"><span class="text-xs text-gray-700 dark:text-white/85">${
+            incident.reporter
+          }</span></td>
+          <td class="px-6 py-4"><span class="text-xs text-gray-700 dark:text-white/85">${
+            incident.dateTime
+          }</span></td>
           <td class="px-6 py-4">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(incident.status)}">
-              ${incident.status.charAt(0).toUpperCase() + incident.status.slice(1)}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+              incident.status
+            )}">
+              ${
+                incident.status.charAt(0).toUpperCase() +
+                incident.status.slice(1)
+              }
             </span>
           </td>
           <td class="px-6 py-4">
             <div class="flex items-center gap-3">
-              <button class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center transition-all transform hover:scale-105">
+              <button class="text-gray-500 dark:text-white/85 hover:text-[#01AF78] hover:bg-emerald-50 dark:hover:bg-emerald-700/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-gray-900  p-2 rounded-lg w-8 h-8 flex items-center justify-center transition-all transform hover:scale-105">
                 <i class="uil uil-eye text-xl"></i>
               </button>
               <button onclick="archiveIncident('${incident.id}')" 
-                      class="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors bg-[#F1F5F9] p-2 rounded-lg w-8 h-8 flex items-center justify-center transition-all transform hover:scale-105">
+                      class="text-gray-500 dark:text-white/85 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-700/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-gray-900  p-2 rounded-lg w-8 h-8 flex items-center justify-center transition-all transform hover:scale-105">
                 <i class="uil uil-archive-alt text-xl"></i>
               </button>
             </div>
@@ -429,7 +457,6 @@ function renderTable() {
     renderPagination(totalPages);
   }, 800);
 }
-
 
 function renderPagination(totalPages) {
   const paginationNumbers = paginationContainer.querySelector("div");
@@ -499,7 +526,7 @@ function createPageButton(pageNum, isActive) {
   button.className = `w-8 h-8 flex items-center justify-center rounded-full transition-colors font-medium text-sm ${
     isActive
       ? "bg-emerald-500 text-white shadow-md"
-      : "text-gray-700 hover:bg-emerald-50 hover:text-emerald-500"
+      : "text-gray-700 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20 "
   }`;
   button.textContent = pageNum;
   button.onclick = () => {
@@ -551,6 +578,15 @@ function updateClearFilterButton() {
 
 // Event Listeners
 
+const activeDropdownClasses = [
+  "bg-emerald-50",
+  "border-emerald-500",
+  "text-emerald-600",
+  "dark:bg-emerald-700/20",
+  "dark:border-emerald-700/20",
+  "dark:text-emerald-300",
+];
+
 // Search
 searchInput.addEventListener("input", (e) => {
   searchQuery = e.target.value;
@@ -581,9 +617,9 @@ typeDropdownItems.forEach((item) => {
     typeSelectedText.textContent = text;
 
     typeDropdownItems.forEach((i) =>
-      i.classList.remove("bg-emerald-50", "text-emerald-600")
+      i.classList.remove(...activeDropdownClasses)
     );
-    e.target.classList.add("bg-emerald-50", "text-emerald-600");
+    e.target.classList.add(...activeDropdownClasses);
 
     typeDropdownMenu.classList.add("hidden");
     typeDropdownIcon.style.transform = "rotate(0deg)";
@@ -615,9 +651,9 @@ statusDropdownItems.forEach((item) => {
     statusSelectedText.textContent = text;
 
     statusDropdownItems.forEach((i) =>
-      i.classList.remove("bg-emerald-50", "text-emerald-600")
+      i.classList.remove(...activeDropdownClasses)
     );
-    e.target.classList.add("bg-emerald-50", "text-emerald-600");
+    e.target.classList.add(...activeDropdownClasses);
 
     statusDropdownMenu.classList.add("hidden");
     statusDropdownIcon.style.transform = "rotate(0deg)";
@@ -648,38 +684,19 @@ quickDateButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const days = button.getAttribute("data-days");
 
+    // Remove active classes from all buttons
+    quickDateButtons.forEach((btn) => btn.classList.remove(...activeDropdownClasses));
+
+    // Add active classes to selected button
+    button.classList.add(...activeDropdownClasses);
+
     if (days === "custom") {
       customDates.classList.remove("hidden");
-      quickDateButtons.forEach((btn) =>
-        btn.classList.remove(
-          "bg-emerald-50",
-          "border-emerald-500",
-          "text-emerald-600"
-        )
-      );
-      button.classList.add(
-        "bg-emerald-50",
-        "border-emerald-500",
-        "text-emerald-600"
-      );
     } else {
       customDates.classList.add("hidden");
       const text = button.textContent;
       dateText.textContent = text;
       selectedDateRange = text;
-
-      quickDateButtons.forEach((btn) =>
-        btn.classList.remove(
-          "bg-emerald-50",
-          "border-emerald-500",
-          "text-emerald-600"
-        )
-      );
-      button.classList.add(
-        "bg-emerald-50",
-        "border-emerald-500",
-        "text-emerald-600"
-      );
 
       dateMenu.classList.add("hidden");
       dateIcon.style.transform = "rotate(0deg)";
@@ -742,14 +759,14 @@ clearFilterBtn.addEventListener("click", () => {
   selectedType = "all";
   typeSelectedText.textContent = "All Types";
   typeDropdownItems.forEach((i) =>
-    i.classList.remove("bg-emerald-50", "text-emerald-600")
+    i.classList.remove(...activeDropdownClasses)
   );
 
   // Reset status
   selectedStatus = "all";
   statusSelectedText.textContent = "All Status";
   statusDropdownItems.forEach((i) =>
-    i.classList.remove("bg-emerald-50", "text-emerald-600")
+    i.classList.remove(...activeDropdownClasses)
   );
 
   // Reset date
@@ -759,11 +776,7 @@ clearFilterBtn.addEventListener("click", () => {
   endDate.value = "";
   customDates.classList.add("hidden");
   quickDateButtons.forEach((btn) =>
-    btn.classList.remove(
-      "bg-emerald-50",
-      "border-emerald-500",
-      "text-emerald-600"
-    )
+    btn.classList.remove(...activeDropdownClasses)
   );
 
   currentPage = 1;

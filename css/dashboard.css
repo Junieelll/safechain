@@ -21,44 +21,6 @@ body {
   background: var(--bg-light);
 }
 
-body.dark-mode {
-  background: var(--bg-dark);
-  color: var(--text-dark);
-}
-
-body.dark-mode #rightPanel {
-  background: var(--panel-dark);
-  color: var(--text-dark);
-}
-
-body.dark-mode .bg-\[#F6F7F7\] {
-  background: var(--gray-dark) !important;
-}
-
-body.dark-mode .text-gray-600,
-body.dark-mode .text-gray-500 {
-  color: #94a3b8 !important;
-}
-
-body.dark-mode .text-gray-800,
-body.dark-mode .text-gray-700 {
-  color: var(--text-dark) !important;
-}
-
-body.dark-mode .bg-gray-200,
-body.dark-mode .bg-gray-100 {
-  background: var(--border-dark) !important;
-}
-
-body.dark-mode .border-gray-200,
-body.dark-mode .border-gray-300 {
-  border-color: var(--border-dark) !important;
-}
-
-body.dark-mode .chart {
-  background: #252b3d;
-}
-
 @keyframes rotateIcon {
   0%,
   100% {
@@ -202,33 +164,6 @@ body.dark-mode .chart {
   display: block;
 }
 
-body.dark-mode #yearDropdownBtn {
-  background: var(--border-dark);
-  color: var(--text-dark);
-  border-color: var(--border-dark);
-}
-
-body.dark-mode #yearDropdownMenu {
-  background: var(--border-dark);
-  border-color: #4b5563;
-}
-
-body.dark-mode .year-option {
-  color: var(--text-dark);
-}
-
-body.dark-mode .year-option:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-body.dark-mode .year-option.active {
-  background: rgba(1, 175, 120, 0.2);
-}
-
-body.dark-mode #yearDropdownIcon {
-  color: var(--text-dark);
-}
-
 .chart-wrapper {
   width: 100%;
   max-width: 100%;
@@ -239,3 +174,63 @@ body.dark-mode #yearDropdownIcon {
   max-width: 100%;
   height: 280px !important;
 }
+
+/* Skeleton Loading Styles */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Scrollbar styles for light mode */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Scrollbar styles for dark mode */
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #2d3748;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #4a5568;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #5a6779;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+[data-theme="dark"] * {
+  scrollbar-color: #4a5568 #2d3748;
+}
+

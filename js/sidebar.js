@@ -6,7 +6,6 @@ const mainContent = document.getElementById("mainContent");
 // Load saved state from localStorage
 let isCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
 
-// Function to apply collapse state
 function applySidebarState() {
   if (isCollapsed) {
     sidebar.classList.remove("w-[270px]");
@@ -89,14 +88,30 @@ document.querySelectorAll(".nav-item").forEach((item) => {
 
 document.getElementById("darkModeToggle").addEventListener("click", (e) => {
   e.preventDefault();
-  const body = document.body;
-  body.classList.toggle("dark-mode");
+  const html = document.documentElement;
+  
+  // Toggle dark mode on html element
+  if (html.getAttribute('data-theme') === 'dark') {
+    html.removeAttribute('data-theme');
+    localStorage.setItem('theme', 'light');
+    // Switch map theme if switchMapTheme function exists (only on dashboard page)
+    if (typeof switchMapTheme === 'function') {
+      switchMapTheme(false);
+    }
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    localStorage.setItem('theme', 'dark');
+    // Switch map theme if switchMapTheme function exists (only on dashboard page)
+    if (typeof switchMapTheme === 'function') {
+      switchMapTheme(true);
+    }
+  }
 
   const icon = document.getElementById("darkModeIcon");
   const label = document.getElementById("darkModeLabel");
   icon.classList.add("rotate");
 
-  if (body.classList.contains("dark-mode")) {
+  if (html.getAttribute('data-theme') === 'dark') {
     icon.classList.replace("uil-moon", "uil-sun");
     label.textContent = "Light Mode";
   } else {
@@ -106,6 +121,16 @@ document.getElementById("darkModeToggle").addEventListener("click", (e) => {
 
   setTimeout(() => icon.classList.remove("rotate"), 500);
 });
+
+// Load saved theme on page load
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') {
+  document.documentElement.setAttribute('data-theme', 'dark');
+  const icon = document.getElementById("darkModeIcon");
+  const label = document.getElementById("darkModeLabel");
+  icon.classList.replace("uil-moon", "uil-sun");
+  label.textContent = "Light Mode";
+}
 
 const userProfileBtn = document.getElementById("userProfileBtn");
 const userDropdown = document.getElementById("userDropdown");

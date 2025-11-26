@@ -135,16 +135,133 @@ const incidentData = {
   ],
 };
 
+// Data structure for different years
+const chartDataByYear = {
+  2024: {
+    fire: [28, 35, 32, 38, 30, 22, 48, 47, 35, 15, 32, 38],
+    flood: [32, 42, 38, 28, 12, 8, 28, 22, 18, 35, 38, 42],
+    crime: [25, 12, 22, 18, 12, 25, 22, 25, 22, 15, 25, 18],
+  },
+  2023: {
+    fire: [22, 28, 35, 31, 27, 19, 42, 39, 30, 12, 28, 35],
+    flood: [28, 38, 35, 24, 10, 6, 25, 19, 15, 32, 35, 39],
+    crime: [20, 10, 19, 15, 10, 22, 19, 22, 19, 12, 22, 15],
+  },
+  2022: {
+    fire: [25, 30, 28, 35, 28, 20, 45, 43, 33, 14, 30, 36],
+    flood: [30, 40, 36, 26, 11, 7, 26, 20, 16, 33, 36, 40],
+    crime: [22, 11, 20, 16, 11, 23, 20, 23, 20, 13, 23, 16],
+  },
+  2021: {
+    fire: [20, 26, 30, 33, 25, 18, 40, 38, 28, 11, 26, 33],
+    flood: [26, 36, 33, 22, 9, 5, 22, 17, 13, 30, 33, 37],
+    crime: [18, 9, 17, 13, 9, 20, 17, 20, 17, 10, 20, 13],
+  },
+  2020: {
+    fire: [18, 24, 27, 30, 23, 16, 38, 35, 26, 10, 24, 30],
+    flood: [24, 34, 30, 20, 8, 4, 20, 15, 11, 28, 30, 35],
+    crime: [16, 8, 15, 11, 8, 18, 15, 18, 15, 9, 18, 11],
+  },
+};
+
+function renderSkeletonLoading() {
+  return `
+    <div class="skeleton-loading">
+      <div class="mb-6">
+        <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3">
+          <div class="skeleton h-9 w-36 rounded-xl mb-3"></div>
+          <div class="flex justify-between">
+            <div class="skeleton h-3.5 w-24 rounded"></div>
+            <div class="skeleton h-3.5 w-32 rounded"></div>
+          </div>
+          <div class="flex justify-between">
+            <div class="skeleton h-3.5 w-28 rounded"></div>
+            <div class="skeleton h-3.5 w-20 rounded"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <div class="skeleton h-5 w-40 rounded mb-3"></div>
+        <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3">
+          <div class="flex justify-between">
+            <div class="skeleton h-3.5 w-16 rounded"></div>
+            <div class="skeleton h-3.5 w-36 rounded"></div>
+          </div>
+          <div class="flex justify-between">
+            <div class="skeleton h-3.5 w-20 rounded"></div>
+            <div class="skeleton h-3.5 w-40 rounded"></div>
+          </div>
+          <div class="flex justify-between">
+            <div class="skeleton h-3.5 w-16 rounded"></div>
+            <div class="skeleton h-3.5 w-24 rounded"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <div class="skeleton h-5 w-36 rounded mb-3"></div>
+        <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3">
+          <div class="flex justify-between">
+            <div class="skeleton h-3.5 w-20 rounded"></div>
+            <div class="skeleton h-3.5 w-48 rounded"></div>
+          </div>
+          <div class="flex justify-between">
+            <div class="skeleton h-3.5 w-20 rounded"></div>
+            <div class="skeleton h-3.5 w-28 rounded"></div>
+          </div>
+          <div class="flex justify-between">
+            <div class="skeleton h-3.5 w-12 rounded"></div>
+            <div class="skeleton h-3.5 w-32 rounded"></div>
+          </div>
+          <div class="flex justify-between">
+            <div class="skeleton h-3.5 w-24 rounded"></div>
+            <div class="skeleton h-3.5 w-40 rounded"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <div class="skeleton h-5 w-32 rounded mb-3"></div>
+        <div class="space-y-4">
+          <div class="flex gap-3">
+            <div class="skeleton w-3 h-3 rounded-full"></div>
+            <div class="flex-1">
+              <div class="skeleton h-3 w-16 rounded mb-2"></div>
+              <div class="skeleton h-3 w-full rounded"></div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="skeleton w-3 h-3 rounded-full"></div>
+            <div class="flex-1">
+              <div class="skeleton h-3 w-16 rounded mb-2"></div>
+              <div class="skeleton h-3 w-4/5 rounded"></div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="skeleton w-3 h-3 rounded-full"></div>
+            <div class="flex-1">
+              <div class="skeleton h-3 w-16 rounded mb-2"></div>
+              <div class="skeleton h-3 w-full rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderIncidentDetails(incident) {
   const colorClasses = {
-    red: "bg-red-50 text-red-600",
-    yellow: "bg-yellow-50 text-yellow-600",
-    blue: "bg-blue-50 text-blue-600",
+    red: "bg-red-50 text-red-600 dark:bg-red-900/40 dark:text-red-300",
+    yellow:
+      "bg-yellow-50 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-300",
+    blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300",
   };
 
   return `
           <div class="mb-6">
-            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm">
+            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm dark:bg-gray-900">
               <div class="inline-flex items-center gap-2 ${
                 colorClasses[incident.color]
               } px-3 py-2 rounded-lg">
@@ -152,34 +269,38 @@ function renderIncidentDetails(incident) {
                 <span class="text-sm font-medium">${incident.type}</span>
               </div>
               <div class="flex justify-between">
-                <p class="text-gray-500 mb-1">Incident ID</p>
-                <p class="font-medium text-gray-800">#${incident.id}</p>
+                <p class="text-gray-500 dark:text-gray-300 mb-1">Incident ID</p>
+                <p class="font-medium text-gray-800 dark:text-white/90">#${
+                  incident.id
+                }</p>
               </div>
               <div class="flex justify-between">
-                <p class="text-gray-500 mb-1">Time Reported</p>
-                <p class="font-medium text-gray-800">${incident.time}</p>
+                <p class="text-gray-500 mb-1 dark:text-gray-300">Time Reported</p>
+                <p class="font-medium text-gray-800 dark:text-white/90">${
+                  incident.time
+                }</p>
               </div>
             </div>
           </div>
 
           <div class="mb-6">
-            <h3 class="text-sm font-semibold text-[#27C291] uppercase tracking-wide mb-3">User Information</h3>
-            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm">
+            <h3 class="text-sm font-semibold text-[#27C291] dark:text-emerald-600 uppercase tracking-wide mb-3">User Information</h3>
+            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm dark:bg-gray-900">
               <div class="flex justify-between">
-                <span class="text-gray-600">Name</span>
-                <span class="font-medium text-gray-800">${
+                <span class="text-gray-600 dark:text-gray-300">Name</span>
+                <span class="font-medium text-gray-700 dark:text-white/90">${
                   incident.user.name
                 }</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">Contact</span>
-                <span class="font-medium text-gray-800">${
+                <span class="text-gray-600 dark:text-gray-300">Contact</span>
+                <span class="font-medium text-gray-700 dark:text-white/90">${
                   incident.user.contact
                 }</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">User ID</span>
-                <span class="font-medium text-gray-800">${
+                <span class="text-gray-600 dark:text-gray-300">User ID</span>
+                <span class="font-medium text-gray-700 dark:text-white/90">${
                   incident.user.id
                 }</span>
               </div>
@@ -187,29 +308,29 @@ function renderIncidentDetails(incident) {
           </div>
 
           <div class="mb-6">
-            <h3 class="text-sm font-semibold text-[#27C291] uppercase tracking-wide mb-3">Location Details</h3>
-            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm">
+            <h3 class="text-sm font-semibold text-[#27C291] dark:text-emerald-600 uppercase tracking-wide mb-3">Location Details</h3>
+            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm dark:bg-gray-900">
               <div class="flex justify-between">
-                <span class="text-gray-600">Address</span>
-                <span class="font-medium text-gray-800 text-right">${
+                <span class="text-gray-600 dark:text-gray-300">Address</span>
+                <span class="font-medium text-gray-700 text-right dark:text-white/90">${
                   incident.location.address
                 }</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">Barangay</span>
-                <span class="font-medium text-gray-800">${
+                <span class="text-gray-600 dark:text-gray-300">Barangay</span>
+                <span class="font-medium text-gray-800 dark:text-white/90">${
                   incident.location.barangay
                 }</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">City</span>
-                <span class="font-medium text-gray-800">${
+                <span class="text-gray-600 dark:text-gray-300">City</span>
+                <span class="font-medium text-gray-800 dark:text-white/90">${
                   incident.location.city
                 }</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">Coordinates</span>
-                <span class="font-medium text-gray-800 text-right">${
+                <span class="text-gray-600 dark:text-gray-300">Coordinates</span>
+                <span class="font-medium text-gray-800 text-right dark:text-white/90">${
                   incident.location.coords
                 }</span>
               </div>
@@ -217,7 +338,7 @@ function renderIncidentDetails(incident) {
           </div>
 
           <div class="mb-6">
-            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Activity Timeline</h3>
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-white/80 uppercase tracking-wide mb-3">Activity Timeline</h3>
             <div class="space-y-4">
               ${incident.timeline
                 .map(
@@ -236,10 +357,10 @@ function renderIncidentDetails(incident) {
                   <div class="flex-1 ${
                     index < incident.timeline.length - 1 ? "pb-4" : ""
                   }">
-                    <p class="text-xs font-semibold text-gray-800 mb-1">${
+                    <p class="text-xs font-semibold text-gray-800 mb-1 dark:text-white/90">${
                       item.time
                     }</p>
-                    <p class="text-xs text-gray-600">${item.event}</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-300">${item.event}</p>
                   </div>
                 </div>`
                 )
@@ -256,13 +377,41 @@ let isRightPanelCollapsed = false;
 
 var map = L.map("map").setView([14.7158532, 121.0403842], 16);
 
-L.tileLayer(
+// Create both light and dark tile layers
+const lightLayer = L.tileLayer(
   "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
   {
     attribution:
       '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
   }
-).addTo(map);
+);
+
+const darkLayer = L.tileLayer(
+  "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  {
+    attribution:
+      '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+  }
+);
+
+// Add the appropriate layer based on current theme
+const currentTheme = document.documentElement.getAttribute("data-theme");
+if (currentTheme === "dark") {
+  darkLayer.addTo(map);
+} else {
+  lightLayer.addTo(map);
+}
+
+// Function to switch map theme
+function switchMapTheme(isDark) {
+  if (isDark) {
+    map.removeLayer(lightLayer);
+    map.addLayer(darkLayer);
+  } else {
+    map.removeLayer(darkLayer);
+    map.addLayer(lightLayer);
+  }
+}
 
 const fireIcon = L.divIcon({
   className:
@@ -300,28 +449,44 @@ const iconMap = {
   flood: floodIcon,
 };
 
-// Add all markers
-Object.keys(incidentData).forEach((type) => {
-  incidentData[type].forEach((incident) => {
-    const marker = L.marker([incident.lat, incident.lng], {
-      icon: iconMap[type],
-    })
-      .addTo(map)
-      .bindPopup(`<strong>${incident.type}</strong><br>${incident.user.name}`);
+// Add all markers with staggered animation
+setTimeout(() => {
+  Object.keys(incidentData).forEach((type, typeIndex) => {
+    incidentData[type].forEach((incident, incidentIndex) => {
+      setTimeout(() => {
+        const marker = L.marker([incident.lat, incident.lng], {
+          icon: iconMap[type],
+          opacity: 0,
+        })
+          .addTo(map)
+          .bindPopup(
+            `<strong>${incident.type}</strong><br>${incident.user.name}`
+          );
 
-    marker.on("click", () => {
-      incidentContent.innerHTML = renderIncidentDetails(incident);
-      if (isRightPanelCollapsed) {
-        rightPanelToggle.click();
-      }
+        // Animate marker appearance
+        setTimeout(() => {
+          marker.setOpacity(1);
+        }, 50);
+
+        marker.on("click", () => {
+          incidentContent.innerHTML = renderIncidentDetails(incident);
+          if (isRightPanelCollapsed) {
+            rightPanelToggle.click();
+          }
+        });
+
+        markers[type].push(marker);
+      }, typeIndex * 300 + incidentIndex * 150);
     });
-
-    markers[type].push(marker);
   });
-});
+}, 1000);
 
 // Load default incident
-incidentContent.innerHTML = renderIncidentDetails(incidentData.fire[0]);
+incidentContent.innerHTML = renderSkeletonLoading();
+
+setTimeout(() => {
+  incidentContent.innerHTML = renderIncidentDetails(incidentData.fire[0]);
+}, 1500); // Show skeleton for 1.5 seconds
 
 document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
 document
@@ -375,9 +540,10 @@ rightPanelToggle.addEventListener("click", () => {
 });
 
 // Chart.js Configuration
+let emergencyChart;
 setTimeout(() => {
   const ctx = document.getElementById("emergencyChart").getContext("2d");
-  const emergencyChart = new Chart(ctx, {
+  emergencyChart = new Chart(ctx, {
     type: "line",
     data: {
       labels: [
@@ -397,7 +563,7 @@ setTimeout(() => {
       datasets: [
         {
           label: "Fire",
-          data: [28, 35, 32, 38, 30, 22, 48, 47, 35, 15, 32, 38],
+          data: chartDataByYear[2024].fire,
           borderColor: "#ff4444",
           backgroundColor: "rgba(255, 68, 68, 0.1)",
           tension: 0.4,
@@ -414,7 +580,7 @@ setTimeout(() => {
         },
         {
           label: "Flood",
-          data: [32, 42, 38, 28, 12, 8, 28, 22, 18, 35, 38, 42],
+          data: chartDataByYear[2024].flood,
           borderColor: "#3B82F6",
           backgroundColor: "rgba(59, 130, 246, 0.1)",
           tension: 0.4,
@@ -431,7 +597,7 @@ setTimeout(() => {
         },
         {
           label: "Crime",
-          data: [25, 12, 22, 18, 12, 25, 22, 25, 22, 15, 25, 18, 28],
+          data: chartDataByYear[2024].crime,
           borderColor: "#FBBF24",
           backgroundColor: "rgba(251, 191, 36, 0.1)",
           tension: 0.4,
@@ -454,6 +620,10 @@ setTimeout(() => {
       interaction: {
         mode: "index",
         intersect: false,
+      },
+      animation: {
+        duration: 2000,
+        easing: "easeInOutQuart",
       },
       plugins: {
         legend: {
@@ -507,7 +677,7 @@ setTimeout(() => {
       },
     },
   });
-}, 100);
+}, 1100);
 
 // Year Dropdown Functionality
 const yearDropdownBtn = document.getElementById("yearDropdownBtn");
@@ -536,22 +706,21 @@ yearOptions.forEach((option) => {
 
     // Update active state
     yearOptions.forEach((opt) => {
-      opt.classList.remove("active", "bg-[#01af78]/10", "font-medium");
+      opt.classList.remove("active", "bg-[#01af78]/10", "font-medium", "text-emerald-600" , "dark:text-emerald-700");
     });
-    option.classList.add("active", "bg-[#01af78]/10", "font-medium");
+    option.classList.add("active", "bg-[#01af78]/10", "font-medium", "text-emerald-600", "dark:text-emerald-700");
 
     // Close dropdown
     yearDropdownMenu.classList.add("hidden");
     yearDropdownIcon.style.transform = "rotate(0deg)";
 
-    // Generate random data for selected year
-    const generateRandomData = () =>
-      Array.from({ length: 12 }, () => Math.floor(Math.random() * 50) + 10);
-
-    emergencyChart.data.datasets[0].data = generateRandomData();
-    emergencyChart.data.datasets[1].data = generateRandomData();
-    emergencyChart.data.datasets[2].data = generateRandomData();
-    emergencyChart.update();
+    // Update chart with data for selected year
+    if (chartDataByYear[year]) {
+      emergencyChart.data.datasets[0].data = chartDataByYear[year].fire;
+      emergencyChart.data.datasets[1].data = chartDataByYear[year].flood;
+      emergencyChart.data.datasets[2].data = chartDataByYear[year].crime;
+      emergencyChart.update("active");
+    }
 
     console.log("Selected year:", year);
   });
@@ -567,3 +736,33 @@ document.addEventListener("click", (e) => {
     yearDropdownIcon.style.transform = "rotate(0deg)";
   }
 });
+
+function updateDateTime() {
+  const now = new Date();
+
+  const options = {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  };
+
+  const dateString = now.toLocaleDateString("en-US", options);
+  const timeString = now.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
+  const dateTimeElement = document.querySelector(".header p");
+  if (dateTimeElement) {
+    dateTimeElement.textContent = `${dateString}, ${timeString}`;
+  }
+}
+
+// Update immediately on load
+updateDateTime();
+
+// Update every second
+setInterval(updateDateTime, 1000);

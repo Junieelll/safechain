@@ -37,13 +37,15 @@ class ModalManager {
       <!-- Modal Overlay -->
       <div
         id="${id}Overlay"
-        class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300 opacity-0"
+        class="hidden fixed inset-0 bg-black/40 dark:bg-black/60 z-50 transition-opacity duration-300 opacity-0"
       ></div>
 
       <!-- Modal -->
       <div
         id="${id}"
-        class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl shadow-2xl z-[999] w-full max-w-lg transition-all duration-300 opacity-0 scale-95"
+        class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
+               bg-white dark:bg-gray-800 rounded-3xl shadow-2xl z-[999] 
+               w-full max-w-lg transition-all duration-300 opacity-0 scale-95"
       >
         <!-- Modal Header -->
         <div class="flex items-center justify-between p-6 pb-4">
@@ -52,49 +54,81 @@ class ModalManager {
               <i class="uil ${icon} text-2xl ${iconColor}"></i>
             </div>
             <div>
-              <h3 class="text-sm font-semibold text-gray-800">${title}</h3>
-              ${subtitle ? `<p class="text-xs text-gray-500 mt-0.5">${subtitle}</p>` : ''}
+              <h3 class="text-sm font-semibold text-gray-800 dark:text-white">${title}</h3>
+              ${
+                subtitle
+                  ? `<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${subtitle}</p>`
+                  : ''
+              }
             </div>
           </div>
         </div>
 
         <!-- Modal Body -->
         <div class="px-6 py-4">
-          ${showWarning ? `
-            <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+          ${
+            showWarning
+              ? `
+            <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-4 mb-4">
               <div class="flex items-start gap-3">
-                <i class="uil uil-exclamation-triangle text-red-600 text-xl mt-0.5"></i>
+                <i class="uil uil-exclamation-triangle text-red-600 dark:text-red-400 text-xl mt-0.5"></i>
                 <div>
-                  <p class="text-xs font-semibold text-red-800 mb-1">Warning: This action cannot be undone!</p>
-                  <p class="text-xs text-red-700">${warningText}</p>
+                  <p class="text-xs font-semibold text-red-800 dark:text-red-300 mb-1">
+                    Warning: This action cannot be undone!
+                  </p>
+                  <p class="text-xs text-red-700 dark:text-red-400">${warningText}</p>
                 </div>
               </div>
             </div>
-          ` : ''}
-          <div id="${id}Body" class="modal-body">
+          `
+              : ''
+          }
+
+          <div id="${id}Body" class="modal-body text-gray-700 dark:text-gray-300">
             ${body}
           </div>
         </div>
 
         <!-- Modal Footer -->
         <div class="flex items-center gap-3 p-6 pt-4">
-          ${secondaryButton ? `
+
+          ${
+            secondaryButton
+              ? `
             <button
               id="${id}SecondaryBtn"
-              class="flex-1 px-4 py-3.5 min-h-[45px] text-xs font-medium text-[#64748B] bg-white border border-[#96A9C4] rounded-full hover:bg-gray-200 transition-colors"
+              class="flex-1 px-4 py-3.5 min-h-[45px] text-xs font-medium 
+                     text-gray-600 dark:text-gray-300 
+                     bg-white dark:bg-gray-700 
+                     border border-gray-300 dark:border-gray-600 
+                     rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
             >
               ${secondaryButton.text}
             </button>
-          ` : ''}
-          ${primaryButton ? `
+          `
+              : ''
+          }
+
+          ${
+            primaryButton
+              ? `
             <button
               id="${id}PrimaryBtn"
-              class="flex-1 px-4 py-3.5 max-h-[45px] text-xs font-medium text-white rounded-full transition-colors flex items-center justify-center gap-2 ${primaryButton.class || 'bg-[#01AF78] hover:bg-[#00965F]'}"
+              class="flex-1 px-4 py-3.5 max-h-[45px] text-xs font-medium text-white 
+                     rounded-full transition-colors flex items-center justify-center gap-2 
+                     ${primaryButton.class || 'bg-[#01AF78] hover:bg-[#00965F] dark:bg-[#01AF78]/90 dark:hover:bg-[#01AF78]'}"
             >
-              ${primaryButton.icon ? `<i class="uil ${primaryButton.icon} text-lg"></i>` : ''}
+              ${
+                primaryButton.icon
+                  ? `<i class="uil ${primaryButton.icon} text-lg"></i>`
+                  : ''
+              }
               ${primaryButton.text}
             </button>
-          ` : ''}
+          `
+              : ''
+          }
+
         </div>
       </div>
     `;
@@ -113,7 +147,6 @@ class ModalManager {
       onSecondary
     });
 
-    // Attach event listeners
     this.attachEventListeners(id);
 
     return id;
@@ -125,26 +158,18 @@ class ModalManager {
 
     const { overlay, onPrimary, onSecondary } = modalData;
 
-    // Close on overlay click
     overlay.addEventListener('click', () => this.close(id));
 
-    // Primary button
     const primaryBtn = document.getElementById(`${id}PrimaryBtn`);
     if (primaryBtn && onPrimary) {
-      primaryBtn.addEventListener('click', () => {
-        onPrimary();
-      });
+      primaryBtn.addEventListener('click', () => onPrimary());
     }
 
-    // Secondary button
     const secondaryBtn = document.getElementById(`${id}SecondaryBtn`);
     if (secondaryBtn) {
       secondaryBtn.addEventListener('click', () => {
-        if (onSecondary) {
-          onSecondary();
-        } else {
-          this.close(id);
-        }
+        if (onSecondary) onSecondary();
+        else this.close(id);
       });
     }
   }
@@ -185,9 +210,7 @@ class ModalManager {
 
   updateBody(id, content) {
     const bodyElement = document.getElementById(`${id}Body`);
-    if (bodyElement) {
-      bodyElement.innerHTML = content;
-    }
+    if (bodyElement) bodyElement.innerHTML = content;
   }
 
   destroy(id) {
