@@ -83,9 +83,9 @@ function showLoadingSkeleton() {
 
 function getIconColor(type) {
   return {
-    incident: "bg-red-100",
-    user: "bg-blue-100",
-    device: "bg-green-100",
+    incident: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-700",
+    user: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-700",
+    device: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-700",
   }[type];
 }
 
@@ -101,11 +101,11 @@ function getIcon(type) {
 
 function getBadge(type) {
   if (type === "incident") {
-    return '<span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">INCIDENT</span>';
+    return '<span class="px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/40 dark:text-red-700 text-red-700 rounded-full">INCIDENT</span>';
   } else if (type === "user") {
-    return '<span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">USER</span>';
+    return '<span class="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/40 dark:text-blue-700 text-blue-700 rounded-full">USER</span>';
   } else {
-    return '<span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">DEVICE</span>';
+    return '<span class="px-2 py-1 text-xs font-medium bg-green-100 dark:bg-emerald-900/40 dark:text-emerald-700 text-green-700 rounded-full">DEVICE</span>';
   }
 }
 
@@ -171,9 +171,9 @@ function renderItems() {
   if (filteredItems.length === 0) {
     itemsList.innerHTML = `
       <div class="px-6 py-12 text-center animate-scale-in">
-        <i class="uil uil-inbox text-6xl text-gray-300 mb-4"></i>
-        <p class="text-gray-500 text-lg font-medium">No items found</p>
-        <p class="text-gray-400 text-sm mt-2">Try adjusting your filters</p>
+        <i class="uil uil-inbox text-6xl text-gray-300 dark:text-neutral-300 mb-4"></i>
+        <p class="text-gray-500 dark:text-neutral-200 text-lg font-medium">No items found</p>
+        <p class="text-gray-400 dark:text-neutral-100 text-sm mt-2">Try adjusting your filters</p>
       </div>
     `;
     return;
@@ -182,7 +182,7 @@ function renderItems() {
   itemsList.innerHTML = filteredItems
     .map(
       (item, index) => `
-      <div class="item-row item-enter group px-6 py-5 hover:bg-gray-50 transition-colors flex items-center gap-4 relative" style="animation-delay: ${
+      <div class="item-row item-enter group px-6 py-5 hover:bg-gray-50 dark:hover:bg-neutral-900/50 transition-colors flex items-center gap-4 relative" style="animation-delay: ${
         index * 0.05
       }s">
           <input 
@@ -195,7 +195,7 @@ function renderItems() {
               ${getIcon(item.type)}
           </div>
           <div class="flex-1">
-              <h4 class="text-sm font-medium text-gray-900">${item.title}</h4>
+              <h4 class="text-sm font-medium text-gray-900 dark:text-neutral-300">${item.title}</h4>
               <div class="flex items-center gap-3 mt-1">
                   ${getBadge(item.type)}
                   <span class="flex items-center gap-1 text-xs text-gray-500">
@@ -207,13 +207,13 @@ function renderItems() {
           
           <div class="action-buttons opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-2">
               <button 
-                  class="restore-btn px-4 py-2 border border-[#01AF78] text-[#01AF78] text-xs font-medium rounded-lg hover:bg-emerald-50 flex items-center gap-2 transition-all transform hover:scale-105"
+                  class="restore-btn px-4 py-2 border border-[#01AF78] text-[#01AF78] text-xs font-medium rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/60 flex items-center gap-2 transition-all transform hover:scale-105"
                   data-id="${item.id}">
                   <i class="uil uil-redo text-sm"></i>
                   Restore
               </button>
               <button 
-                  class="delete-btn px-4 py-2 border border-red-500 text-red-500 text-xs font-medium rounded-lg hover:bg-red-50 flex items-center gap-2 transition-all transform hover:scale-105"
+                  class="delete-btn px-4 py-2 border border-red-500 text-red-500 text-xs font-medium rounded-lg hover:bg-red-50 dark:hover:bg-red-900/60 flex items-center gap-2 transition-all transform hover:scale-105"
                   data-id="${item.id}">
                   <i class="uil uil-trash-alt text-sm"></i>
                   Delete
@@ -318,15 +318,15 @@ function updateTabStyles() {
     const countSpan = btn.querySelector(".tab-count");
 
     if (isActive) {
-      btn.classList.add("text-gray-900");
-      btn.classList.remove("text-gray-600");
-      countSpan.classList.add("bg-[#01AF78]", "text-white");
-      countSpan.classList.remove("bg-gray-300", "text-gray-700");
+      btn.classList.add("text-gray-900", "dark:text-neutral-300");
+      btn.classList.remove("text-gray-600", "dark:text-neutral-500");
+      countSpan.classList.add("bg-[#01AF78]", "text-white", "dark:bg-[#01AF78]", "dark:text-white");
+      countSpan.classList.remove("bg-gray-300", "text-gray-700", "dark:bg-neutral-700", "dark:text-neutral-400");
     } else {
-      btn.classList.add("text-gray-600");
-      btn.classList.remove("text-gray-900");
-      countSpan.classList.add("bg-gray-300", "text-gray-700");
-      countSpan.classList.remove("bg-[#01AF78]", "text-white");
+      btn.classList.add("text-gray-600", "dark:text-neutral-500");
+      btn.classList.remove("text-gray-900", "dark:text-neutral-300");
+      countSpan.classList.add("bg-gray-300", "text-gray-700", "dark:bg-neutral-700", "dark:text-neutral-400");
+      countSpan.classList.remove("bg-[#01AF78]", "text-white", "dark:bg-[#01AF78]", "dark:text-white");
     }
   });
 
@@ -386,7 +386,7 @@ function showRestoreModal(items) {
     title: 'Restore from Archive',
     subtitle: 'Item will be restored to its original location.',
     body: `
-      <p class="text-xs text-gray-600 text-center leading-relaxed">
+      <p class="text-xs text-gray-600 dark:text-neutral-300 text-center leading-relaxed">
         Are you sure you want to restore
         <span class="font-semibold text-[#01AF78]">${itemText}</span>?
         ${items.length === 1 ? 'This item' : 'These items'} will be moved back from the archive.
@@ -419,7 +419,7 @@ function showDeleteModal(items) {
     title: 'Delete Permanently',
     subtitle: 'This action cannot be undone.',
     body: `
-      <p class="text-xs text-gray-600 text-center leading-relaxed">
+      <p class="text-xs text-gray-600 dark:text-neutral-300 text-center leading-relaxed">
         Are you sure you want to permanently delete
         <span class="font-semibold text-red-600">${itemText}</span>?
         ${items.length === 1 ? 'This item' : 'These items'} will be removed forever and cannot be recovered.
@@ -454,7 +454,7 @@ function showEmptyArchiveModal() {
     showWarning: true,
     warningText: `All <strong>${totalItems}</strong> ${totalItems === 1 ? 'item' : 'items'} in the archive will be permanently deleted and cannot be recovered.`,
     body: `
-      <p class="text-xs text-gray-600 text-center leading-relaxed">
+      <p class="text-xs text-gray-600 dark:text-neutral-300 text-center leading-relaxed">
         Are you absolutely sure you want to empty the entire archive?
       </p>
     `,

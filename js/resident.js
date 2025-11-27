@@ -19,7 +19,7 @@ const residentsData = [
     address: "456 Bonifacio Avenue, Barangay 2",
     contact: "+63 920 234 5678",
     deviceId: "SC-KC-002",
-    registeredDate: new Date("2024-09-20"),
+    registeredDate: new Date("2025-09-20"),
     color: "bg-blue-500 dark:bg-blue-600/70",
   },
   {
@@ -29,7 +29,7 @@ const residentsData = [
     address: "789 Mabini Road, Barangay 3",
     contact: "+63 930 345 6789",
     deviceId: "SC-KC-003",
-    registeredDate: new Date("2024-10-05"),
+    registeredDate: new Date("2025-10-05"),
     color: "bg-purple-500 dark:bg-purple-600/70",
   },
   {
@@ -39,7 +39,7 @@ const residentsData = [
     address: "321 Luna Street, Barangay 4",
     contact: "+63 940 456 7890",
     deviceId: "SC-KC-004",
-    registeredDate: new Date("2024-10-12"),
+    registeredDate: new Date("2025-10-12"),
     color: "bg-orange-500 dark:bg-orange-600/70",
   },
   {
@@ -49,7 +49,7 @@ const residentsData = [
     address: "654 Del Pilar Avenue, Barangay 5",
     contact: "+63 950 567 8901",
     deviceId: "SC-KC-005",
-    registeredDate: new Date("2024-10-18"),
+    registeredDate: new Date("2025-10-18"),
     color: "bg-pink-500 dark:bg-pink-600/70",
   },
   {
@@ -59,7 +59,7 @@ const residentsData = [
     address: "987 Aguinaldo Road, Barangay 6",
     contact: "+63 960 678 9012",
     deviceId: "SC-KC-006",
-    registeredDate: new Date("2024-10-25"),
+    registeredDate: new Date("2025-10-25"),
     color: "bg-indigo-500 dark:bg-indigo-600/70",
   },
   {
@@ -69,7 +69,7 @@ const residentsData = [
     address: "147 Quezon Boulevard, Barangay 7",
     contact: "+63 970 789 0123",
     deviceId: "SC-KC-007",
-    registeredDate: new Date("2024-11-01"),
+    registeredDate: new Date("2025-11-01"),
     color: "bg-teal-500 dark:bg-teal-600/70",
   },
   {
@@ -79,7 +79,7 @@ const residentsData = [
     address: "258 Magsaysay Street, Barangay 8",
     contact: "+63 980 890 1234",
     deviceId: "SC-KC-008",
-    registeredDate: new Date("2024-11-08"),
+    registeredDate: new Date("2025-11-08"),
     color: "bg-red-500 dark:bg-red-600/70",
   },
   {
@@ -332,17 +332,17 @@ function renderTable() {
           <div class="flex items-center gap-2">
             <button onclick="viewResident('${
               resident.id
-            }')" class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-gray-900 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
+            }')" class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-neutral-700 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
               <i class="uil uil-eye text-xl"></i>
             </button>
             <button onclick="editResident('${
               resident.id
-            }')" class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] dark:hover:bg-blue-900/20 dark:hover:text-blue-500 dark:bg-gray-900 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
+            }')" class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] dark:hover:bg-blue-900/20 dark:hover:text-blue-500 dark:bg-neutral-700 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
               <i class="uil uil-pen text-xl"></i>
             </button>
             <button onclick="archiveResident('${
               resident.id
-            }')" class="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-gray-900 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
+            }')" class="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-neutral-700 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
               <i class="uil uil-archive-alt text-xl"></i>
             </button>
           </div>
@@ -372,13 +372,13 @@ function renderPagination() {
 
   let paginationHTML = `
     <button onclick="changePage(${currentPage - 1})" 
-      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-gray-900 dark:hover:bg-emerald-900/60 text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition ${
+      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-neutral-700 dark:hover:bg-emerald-900/60 text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition ${
         currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
       }"
       ${currentPage === 1 ? "disabled" : ""}>
       <i class="uil uil-angle-left text-xl"></i>
     </button>
-    <div class="bg-[#F1F5F9] dark:bg-gray-900 rounded-full p-1 flex items-center gap-1">
+    <div class="bg-[#F1F5F9] dark:bg-neutral-700 rounded-full p-1 flex items-center gap-1">
   `;
 
   // Show pages with ellipsis logic
@@ -389,7 +389,7 @@ function renderPagination() {
           class="w-8 h-8 flex items-center justify-center rounded-full ${
             currentPage === i
               ? "bg-emerald-500 text-white"
-              : "hover:bg-white dark:hover:bg-emerald-900/60 text-gray-600 dark:hover:text-emerald-500"
+              : "hover:bg-white dark:hover:bg-emerald-900/60 text-neutral-600 dark:text-neutral-400 dark:hover:text-emerald-500"
           } text-sm font-medium transition">
           ${i}
         </button>
@@ -449,7 +449,7 @@ function renderPagination() {
   paginationHTML += `
     </div>
     <button onclick="changePage(${currentPage + 1})" 
-      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-gray-900 dark:hover:bg-emerald-900/60 text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition ${
+      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-neutral-700 dark:hover:bg-emerald-900/60 text-gray-600 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 transition ${
         currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""
       }"
       ${currentPage === totalPages ? "disabled" : ""}>
@@ -712,7 +712,7 @@ function editResident(id) {
         <label for="editResidentName" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
           Resident Name
         </label>
-        <input type="text" id="editResidentName" value="${resident.name}" class="w-full px-4 py-3 bg-gray-50 dark:text-gray-200 dark:bg-gray-900 border border-gray-200 dark:border-gray-900 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter resident name" />
+        <input type="text" id="editResidentName" value="${resident.name}" class="w-full px-4 py-3 bg-gray-50 dark:text-gray-200 dark:bg-neutral-700 border border-gray-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter resident name" />
       </div>
 
       <!-- User ID (Read-only) -->
@@ -728,7 +728,7 @@ function editResident(id) {
         <label for="editAddress" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
           Household / Address
         </label>
-        <input type="text" id="editAddress" value="${resident.address}" class="w-full px-4 py-3 bg-gray-50 dark:text-gray-200 dark:bg-gray-900 border border-gray-200 dark:border-gray-900 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter address" />
+        <input type="text" id="editAddress" value="${resident.address}" class="w-full px-4 py-3 bg-gray-50 dark:text-gray-200 dark:bg-neutral-700 border border-gray-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter address" />
       </div>
 
       <!-- Contact Number -->
@@ -736,7 +736,7 @@ function editResident(id) {
         <label for="editContact" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
           Contact Number
         </label>
-        <input type="tel" id="editContact" value="${resident.contact}" class="w-full px-4 py-3 bg-gray-50 dark:text-gray-200 dark:bg-gray-900 border border-gray-200 dark:border-gray-900 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter contact number" />
+        <input type="tel" id="editContact" value="${resident.contact}" class="w-full px-4 py-3 bg-gray-50 dark:text-gray-200 dark:bg-neutral-700 border border-gray-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter contact number" />
       </div>
 
       <!-- Device ID -->

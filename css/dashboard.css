@@ -213,15 +213,15 @@ body {
 
 /* Scrollbar styles for dark mode */
 [data-theme="dark"] ::-webkit-scrollbar-track {
-  background: #2d3748;
+  background: #171717;
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: #4a5568;
+  background: #171717;
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: #5a6779;
+  background: #171717;
 }
 
 /* Firefox scrollbar */
@@ -231,6 +231,6 @@ body {
 }
 
 [data-theme="dark"] * {
-  scrollbar-color: #4a5568 #2d3748;
+  scrollbar-color: #262626 #171717;
 }
 

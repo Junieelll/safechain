@@ -44,7 +44,7 @@ class ModalManager {
       <div
         id="${id}"
         class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
-               bg-white dark:bg-gray-800 rounded-3xl shadow-2xl z-[999] 
+               bg-white dark:bg-neutral-800 rounded-3xl shadow-2xl z-[999] 
                w-full max-w-lg transition-all duration-300 opacity-0 scale-95"
       >
         <!-- Modal Header -->
@@ -84,7 +84,7 @@ class ModalManager {
               : ''
           }
 
-          <div id="${id}Body" class="modal-body text-gray-700 dark:text-gray-300">
+          <div id="${id}Body" class="modal-body text-gray-700 dark:text-neutral-300">
             ${body}
           </div>
         </div>
@@ -99,9 +99,9 @@ class ModalManager {
               id="${id}SecondaryBtn"
               class="flex-1 px-4 py-3.5 min-h-[45px] text-xs font-medium 
                      text-gray-600 dark:text-gray-300 
-                     bg-white dark:bg-gray-700 
-                     border border-gray-300 dark:border-gray-600 
-                     rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                     bg-white dark:bg-neutral-700 
+                     border border-gray-300 dark:border-neutral-600 
+                     rounded-full hover:bg-gray-100 dark:hover:bg-neutral-600 transition-colors"
             >
               ${secondaryButton.text}
             </button>

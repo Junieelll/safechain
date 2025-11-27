@@ -168,81 +168,81 @@ function renderSkeletonLoading() {
   return `
     <div class="skeleton-loading">
       <div class="mb-6">
-        <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3">
-          <div class="skeleton h-9 w-36 rounded-xl mb-3"></div>
+        <div class="bg-neutral-100 dark:bg-neutral-700 rounded-lg p-4 space-y-3">
+          <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-9 w-36 rounded-xl mb-3"></div>
           <div class="flex justify-between">
-            <div class="skeleton h-3.5 w-24 rounded"></div>
-            <div class="skeleton h-3.5 w-32 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-24 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-32 rounded"></div>
           </div>
           <div class="flex justify-between">
-            <div class="skeleton h-3.5 w-28 rounded"></div>
-            <div class="skeleton h-3.5 w-20 rounded"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="mb-6">
-        <div class="skeleton h-5 w-40 rounded mb-3"></div>
-        <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3">
-          <div class="flex justify-between">
-            <div class="skeleton h-3.5 w-16 rounded"></div>
-            <div class="skeleton h-3.5 w-36 rounded"></div>
-          </div>
-          <div class="flex justify-between">
-            <div class="skeleton h-3.5 w-20 rounded"></div>
-            <div class="skeleton h-3.5 w-40 rounded"></div>
-          </div>
-          <div class="flex justify-between">
-            <div class="skeleton h-3.5 w-16 rounded"></div>
-            <div class="skeleton h-3.5 w-24 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-28 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-20 rounded"></div>
           </div>
         </div>
       </div>
 
       <div class="mb-6">
-        <div class="skeleton h-5 w-36 rounded mb-3"></div>
-        <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3">
+        <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-5 w-40 rounded mb-3"></div>
+        <div class="bg-neutral-100 dark:bg-neutral-700 rounded-lg p-4 space-y-3">
           <div class="flex justify-between">
-            <div class="skeleton h-3.5 w-20 rounded"></div>
-            <div class="skeleton h-3.5 w-48 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-16 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-36 rounded"></div>
           </div>
           <div class="flex justify-between">
-            <div class="skeleton h-3.5 w-20 rounded"></div>
-            <div class="skeleton h-3.5 w-28 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-20 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-40 rounded"></div>
           </div>
           <div class="flex justify-between">
-            <div class="skeleton h-3.5 w-12 rounded"></div>
-            <div class="skeleton h-3.5 w-32 rounded"></div>
-          </div>
-          <div class="flex justify-between">
-            <div class="skeleton h-3.5 w-24 rounded"></div>
-            <div class="skeleton h-3.5 w-40 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-16 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-24 rounded"></div>
           </div>
         </div>
       </div>
 
       <div class="mb-6">
-        <div class="skeleton h-5 w-32 rounded mb-3"></div>
+        <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-5 w-36 rounded mb-3"></div>
+        <div class="bg-neutral-100 dark:bg-neutral-700 rounded-lg p-4 space-y-3">
+          <div class="flex justify-between">
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-20 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-48 rounded"></div>
+          </div>
+          <div class="flex justify-between">
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-20 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-28 rounded"></div>
+          </div>
+          <div class="flex justify-between">
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-12 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-32 rounded"></div>
+          </div>
+          <div class="flex justify-between">
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-24 rounded"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3.5 w-40 rounded"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-5 w-32 rounded mb-3"></div>
         <div class="space-y-4">
           <div class="flex gap-3">
-            <div class="skeleton w-3 h-3 rounded-full"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse w-3 h-3 rounded-full"></div>
             <div class="flex-1">
-              <div class="skeleton h-3 w-16 rounded mb-2"></div>
-              <div class="skeleton h-3 w-full rounded"></div>
+              <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3 w-16 rounded mb-2"></div>
+              <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3 w-full rounded"></div>
             </div>
           </div>
           <div class="flex gap-3">
-            <div class="skeleton w-3 h-3 rounded-full"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse w-3 h-3 rounded-full"></div>
             <div class="flex-1">
-              <div class="skeleton h-3 w-16 rounded mb-2"></div>
-              <div class="skeleton h-3 w-4/5 rounded"></div>
+              <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3 w-16 rounded mb-2"></div>
+              <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3 w-4/5 rounded"></div>
             </div>
           </div>
           <div class="flex gap-3">
-            <div class="skeleton w-3 h-3 rounded-full"></div>
+            <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse w-3 h-3 rounded-full"></div>
             <div class="flex-1">
-              <div class="skeleton h-3 w-16 rounded mb-2"></div>
-              <div class="skeleton h-3 w-full rounded"></div>
+              <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3 w-16 rounded mb-2"></div>
+              <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-3 w-full rounded"></div>
             </div>
           </div>
         </div>
@@ -261,7 +261,7 @@ function renderIncidentDetails(incident) {
 
   return `
           <div class="mb-6">
-            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm dark:bg-gray-900">
+            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm dark:bg-neutral-700">
               <div class="inline-flex items-center gap-2 ${
                 colorClasses[incident.color]
               } px-3 py-2 rounded-lg">
@@ -285,7 +285,7 @@ function renderIncidentDetails(incident) {
 
           <div class="mb-6">
             <h3 class="text-sm font-semibold text-[#27C291] dark:text-emerald-600 uppercase tracking-wide mb-3">User Information</h3>
-            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm dark:bg-gray-900">
+            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm dark:bg-neutral-700">
               <div class="flex justify-between">
                 <span class="text-gray-600 dark:text-gray-300">Name</span>
                 <span class="font-medium text-gray-700 dark:text-white/90">${
@@ -309,7 +309,7 @@ function renderIncidentDetails(incident) {
 
           <div class="mb-6">
             <h3 class="text-sm font-semibold text-[#27C291] dark:text-emerald-600 uppercase tracking-wide mb-3">Location Details</h3>
-            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm dark:bg-gray-900">
+            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm dark:bg-neutral-700">
               <div class="flex justify-between">
                 <span class="text-gray-600 dark:text-gray-300">Address</span>
                 <span class="font-medium text-gray-700 text-right dark:text-white/90">${
@@ -350,7 +350,7 @@ function renderIncidentDetails(incident) {
                     } p-1 mb-1"></div>
                     ${
                       index < incident.timeline.length - 1
-                        ? '<div class="w-0.5 h-full bg-gray-200"></div>'
+                        ? '<div class="w-0.5 h-full bg-neutral-200"></div>'
                         : ""
                     }
                   </div>

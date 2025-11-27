@@ -256,10 +256,10 @@ function showLoadingSkeleton() {
 // Helper Functions
 function getTypeColor(type) {
   const colors = {
-    fire: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-    flood: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+    fire: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-600",
+    flood: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-600",
     crime:
-      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
+      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-600",
   };
   return (
     colors[type] ||
@@ -270,11 +270,11 @@ function getTypeColor(type) {
 function getStatusColor(status) {
   const colors = {
     resolved:
-      "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+      "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-600",
     responding:
-      "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+      "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-600",
     pending:
-      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
+      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-600",
   };
   return (
     colors[status] ||
@@ -393,7 +393,7 @@ function renderTable() {
     if (pageData.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+          <td colspan="7" class="px-3 md:px-6 py-12 text-center text-gray-500">
             <i class="uil uil-inbox text-4xl mb-2"></i>
             <p class="text-sm">No incidents found</p>
           </td>
@@ -407,27 +407,27 @@ function renderTable() {
         row.style.animationDelay = `${index * 0.05}s`;
 
         row.innerHTML = `
-          <td class="px-6 py-4"><span class="text-xs font-medium text-blue-600">${
+          <td class="px-3 md:px-6 py-3 md:py-4"><span class="text-xs font-medium text-blue-600 dark:text-blue-800">${
             incident.id
           }</span></td>
-          <td class="px-6 py-4">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(
+          <td class="px-3 md:px-6 py-3 md:py-4">
+            <span class="inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(
               incident.type
             )}">
               ${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)}
             </span>
           </td>
-          <td class="px-6 py-4"><span class="text-xs text-gray-700 dark:text-white/85">${
+          <td class="px-3 md:px-6 py-3 md:py-4"><span class="text-xs text-gray-700 dark:text-neutral-400">${
             incident.location
           }</span></td>
-          <td class="px-6 py-4"><span class="text-xs text-gray-700 dark:text-white/85">${
+          <td class="px-3 md:px-6 py-3 md:py-4"><span class="text-xs text-gray-700 dark:text-neutral-400">${
             incident.reporter
           }</span></td>
-          <td class="px-6 py-4"><span class="text-xs text-gray-700 dark:text-white/85">${
+          <td class="px-3 md:px-6 py-3 md:py-4"><span class="text-xs text-gray-700 dark:text-neutral-400">${
             incident.dateTime
           }</span></td>
-          <td class="px-6 py-4">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+          <td class="px-3 md:px-6 py-3 md:py-4">
+            <span class="inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
               incident.status
             )}">
               ${
@@ -436,14 +436,14 @@ function renderTable() {
               }
             </span>
           </td>
-          <td class="px-6 py-4">
-            <div class="flex items-center gap-3">
-              <button class="text-gray-500 dark:text-white/85 hover:text-[#01AF78] hover:bg-emerald-50 dark:hover:bg-emerald-700/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-gray-900  p-2 rounded-lg w-8 h-8 flex items-center justify-center transition-all transform hover:scale-105">
-                <i class="uil uil-eye text-xl"></i>
+          <td class="px-3 md:px-6 py-3 md:py-4">
+            <div class="flex items-center gap-2 md:gap-3">
+              <button class="text-gray-500 dark:text-neutral-400 hover:text-[#01AF78] hover:bg-emerald-50 dark:hover:bg-emerald-700/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-neutral-700 p-1.5 md:p-2 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center transition-all transform hover:scale-105">
+                <i class="uil uil-eye text-lg md:text-xl"></i>
               </button>
               <button onclick="archiveIncident('${incident.id}')" 
-                      class="text-gray-500 dark:text-white/85 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-700/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-gray-900  p-2 rounded-lg w-8 h-8 flex items-center justify-center transition-all transform hover:scale-105">
-                <i class="uil uil-archive-alt text-xl"></i>
+                      class="text-gray-500 dark:text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-700/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-neutral-700 p-1.5 md:p-2 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center transition-all transform hover:scale-105">
+                <i class="uil uil-archive-alt text-lg md:text-xl"></i>
               </button>
             </div>
           </td>
@@ -526,7 +526,7 @@ function createPageButton(pageNum, isActive) {
   button.className = `w-8 h-8 flex items-center justify-center rounded-full transition-colors font-medium text-sm ${
     isActive
       ? "bg-emerald-500 text-white shadow-md"
-      : "text-gray-700 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20 "
+      : "text-neutral-700 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20 "
   }`;
   button.textContent = pageNum;
   button.onclick = () => {

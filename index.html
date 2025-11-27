@@ -29,7 +29,7 @@
       };
     </script>
   </head>
-  <body class="min-h-screen flex transition-all duration-300 dark:bg-gray-900">
+  <body class="min-h-screen flex transition-all duration-300 dark:bg-neutral-900">
     <aside
       id="sidebar"
       class="fixed w-[280px] m-4 rounded-[20px] sidebar-gradient h-[calc(100vh-32px)] transition-all duration-500 ease-in-out shadow-[0_10px_40px_rgba(0,0,0,0.3)] z-50"
@@ -230,7 +230,7 @@
         </div>
 
         <div
-          class="border border-white dark:border-gray-500 rounded-2xl mt-4 relative"
+          class="border border-white dark:border-neutral-800 rounded-2xl mt-4 relative"
         >
           <div id="map" class="rounded-2xl"></div>
           <div class="map-controls flex flex-col gap-3">
@@ -304,7 +304,7 @@
             <div class="relative">
               <button
                 id="yearDropdownBtn"
-                class="bg-white dark:bg-gray-800 dark:border-gray-400 dark:text-gray-400 border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm font-medium text-gray-700 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#01af78] focus:border-transparent transition-all flex items-center gap-2 min-w-[100px]"
+                class="bg-white dark:bg-neutral-800 dark:border-neutral-700 dark:text-gray-400 border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm font-medium text-gray-700 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#01af78] focus:border-transparent transition-all flex items-center gap-2 min-w-[100px]"
               >
                 <i class="uil uil-calendar-alt"></i>
                 <span id="selectedYear">2024</span>
@@ -316,7 +316,7 @@
 
               <div
                 id="yearDropdownMenu"
-                class="hidden absolute top-full right-0 mt-2 w-full bg-white dark:bg-gray-800 dark:border-gray-600 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.15)] overflow-hidden z-50 border border-gray-200"
+                class="hidden absolute top-full right-0 mt-2 w-full bg-white dark:bg-neutral-800 dark:border-gray-600 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.15)] overflow-hidden z-50 border border-gray-200"
               >
                 <div
                   class="year-option px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300/80 hover:bg-gray-100 dark:hover:bg-emerald-700/20 cursor-pointer transition-colors active bg-[#01af78]/10 font-medium"
@@ -346,7 +346,7 @@
             </div>
           </div>
 
-          <div class="chart-wrapper rounded-2xl p-5 bg-white dark:bg-gray-800">
+          <div class="chart-wrapper rounded-2xl p-5 bg-white dark:bg-neutral-800">
             <canvas id="emergencyChart"></canvas>
           </div>
         </div>
@@ -355,7 +355,7 @@
 
     <aside
       id="rightPanel"
-      class="fixed right-0 top-0 w-[360px] h-screen bg-white dark:bg-gray-800 backdrop-blur-lg p-6 transition-all duration-500 ease-in-out flex flex-col z-40"
+      class="fixed right-0 top-0 w-[360px] h-screen bg-white dark:bg-neutral-800 backdrop-blur-lg p-6 transition-all duration-500 ease-in-out flex flex-col z-40"
     >
       <div class="flex items-center justify-between mb-6 flex-shrink-0">
         <h2 class="text-base font-semibold text-[#27C291] dark:text-emerald-600">
@@ -363,7 +363,7 @@
         </h2>
         <button
           id="rightPanelToggle"
-          class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors dark:bg-gray-700 dark:border-gray-700 dark:text-gray-300"
+          class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors dark:bg-neutral-700 dark:border-gray-700 dark:text-gray-300"
         >
           <i class="uil uil-angle-right text-xl text-gray-600 dark:text-gray-300"></i>
         </button>
@@ -375,7 +375,7 @@
 
       <div class="flex-shrink-0 pt-4">
         <button
-          class="w-full bg-white border border-gray-300 text-[#64748B] rounded-xl py-3 px-4 font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm dark:bg-gray-700 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+          class="w-full bg-white border border-gray-300 text-[#64748B] rounded-xl py-3 px-4 font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm dark:bg-neutral-700 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800"
         >
           <i class="uil uil-eye dark:text-gray-300"></i>
           View More Details
