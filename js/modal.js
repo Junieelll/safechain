@@ -44,7 +44,7 @@ class ModalManager {
       <div
         id="${id}"
         class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
-               bg-white dark:bg-neutral-800 rounded-3xl shadow-2xl z-[999] 
+               bg-white dark:bg-neutral-800 rounded-3xl shadow-2xl z-[9999] 
                w-full max-w-lg transition-all duration-300 opacity-0 scale-95"
       >
         <!-- Modal Header -->

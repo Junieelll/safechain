@@ -186,13 +186,13 @@ function markAsResolved() {
   modalManager.create({
     id: 'resolveModal',
     icon: 'uil-check-circle',
-    iconColor: 'text-emerald-600',
-    iconBg: 'bg-emerald-100',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900/60',
     title: 'Mark as Resolved',
     subtitle: 'Confirm incident resolution',
     body: '<p class="text-xs text-center px-2">Are you sure you want to mark this incident as <strong>RESOLVED</strong>? This will close the incident and update its status.</p>',
     showWarning: true,
-    warningText: 'Once marked as resolved, this incident will be moved to the archive.',
+    warningText: 'Marking this incident as resolved will finalize it and update its status. This action cannot be undone.',
     primaryButton: {
       text: 'Yes, Resolve',
       icon: 'uil-check',
@@ -220,8 +220,8 @@ function updateStatus() {
   modalManager.create({
     id: 'updateStatusModal',
     icon: 'uil-pen',
-    iconColor: 'text-blue-600',
-    iconBg: 'bg-blue-100',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+    iconBg: 'bg-blue-100 dark:bg-blue-900/60',
     title: 'Update Incident Status',
     subtitle: 'Change status and priority',
     body: `
@@ -251,7 +251,6 @@ function updateStatus() {
     },
     onPrimary: () => {
       const status = document.getElementById("statusSelectModal");
-      const priority = document.getElementById("prioritySelectModal");
       const notes = document.getElementById("instructionsModal");
 
       if (!status.value) {
@@ -261,32 +260,31 @@ function updateStatus() {
 
       const statusText = status.options[status.selectedIndex].text;
       const statusValue = status.value;
-      const priorityText = priority.options[priority.selectedIndex].text;
 
       const statusBadge = document.getElementById("statusBadge");
 
       let bgColor = "", textColor = "", dotColor = "", statusDisplay = "";
       if (statusValue === "pending") {
-        bgColor = "bg-yellow-100";
-        textColor = "text-yellow-600";
-        dotColor = "bg-yellow-600";
+        bgColor = "bg-yellow-100 dark:bg-yellow-900/60";
+        textColor = "text-yellow-600 dark:text-yellow-400";
+        dotColor = "bg-yellow-600 dark:bg-yellow-400";
         statusDisplay = "Pending Response";
       } else if (statusValue === "responding") {
-        bgColor = "bg-blue-100";
-        textColor = "text-blue-600";
-        dotColor = "bg-blue-600";
+        bgColor = "bg-blue-100 dark:bg-blue-900/60";
+        textColor = "text-blue-600 dark:text-blue-400";
+        dotColor = "bg-blue-600 dark:bg-blue-400";
         statusDisplay = "Active Response";
       } else if (statusValue === "resolved") {
-        bgColor = "bg-green-100";
-        textColor = "text-green-600";
-        dotColor = "bg-green-600";
+        bgColor = "bg-green-100 dark:bg-green-900/60";
+        textColor = "text-green-600 dark:text-green-400";
+        dotColor = "bg-green-600 dark:bg-green-400";
         statusDisplay = "Resolved";
       }
 
       statusBadge.className = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${bgColor} ${textColor}`;
       statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full ${dotColor} status-dot"></span> ${statusDisplay}`;
 
-      addTimelineItem("Status Updated", `Status: ${statusText} | Priority: ${priorityText}`);
+      addTimelineItem("Status Updated", `Status: ${statusText}`);
 
       if (notes.value) {
         addTimelineItem("Admin Note Added", notes.value);

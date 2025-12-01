@@ -438,7 +438,7 @@ function renderTable() {
           </td>
           <td class="px-3 md:px-6 py-3 md:py-4">
             <div class="flex items-center gap-2 md:gap-3">
-              <button class="text-gray-500 dark:text-neutral-400 hover:text-[#01AF78] hover:bg-emerald-50 dark:hover:bg-emerald-700/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-neutral-700 p-1.5 md:p-2 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center transition-all transform hover:scale-105">
+              <button onclick="window.location='/incidents/details.html'" class="text-gray-500 dark:text-neutral-400 hover:text-[#01AF78] hover:bg-emerald-50 dark:hover:bg-emerald-700/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-neutral-700 p-1.5 md:p-2 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center transition-all transform hover:scale-105">
                 <i class="uil uil-eye text-lg md:text-xl"></i>
               </button>
               <button onclick="archiveIncident('${incident.id}')" 
