@@ -382,7 +382,7 @@ function showRestoreModal(items) {
     id: 'restoreModal',
     icon: 'uil-redo',
     iconColor: 'text-[#01AF78]',
-    iconBg: 'bg-emerald-50',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900/60',
     title: 'Restore from Archive',
     subtitle: 'Item will be restored to its original location.',
     body: `
@@ -414,8 +414,8 @@ function showDeleteModal(items) {
   modalManager.create({
     id: 'deleteModal',
     icon: 'uil-trash-alt',
-    iconColor: 'text-red-600',
-    iconBg: 'bg-red-50',
+    iconColor: 'text-red-600 dark:text-red-700',
+    iconBg: 'bg-red-100 dark:bg-red-900/60',
     title: 'Delete Permanently',
     subtitle: 'This action cannot be undone.',
     body: `
@@ -447,8 +447,8 @@ function showEmptyArchiveModal() {
   modalManager.create({
     id: 'emptyArchiveModal',
     icon: 'uil-trash-alt',
-    iconColor: 'text-red-600',
-    iconBg: 'bg-red-50',
+    iconColor: 'text-red-600 dark:text-red-700',
+    iconBg: 'bg-red-100 dark:bg-red-900/60',
     title: 'Empty Archive',
     subtitle: 'This will permanently delete all archived items.',
     showWarning: true,

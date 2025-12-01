@@ -1,0 +1,47 @@
+.leaflet-routing-container {
+  display: none !important;
+}
+
+.leaflet-control-zoom {
+  display: none;
+}
+
+.map-btn {
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.map-btn:hover {
+  background: rgba(0, 0, 0, 0.35);
+  transform: translateY(-2px);
+}
+
+.map-btn i {
+  font-size: 22px;
+  color: #fff;
+}
+
+#zoomIn {
+  border-top-left-radius: 50px;
+  border-top-right-radius: 50px;
+}
+
+#zoomOut {
+  border-bottom-left-radius: 50px;
+  border-bottom-right-radius: 50px;
+}
+
+.toggle-btn{
+  background: rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}

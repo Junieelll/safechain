@@ -23,13 +23,16 @@
     />
 
     <link rel="stylesheet" href="css/dashboard.css" />
+    <link rel="stylesheet" href="css/toast.css" />
     <script>
       tailwind.config = {
         darkMode: ["class", '[data-theme="dark"]'],
       };
     </script>
   </head>
-  <body class="min-h-screen flex transition-all duration-300 dark:bg-neutral-900">
+  <body
+    class="min-h-screen flex transition-all duration-300 dark:bg-neutral-900"
+  >
     <aside
       id="sidebar"
       class="fixed w-[280px] m-4 rounded-[20px] sidebar-gradient h-[calc(100vh-32px)] transition-all duration-500 ease-in-out shadow-[0_10px_40px_rgba(0,0,0,0.3)] z-50"
@@ -289,6 +292,54 @@
             >
               <i class="uil uil-crosshairs"></i>
             </button>
+            <div class="border-t border-white/20 my-1 w-8 mx-auto"></div>
+
+            <div class="heatmap-controls flex flex-col items-center gap-3 relative">
+              <!-- Main toggle button for heatmap controls -->
+              <button
+                class="map-btn rounded-full w-12 h-12 text-2xl flex items-center justify-center dark:border-gray-600 transition-all"
+                id="heatmapMenuToggle"
+                title="Heatmap Controls"
+              >
+                <i class="uil uil-ellipsis-h"></i>
+              </button>
+
+              <!-- Heatmap controls container (hidden by default) -->
+              <div
+                id="heatmapControlsContainer"
+                class="heatmap-controls-container hidden flex-col gap-0.5 rounded-xl p-2 dark:border-neutral-400"
+              >
+              <p class="font-medium text-nowrap text-xs text-neutral-600 dark:text-neutral-200 p-2">TOGGLE HEATMAP</p>
+                <button
+                  class="filter-btn active flex items-center px-2 py-1 rounded-lg dark:text-neutral-200
+                  id="toggleFireHeatmap"
+                  title="Fire Heatmap"
+                  data-heatmap="fire"
+                >
+                  <i class="uil uil-fire"></i>
+                  <span class="heatmap-btn-text">Fire</span>
+                </button>
+                <button
+                  class="filter-btn active flex items-center px-2 py-1 rounded-lg"
+                  id="toggleCrimeHeatmap"
+                  title="Crime Heatmap"
+                  data-heatmap="crime"
+                >
+                  <i class="uil uil-shield-plus"></i>
+                  <span class="heatmap-btn-text">Crime</span>
+                </button>
+                <button
+                  class="filter-btn active flex items-center px-2 py-1 rounded-lg"
+                  id="toggleFloodHeatmap"
+                  title="Flood Heatmap"
+                  data-heatmap="flood"
+                >
+                
+                  <i class="uil uil-water"></i>
+                  <span class="heatmap-btn-text">Flood</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -346,7 +397,9 @@
             </div>
           </div>
 
-          <div class="chart-wrapper rounded-2xl p-5 bg-white dark:bg-neutral-800">
+          <div
+            class="chart-wrapper rounded-2xl p-5 bg-white dark:bg-neutral-800"
+          >
             <canvas id="emergencyChart"></canvas>
           </div>
         </div>
@@ -358,14 +411,18 @@
       class="fixed right-0 top-0 w-[360px] h-screen bg-white dark:bg-neutral-800 backdrop-blur-lg p-6 transition-all duration-500 ease-in-out flex flex-col z-40"
     >
       <div class="flex items-center justify-between mb-6 flex-shrink-0">
-        <h2 class="text-base font-semibold text-[#27C291] dark:text-emerald-600">
+        <h2
+          class="text-base font-semibold text-[#27C291] dark:text-emerald-600"
+        >
           Emergency Details
         </h2>
         <button
           id="rightPanelToggle"
           class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors dark:bg-neutral-700 dark:border-gray-700 dark:text-gray-300"
         >
-          <i class="uil uil-angle-right text-xl text-gray-600 dark:text-gray-300"></i>
+          <i
+            class="uil uil-angle-right text-xl text-gray-600 dark:text-gray-300"
+          ></i>
         </button>
       </div>
 
@@ -375,6 +432,7 @@
 
       <div class="flex-shrink-0 pt-4">
         <button
+          onclick="window.location='incidents/details.html';"
           class="w-full bg-white border border-gray-300 text-[#64748B] rounded-xl py-3 px-4 font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm dark:bg-neutral-700 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800"
         >
           <i class="uil uil-eye dark:text-gray-300"></i>
@@ -383,10 +441,18 @@
       </div>
     </aside>
 
+    <!-- Toast Container -->
+      <div
+        id="toastContainer"
+        class="fixed top-4 right-4 z-50 space-y-3 max-w-md w-full"
+      ></div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <script src="js/sidebar.js"></script>
+    <script src="js/toast.js"></script>
     <script src="js/dashboard.js"></script>
   </body>
 </html>

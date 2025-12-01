@@ -851,45 +851,40 @@ function updateWidgetCounts() {
 }
 
 // Archive Modal Functions
-function showArchiveModal(id) {
+function archiveIncident(id) {
   const incident = incidentsData.find((i) => i.id === id);
   if (!incident) return;
 
-  // Update incident name in modal
-  document.getElementById("incidentArchive").textContent = incident.id;
+  const archiveBody = `
+    <p class="text-xs text-gray-600 dark:text-gray-200 text-center leading-relaxed">
+      Are you sure you want to move incident <span class="font-semibold" style="color: #27c291">${incident.id}</span> to Archive? You can restore this incident anytime from the archive.
+    </p>
+  `;
 
   // Store current archiving ID
   window.currentArchivingId = id;
 
-  const modal = document.getElementById("incidentArchiveModal");
-  const overlay = document.getElementById("archiveModalOverlay");
+  modalManager.create({
+    id: "archiveModal",
+    icon: "uil-archive",
+    iconColor: "text-emerald-500",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/60",
+    title: "Move Incident to Archive",
+    subtitle: "This incident can be restored anytime.",
+    body: archiveBody,
+    primaryButton: {
+      text: "Move to Archive",
+      icon: "uil-archive",
+      class: "bg-[#27C291] hover:bg-[#22A87B]",
+    },
+    secondaryButton: {
+      text: "Close",
+    },
+    onPrimary: confirmArchiveIncident,
+    onSecondary: () => modalManager.close("archiveModal"),
+  });
 
-  if (modal && overlay) {
-    overlay.classList.remove("hidden");
-    modal.classList.remove("hidden");
-
-    // Trigger animation
-    setTimeout(() => {
-      overlay.classList.add("opacity-100");
-      modal.classList.add("scale-100", "opacity-100");
-    }, 10);
-  }
-}
-
-function closeArchiveModal() {
-  const modal = document.getElementById("incidentArchiveModal");
-  const overlay = document.getElementById("archiveModalOverlay");
-
-  if (modal && overlay) {
-    overlay.classList.remove("opacity-100");
-    modal.classList.remove("scale-100", "opacity-100");
-
-    setTimeout(() => {
-      overlay.classList.add("hidden");
-      modal.classList.add("hidden");
-      window.currentArchivingId = null;
-    }, 300);
-  }
+  modalManager.show("archiveModal");
 }
 
 function confirmArchiveIncident() {
@@ -898,30 +893,19 @@ function confirmArchiveIncident() {
 
   const index = incidentsData.findIndex((i) => i.id === id);
   if (index !== -1) {
+    const incidentId = incidentsData[index].id;
     incidentsData.splice(index, 1);
     currentPage = 1;
     updateWidgetCounts();
     renderTable();
+    showToast(
+      "success",
+      `${incidentId} has been moved to archive successfully!`
+    );
   }
 
-  closeArchiveModal();
+  modalManager.close("archiveModal");
 }
-
-// Update the archiveResident function
-function archiveIncident(id) {
-  showArchiveModal(id);
-}
-
-// Close modal when clicking overlay
-document.addEventListener("click", (e) => {
-  if (e.target.id === "archiveModalOverlay") {
-    closeArchiveModal();
-  }
-});
-
-// Make functions global
-window.closeArchiveModal = closeArchiveModal;
-window.confirmArchiveIncident = confirmArchiveIncident;
 
 // Page load animations
 function initPageAnimations() {

@@ -234,3 +234,102 @@ body {
   scrollbar-color: #262626 #171717;
 }
 
+/* Heatmap menu toggle button */
+#heatmapMenuToggle {
+  position: relative;
+  overflow: hidden;
+}
+
+#heatmapMenuToggle i {
+  transition: all 0.3s ease;
+}
+
+#heatmapMenuToggle.active i {
+  transform: rotate(90deg);
+}
+
+/* Heatmap controls container */
+.heatmap-controls-container {
+  background: rgba(255, 255, 255, 0.26);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform-origin: top;
+  animation: slideDown 0.3s ease-out;
+  overflow: hidden;
+  position: absolute;
+  right: 70px;
+  bottom: 0;
+  min-width: 180px;
+}
+
+.heatmap-btn-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.dark .heatmap-controls-container {
+  background: rgba(38, 38, 38, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.heatmap-controls-container.hidden {
+  display: none;
+}
+
+.heatmap-controls-container .filter-btn {
+  margin: 0 2px;
+  background: transparent;
+  border: none;
+  color: #404040;
+  transition: all 0.2s ease;
+  gap: 10px;
+}
+
+.heatmap-controls-container .filter-btn:hover {
+  background: rgba(1, 175, 120, 0.1);
+  color: #01af78;
+  transform: scale(1.05);
+}
+
+.heatmap-controls-container .filter-btn.active {
+  color: #27C291;
+}
+
+.heatmap-controls-container .filter-btn i {
+  font-size: 1.5rem;
+}
+
+/* Heatmap button indicator dot */
+.filter-btn[data-heatmap] {
+  position: relative;
+}
+
+.filter-btn[data-heatmap]::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  background: #cbd5e1;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.filter-btn[data-heatmap].active::after {
+  background: #01af78;
+  box-shadow: 0 0 8px rgba(1, 175, 120, 0.6);
+}

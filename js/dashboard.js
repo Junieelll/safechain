@@ -164,6 +164,159 @@ const chartDataByYear = {
   },
 };
 
+// Historical incident data separated by type
+const historicalIncidents = {
+  fire: [
+    { lat: 14.7145, lng: 121.0395, intensity: 0.9 },
+    { lat: 14.7152, lng: 121.0418, intensity: 0.8 },
+    { lat: 14.7138, lng: 121.0402, intensity: 0.85 },
+    { lat: 14.7168, lng: 121.0391, intensity: 0.9 },
+    { lat: 14.7129, lng: 121.0425, intensity: 0.75 },
+    { lat: 14.7141, lng: 121.0387, intensity: 0.8 },
+    { lat: 14.7156, lng: 121.0434, intensity: 0.85 },
+    { lat: 14.7133, lng: 121.0396, intensity: 0.7 },
+    { lat: 14.7171, lng: 121.0406, intensity: 0.88 },
+    { lat: 14.7149, lng: 121.0443, intensity: 0.82 },
+    { lat: 14.7137, lng: 121.0378, intensity: 0.9 },
+  ],
+  crime: [
+    { lat: 14.7147, lng: 121.0411, intensity: 0.7 },
+    { lat: 14.7159, lng: 121.0399, intensity: 0.75 },
+    { lat: 14.7142, lng: 121.0428, intensity: 1.65 },
+    { lat: 14.7136, lng: 121.0384, intensity: 0.7 },
+    { lat: 14.7151, lng: 121.0407, intensity: 0.68 },
+    { lat: 14.7128, lng: 121.0419, intensity: 1.72 },
+    { lat: 14.7165, lng: 121.0393, intensity: 1.67 },
+    { lat: 14.7144, lng: 121.0401, intensity: 0.73 },
+    { lat: 14.7139, lng: 121.0415, intensity: 1.69 },
+    { lat: 14.7158, lng: 121.0380, intensity: 0.71 },
+    { lat: 14.7162, lng: 121.0429, intensity: 0.68 },
+    { lat: 14.7131, lng: 121.0408, intensity: 1.74 },
+  ],
+  flood: [
+    { lat: 14.7112, lng: 121.0431, intensity: 0.6 },
+    { lat: 14.7148, lng: 121.0389, intensity: 0.65 },
+    { lat: 14.7125, lng: 121.0404, intensity: 0.62 },
+    { lat: 14.7161, lng: 121.0422, intensity: 1.58 },
+    { lat: 14.7134, lng: 121.0412, intensity: 1.63 },
+    { lat: 14.7119, lng: 121.0397, intensity: 1.61 },
+    { lat: 14.7154, lng: 121.0385, intensity: 1.59 },
+    { lat: 14.7127, lng: 121.0438, intensity: 0.64 },
+    { lat: 14.7115, lng: 121.0413, intensity: 0.65 },
+    { lat: 14.7123, lng: 121.0391, intensity: 0.6 },
+  ]
+};
+
+// Heatmap layers for each type
+const heatmapLayers = {
+  fire: null,
+  crime: null,
+  flood: null
+};
+
+const heatmapVisible = {
+  fire: true,
+  crime: true,
+  flood: true
+};
+
+// Function to generate heatmap data for specific type
+function generateHeatmapData(type) {
+  const heatData = [];
+  
+  // Add current incidents of this type
+  if (incidentData[type]) {
+    incidentData[type].forEach((incident) => {
+      const intensity = type === 'fire' ? 1.0 : type === 'crime' ? 0.8 : 0.7;
+      heatData.push([incident.lat, incident.lng, intensity]);
+    });
+  }
+  
+  // Add historical incidents of this type
+  if (historicalIncidents[type]) {
+    historicalIncidents[type].forEach((incident) => {
+      heatData.push([incident.lat, incident.lng, incident.intensity]);
+    });
+  }
+  
+  return heatData;
+}
+
+// Heatmap configurations for each type
+const heatmapConfigs = {
+  fire: {
+    radius: 30,
+    blur: 20,
+    maxZoom: 17,
+    max: 1.0,
+    minOpacity: 0.3,
+    gradient: {
+      0.0: 'rgba(255, 68, 68, 0)',      // Lightest, matches icon
+      0.3: 'rgba(255, 68, 68, 0.35)',
+      0.5: 'rgba(220, 40, 40, 0.55)',   // Slightly darker red
+      0.7: 'rgba(200, 30, 30, 0.75)',
+      0.9: 'rgba(170, 20, 20, 0.9)',
+      1.0: 'rgba(140, 10, 10, 1)'       // Deep red for high intensity
+    }
+  },
+
+  crime: {
+    radius: 28,
+    blur: 18,
+    maxZoom: 17,
+    max: 1.0,
+    minOpacity: 0.3,
+    gradient: {
+      0.0: 'rgba(251, 191, 36, 0)',      // Light yellow (icon color)
+      0.3: 'rgba(251, 191, 36, 0.35)',
+      0.5: 'rgba(245, 158, 11, 0.55)',   // Deeper amber
+      0.7: 'rgba(217, 119, 6, 0.75)',
+      0.9: 'rgba(180, 83, 9, 0.9)',
+      1.0: 'rgba(120, 50, 5, 1)'         // Darker brownish-orange
+    }
+  },
+
+  flood: {
+    radius: 32,
+    blur: 22,
+    maxZoom: 17,
+    max: 1.0,
+    minOpacity: 0.3,
+    gradient: {
+      0.0: 'rgba(59, 130, 246, 0)',
+      0.3: 'rgba(59, 130, 246, 0.3)',
+      0.5: 'rgba(37, 99, 235, 0.5)',
+      0.7: 'rgba(29, 78, 216, 0.7)',
+      0.9: 'rgba(30, 64, 175, 0.85)',
+      1.0: 'rgba(23, 37, 84, 1)'
+    }
+  }
+};
+
+// Function to initialize individual heatmap
+function initializeHeatmap(type) {
+  const heatData = generateHeatmapData(type);
+  heatmapLayers[type] = L.heatLayer(heatData, heatmapConfigs[type]).addTo(map);
+}
+
+// Update theme switcher to handle all heatmaps
+function updateHeatmapsForTheme(isDark) {
+  Object.keys(heatmapLayers).forEach(type => {
+    if (heatmapLayers[type] && heatmapVisible[type]) {
+      const heatData = generateHeatmapData(type);
+      map.removeLayer(heatmapLayers[type]);
+      
+      // Adjust opacity for dark mode
+      const config = { ...heatmapConfigs[type] };
+      if (isDark) {
+        config.minOpacity = 0.4;
+      }
+      
+      heatmapLayers[type] = L.heatLayer(heatData, config).addTo(map);
+    }
+  });
+}
+
 function renderSkeletonLoading() {
   return `
     <div class="skeleton-loading">
@@ -360,7 +513,9 @@ function renderIncidentDetails(incident) {
                     <p class="text-xs font-semibold text-gray-800 mb-1 dark:text-white/90">${
                       item.time
                     }</p>
-                    <p class="text-xs text-gray-600 dark:text-gray-300">${item.event}</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-300">${
+                      item.event
+                    }</p>
                   </div>
                 </div>`
                 )
@@ -411,6 +566,9 @@ function switchMapTheme(isDark) {
     map.removeLayer(darkLayer);
     map.addLayer(lightLayer);
   }
+  
+  // Update heatmaps for theme
+  updateHeatmapsForTheme(isDark);
 }
 
 const fireIcon = L.divIcon({
@@ -481,9 +639,37 @@ setTimeout(() => {
   });
 }, 1000);
 
+// Initialize all heatmaps after markers are loaded
+setTimeout(() => {
+  initializeHeatmap("fire");
+  initializeHeatmap("crime");
+  initializeHeatmap("flood");
+}, 2000);
+
+// Heatmap toggle button handlers
+const heatmapToggleButtons = document.querySelectorAll('[data-heatmap]');
+heatmapToggleButtons.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const heatmapType = btn.dataset.heatmap;
+    
+    btn.classList.toggle('active');
+    heatmapVisible[heatmapType] = !heatmapVisible[heatmapType];
+    
+    if (heatmapVisible[heatmapType]) {
+      if (heatmapLayers[heatmapType]) {
+        heatmapLayers[heatmapType].addTo(map);
+      }
+    } else {
+      if (heatmapLayers[heatmapType]) {
+        map.removeLayer(heatmapLayers[heatmapType]);
+      }
+    }
+  });
+});
+
 // Load default incident
 incidentContent.innerHTML = renderSkeletonLoading();
-
 setTimeout(() => {
   incidentContent.innerHTML = renderIncidentDetails(incidentData.fire[0]);
 }, 1500); // Show skeleton for 1.5 seconds
@@ -493,20 +679,106 @@ document
   .getElementById("zoomOut")
   .addEventListener("click", () => map.zoomOut());
 
+// Add this at the top with your other variables
+let userLocationMarker = null;
+let userLocationCircle = null;
+
+// Create a blue dot icon for user location using Tailwind classes
+const userLocationIcon = L.divIcon({
+  className: "user-location-marker",
+  html: `
+    <div class="relative w-5 h-5">
+      <div class="w-5 h-5 bg-blue-500 border-4 border-white rounded-full shadow-lg"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-blue-500/20 rounded-full animate-ping"></div>
+    </div>
+  `,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+});
+
+// Update the locate button functionality
 document.getElementById("locate").addEventListener("click", () => {
   if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition((position) => {
-      map.setView([position.coords.latitude, position.coords.longitude], 15);
-    });
+    showToast('info', 'Getting your location...');
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+
+        // Remove existing user location marker and circle
+        if (userLocationMarker) {
+          map.removeLayer(userLocationMarker);
+        }
+        if (userLocationCircle) {
+          map.removeLayer(userLocationCircle);
+        }
+
+        // Add accuracy circle
+        userLocationCircle = L.circle([userLat, userLng], {
+          color: '#3B82F6',
+          fillColor: '#3B82F6',
+          fillOpacity: 0.1,
+          radius: accuracy,
+          weight: 1,
+        }).addTo(map);
+
+        // Add user location marker with blue dot
+        userLocationMarker = L.marker([userLat, userLng], {
+          icon: userLocationIcon,
+        })
+          .addTo(map)
+          .bindPopup(`
+            <div class="p-2">
+              <div class="font-semibold text-sm text-gray-800 dark:text-white mb-1">Your Location</div>
+              <div class="text-xs text-gray-600 dark:text-gray-400">
+                Accuracy: ±${Math.round(accuracy)}m
+              </div>
+            </div>
+          `);
+
+        // Center map on user location
+        map.setView([userLat, userLng], 16);
+        
+        showToast('success', 'Location found!');
+      },
+      (error) => {
+        let errorMessage = 'Could not get your location';
+        
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location permission denied';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information unavailable';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out';
+            break;
+        }
+        
+        showToast('error', errorMessage);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
   } else {
-    alert("Geolocation is not supported by your browser");
+    showToast('error', 'Geolocation is not supported by your browser');
   }
 });
 
+// Filter buttons for markers (excluding heatmap buttons)
 const filterButtons = document.querySelectorAll("[data-filter]");
 filterButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     const filter = btn.dataset.filter;
+    // Skip heatmap toggle - it has its own handler
+    if (filter === "heatmap") return;
+
     btn.classList.toggle("active");
 
     markers[filter].forEach((marker) => {
@@ -517,6 +789,57 @@ filterButtons.forEach((btn) => {
       }
     });
   });
+});
+
+// Heatmap menu toggle functionality
+const heatmapMenuToggle = document.getElementById('heatmapMenuToggle');
+const heatmapControlsContainer = document.getElementById('heatmapControlsContainer');
+let isHeatmapMenuOpen = false;
+
+heatmapMenuToggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  isHeatmapMenuOpen = !isHeatmapMenuOpen;
+  
+  // Toggle container visibility
+  heatmapControlsContainer.classList.toggle('hidden');
+  heatmapControlsContainer.classList.toggle('flex');
+  
+  // Toggle button active state
+  heatmapMenuToggle.classList.toggle('active');
+  
+  // Change icon
+  const icon = heatmapMenuToggle.querySelector('i');
+  if (isHeatmapMenuOpen) {
+    icon.classList.remove('uil-ellipsis-h');
+    icon.classList.add('uil-times');
+  } else {
+    icon.classList.remove('uil-times');
+    icon.classList.add('uil-ellipsis-h');
+  }
+});
+
+// Close heatmap menu when clicking outside
+document.addEventListener('click', (e) => {
+  if (isHeatmapMenuOpen && 
+      !heatmapMenuToggle.contains(e.target) && 
+      !heatmapControlsContainer.contains(e.target)) {
+    
+    // Close the menu
+    isHeatmapMenuOpen = false;
+    heatmapControlsContainer.classList.add('hidden');
+    heatmapControlsContainer.classList.remove('flex');
+    heatmapMenuToggle.classList.remove('active');
+    
+    // Reset icon
+    const icon = heatmapMenuToggle.querySelector('i');
+    icon.classList.remove('uil-times');
+    icon.classList.add('uil-ellipsis-h');
+  }
+});
+
+// Prevent clicks inside container from closing it
+heatmapControlsContainer.addEventListener('click', (e) => {
+  e.stopPropagation();
 });
 
 rightPanelToggle.addEventListener("click", () => {
@@ -628,6 +951,14 @@ setTimeout(() => {
       plugins: {
         legend: {
           display: true,
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'circle',
+            padding: 10,
+            font: {
+              size: 13,
+            },
+          },
         },
         tooltip: {
           backgroundColor: "rgba(0, 0, 0, 0.8)",
@@ -706,9 +1037,21 @@ yearOptions.forEach((option) => {
 
     // Update active state
     yearOptions.forEach((opt) => {
-      opt.classList.remove("active", "bg-[#01af78]/10", "font-medium", "text-emerald-600" , "dark:text-emerald-700");
+      opt.classList.remove(
+        "active",
+        "bg-[#01af78]/10",
+        "font-medium",
+        "text-emerald-600",
+        "dark:text-emerald-700"
+      );
     });
-    option.classList.add("active", "bg-[#01af78]/10", "font-medium", "text-emerald-600", "dark:text-emerald-700");
+    option.classList.add(
+      "active",
+      "bg-[#01af78]/10",
+      "font-medium",
+      "text-emerald-600",
+      "dark:text-emerald-700"
+    );
 
     // Close dropdown
     yearDropdownMenu.classList.add("hidden");
