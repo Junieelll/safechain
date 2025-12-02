@@ -532,7 +532,6 @@ let isRightPanelCollapsed = false;
 
 var map = L.map("map").setView([14.7158532, 121.0403842], 16);
 
-// Create both light and dark tile layers
 const lightLayer = L.tileLayer(
   "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
   {
