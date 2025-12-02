@@ -100,7 +100,7 @@ class ModalManager {
               class="flex-1 px-4 py-3.5 min-h-[45px] text-xs font-medium 
                      text-gray-600 dark:text-gray-300 
                      bg-white dark:bg-neutral-700 
-                     border border-gray-300 dark:border-neutral-600 
+                     border border-neutral-600 dark:border-neutral-600 
                      rounded-full hover:bg-gray-100 dark:hover:bg-neutral-600 transition-colors"
             >
               ${secondaryButton.text}
