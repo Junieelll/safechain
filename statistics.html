@@ -11,6 +11,8 @@
     />
     <link rel="stylesheet" href="css/dashboard.css" />
     <link rel="stylesheet" href="css/sidebar.css" />
+    <link rel="stylesheet" href="css/toast.css" />
+    <link rel="stylesheet" href="css/archive.css" />
     <link rel="stylesheet" href="css/page-load-animation.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -319,8 +321,6 @@
         </div>
     </div>
 
-    <div id="toastContainer" class="fixed top-5 right-5 space-y-2 z-[100]">
-        </div>
     <script>
         // --- 1. DATA AND STATE MANAGEMENT (UPDATED) ---
         let incidents = [
@@ -489,6 +489,12 @@
             renderIncidents(); // Populate the table with the updated data
         };
     </script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/modal.js"></script>
+    <script src="js/archive.js"></script>
+    <script src="js/statistic.js"></script>
+
 
   </body>
 </html>
