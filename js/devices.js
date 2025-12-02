@@ -38,7 +38,9 @@ const devices = [
   },
 ];
 
-let currentView = "grid";
+let currentView = localStorage.getItem("deviceViewMode") || "grid";
+let searchQuery = "";
+let isLoading = true;
 
 function getSignalColor(signal) {
   if (signal === "Strong") return "bg-teal-500";
@@ -52,13 +54,108 @@ function getSignalBars(signal) {
   return 1;
 }
 
+function getFilteredDevices() {
+  if (!searchQuery) return devices;
+  
+  const query = searchQuery.toLowerCase();
+  return devices.filter(device => 
+    device.id.toLowerCase().includes(query) ||
+    device.owner.toLowerCase().includes(query) ||
+    device.status.toLowerCase().includes(query)
+  );
+}
+
+function handleSearch(event) {
+  searchQuery = event.target.value;
+  renderDevices();
+}
+
+function renderSkeletonLoading() {
+  const container = document.getElementById("devicesContainer");
+  
+  if (currentView === "grid") {
+    container.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+    container.innerHTML = Array(6).fill(0).map(() => `
+      <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 border-2 border-transparent shadow-[0_0_24px_rgba(0,0,0,0.10)] animate-pulse">
+        <div class="flex items-start gap-4 mb-6">
+          <div class="w-11 h-11 bg-gray-300 dark:bg-neutral-700 rounded-xl"></div>
+          <div class="flex-1 min-w-0">
+            <div class="h-4 bg-gray-300 dark:bg-neutral-700 rounded w-24 mb-2"></div>
+            <div class="h-3 bg-gray-200 dark:bg-neutral-600 rounded w-32"></div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="flex gap-3 items-center">
+            <div class="w-10 h-10 bg-gray-200 dark:bg-neutral-700 rounded-lg"></div>
+            <div class="flex-1">
+              <div class="h-3 bg-gray-200 dark:bg-neutral-600 rounded w-12 mb-1"></div>
+              <div class="h-4 bg-gray-300 dark:bg-neutral-700 rounded w-16"></div>
+            </div>
+          </div>
+          <div class="flex gap-3 items-center">
+            <div class="w-10 h-10 bg-gray-200 dark:bg-neutral-700 rounded-lg"></div>
+            <div class="flex-1">
+              <div class="h-3 bg-gray-200 dark:bg-neutral-600 rounded w-16 mb-1"></div>
+              <div class="h-4 bg-gray-300 dark:bg-neutral-700 rounded w-20"></div>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <div class="flex-1 h-9 bg-gray-200 dark:bg-neutral-700 rounded-lg"></div>
+          <div class="flex-1 h-9 bg-gray-200 dark:bg-neutral-700 rounded-lg"></div>
+        </div>
+      </div>
+    `).join("");
+  } else {
+    container.className = "flex flex-col gap-4";
+    container.innerHTML = Array(6).fill(0).map(() => `
+      <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 border-2 border-transparent shadow-[0_0_24px_rgba(0,0,0,0.10)] animate-pulse">
+        <div class="flex items-center gap-6">
+          <div class="w-11 h-11 bg-gray-300 dark:bg-neutral-700 rounded-xl"></div>
+          <div class="flex-1 min-w-0">
+            <div class="h-4 bg-gray-300 dark:bg-neutral-700 rounded w-24 mb-2"></div>
+            <div class="h-3 bg-gray-200 dark:bg-neutral-600 rounded w-32"></div>
+          </div>
+          <div class="flex items-center gap-8">
+            <div>
+              <div class="h-3 bg-gray-200 dark:bg-neutral-600 rounded w-16 mb-2"></div>
+              <div class="h-4 bg-gray-300 dark:bg-neutral-700 rounded w-12"></div>
+            </div>
+            <div>
+              <div class="h-3 bg-gray-200 dark:bg-neutral-600 rounded w-20 mb-2"></div>
+              <div class="h-4 bg-gray-300 dark:bg-neutral-700 rounded w-16"></div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-24 h-10 bg-gray-200 dark:bg-neutral-700 rounded-lg"></div>
+            <div class="w-28 h-10 bg-gray-200 dark:bg-neutral-700 rounded-lg"></div>
+          </div>
+        </div>
+      </div>
+    `).join("");
+  }
+}
+
 function renderDevices() {
   const container = document.getElementById("devicesContainer");
+  const filteredDevices = getFilteredDevices();
 
   if (currentView === "grid") {
     container.className =
       "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
-    container.innerHTML = devices
+    
+    if (filteredDevices.length === 0) {
+      container.innerHTML = `
+        <div class="col-span-full flex flex-col items-center justify-center py-12 text-gray-500 dark:text-neutral-400">
+          <i class="uil uil-search text-6xl mb-4 opacity-50"></i>
+          <p class="text-lg font-medium">No devices found</p>
+          <p class="text-sm">Try adjusting your search criteria</p>
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = filteredDevices
       .map(
         (device) => `
           <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 border-2 border-transparent hover:border-emerald-400 shadow-[0_0_24px_rgba(0,0,0,0.10)] hover:shadow-[0_0_26px_rgba(39,194,145,0.36)] transition-all">
@@ -78,7 +175,7 @@ function renderDevices() {
             </div>
 
             <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="flex gap-3 items-center justify-center">
+                <div class="flex gap-3 items-center">
                   <div class="flex items-center gap-2 text-2xl text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-700 h-fit px-2 py-1 rounded-lg ">
                     <i class="uil uil-info-circle"></i>
                   </div>
@@ -88,7 +185,7 @@ function renderDevices() {
                   </div>
                 </div>
 
-              <div class="flex gap-3 items-center justify-center">
+              <div class="flex gap-3 items-center">
                 <div class="flex items-center gap-2 text-2xl text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-700 h-fit px-2 py-1 rounded-lg ">
                   <i class="uil uil-clock"></i>
                 </div>
@@ -115,7 +212,19 @@ function renderDevices() {
       .join("");
   } else {
     container.className = "flex flex-col gap-4";
-    container.innerHTML = devices
+    
+    if (filteredDevices.length === 0) {
+      container.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-neutral-400">
+          <i class="uil uil-search text-6xl mb-4 opacity-50"></i>
+          <p class="text-lg font-medium">No devices found</p>
+          <p class="text-sm">Try adjusting your search criteria</p>
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = filteredDevices
       .map(
         (device) => `
           <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 border-2 border-transparent hover:border-emerald-400 shadow-[0_0_24px_rgba(0,0,0,0.10)] hover:shadow-[0_0_26px_rgba(39,194,145,0.36)] transition-shadow">
@@ -176,6 +285,7 @@ function renderDevices() {
 
 function setViewMode(mode) {
   currentView = mode;
+  localStorage.setItem("deviceViewMode", mode);
 
   const gridBtn = document.getElementById("gridBtn");
   const listBtn = document.getElementById("listBtn");
@@ -192,7 +302,13 @@ function setViewMode(mode) {
       "p-3 w-[50px] h-[50px] flex items-center justify-center bg-white dark:bg-neutral-600 dark:text-neutral-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors";
   }
 
-  renderDevices();
+  // Show skeleton loading when switching views
+  renderSkeletonLoading();
+  
+  // Render actual devices after a short delay
+  setTimeout(() => {
+    renderDevices();
+  }, 300);
 }
 
 function viewDevice(deviceId) {
@@ -283,13 +399,11 @@ function viewDevice(deviceId) {
       text: "Close",
     },
     onPrimary: () => {
-      // Handle deactivation logic here
       console.log("Deactivating device:", deviceId);
       modalManager.close("viewDeviceModal");
       deactivateDevice(deviceId);
     },
     onSecondary: () => {
-      
       modalManager.close("viewDeviceModal");
     },
   });
@@ -338,5 +452,25 @@ function deactivateDevice(deviceId) {
   modalManager.show("deactivateModal");
 }
 
+// Initialize on page load
+function initialize() {
+  // Show skeleton loading
+  renderSkeletonLoading();
+  
+  // Set up search input listener
+  const searchInput = document.querySelector('input[placeholder="Search devices..."]');
+  if (searchInput) {
+    searchInput.addEventListener('input', handleSearch);
+  }
+  
+  // Simulate loading delay
+  setTimeout(() => {
+    isLoading = false;
+    renderDevices();
+    // Set initial view mode buttons
+    setViewMode(currentView);
+  }, 800);
+}
+
 // Initial render
-renderDevices();
+initialize();
