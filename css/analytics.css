@@ -1,0 +1,71 @@
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-10px, -10px) scale(1.1);
+  }
+}
+@keyframes pulse-custom {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-scale-in-1 {
+  animation: scaleIn 0.5s ease backwards 0.1s;
+}
+.animate-scale-in-2 {
+  animation: scaleIn 0.5s ease backwards 0.2s;
+}
+.animate-scale-in-3 {
+  animation: scaleIn 0.5s ease backwards 0.3s;
+}
+.float-effect::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(
+    circle,
+    rgba(39, 194, 145, 0.08) 0%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite;
+}
+.animate-pulse-custom {
+  animation: pulse-custom 2s ease-in-out infinite;
+}
+.animate-count-up {
+  animation: countUp 1s ease;
+}
+.stat-card:hover .stat-icon {
+  transform: scale(1.1) rotate(5deg);
+}
