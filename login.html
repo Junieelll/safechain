@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SafeChain | Login</title>
+    <link
+      rel="stylesheet"
+      href="https://unicons.iconscout.com/release/v4.0.8/css/line.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/login.css" />
+    <link rel="stylesheet" href="css/transitions.css" />
+  </head>
+  <body>
+    <!-- Full-Screen Carousel Background -->
+    <div class="carousel-wrapper">
+      <div class="carousel-slide active" style="background-image: url('img/1.jpeg');"></div>
+      <div class="carousel-slide" style="background-image: url('img/2.jpg');"></div>
+      <div class="carousel-slide" style="background-image: url('img/3.jpeg');"></div>
+    </div>
+
+    <!-- Dark Overlay -->
+    <div class="carousel-overlay-dark"></div>
+
+    <!-- Global Toast Notification -->
+    <div id="globalToast" class="global-toast">
+      <div class="toast-content">
+        <i class="uil uil-check-circle"></i>
+        <span id="toastMessage"></span>
+      </div>
+      <button id="toastClose" type="button" class="toast-close">
+        <i class="uil uil-times"></i>
+      </button>
+    </div>
+
+    <!-- Content Container -->
+    <div class="login-container">
+      <!-- Left Side - Branding -->
+      <div class="login-left">
+        <div class="login-branding">
+          <div class="login-logo">
+            <img src="img/logo-shield.svg" alt="SafeChain Logo" style="width: 48px; height: 48px; display: block;" />
+          </div>
+          <div>
+            <h1 class="login-title">SafeChain</h1>
+          </div>
+        </div>
+
+        <div class="login-footer">
+          <h2 style="font-size: 2.5rem; font-weight: 700; color: white; line-height: 1.2; margin-bottom: 1rem;">Alert Instantly. Connect Reliably. Save Lives.</h2>
+          <p style="font-size: 1rem; color: rgba(255, 255, 255, 0.7); max-width: 400px; line-height: 1.6; margin: 0;">From fire emergencies to floods and crime alerts, our smart community system lets you call for help instantly.</p>
+          <p style="margin-top: 1.5rem; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; color: rgba(255, 255, 255, 0.5);">TRUSTED RESPONSE PARTNERS</p>
+        </div>
+      </div>
+
+      <!-- Right Side - Form -->
+      <div class="login-right">
+        <div class="login-form-wrapper">
+          <div class="login-form-header">
+            <h2>Welcome Back!</h2>
+            <p>Log in to access your SafeChain dashboard</p>
+          </div>
+
+          <!-- Tabs removed: login only page -->
+
+          <!-- Login Form -->
+          <form id="loginForm" class="form-content active" data-form="login" novalidate>
+            <div class="form-group">
+              <label class="form-label" for="loginEmail">Email Address</label>
+              <div class="form-input-wrapper">
+                <i class="uil uil-envelope form-input-icon"></i>
+                <input
+                  type="email"
+                  id="loginEmail"
+                  class="form-input"
+                  required
+                />
+              </div>
+              <div class="form-error"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="loginPassword"
+                >Password</label
+              >
+              <div class="form-input-wrapper">
+                <i class="uil uil-lock form-input-icon"></i>
+                <input
+                  type="password"
+                  id="loginPassword"
+                  class="form-input"
+                  required
+                />
+              </div>
+              <div class="form-error"></div>
+            </div>
+
+            <div class="form-checkbox">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                name="rememberMe"
+              />
+              <label for="rememberMe">Remember me</label>
+            </div>
+
+            <button type="submit" class="form-submit">Login</button>
+
+            <div class="form-link">
+              Don't have an account?
+              <a href="register.html">Register here</a>
+            </div>
+          </form>
+          <!-- register form removed (moved to register.html) -->
+        </div>
+      </div>
+    </div>
+
+    <script src="js/login.js"></script>
+  </body>
+</html>
