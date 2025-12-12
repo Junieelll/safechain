@@ -3,6 +3,14 @@ const sidebarToggler = document.getElementById("sidebarToggler");
 const primaryNav = document.getElementById("primaryNav");
 const mainContent = document.getElementById("mainContent");
 
+// --- Smooth Page Transitions ---
+window.redirectWithTransition = function (href) {
+  document.body.classList.add('page-exit');
+  setTimeout(() => {
+    window.location.href = href;
+  }, 400); // Match animation duration
+};
+
 // Load saved state from localStorage
 let isCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
 
@@ -154,3 +162,15 @@ userProfileBtn.addEventListener("click", (e) => {
 
 document.addEventListener("click", () => userDropdown.classList.add("hidden"));
 userDropdown.addEventListener("click", (e) => e.stopPropagation());
+
+// Logout handler
+const logoutLink = userDropdown.querySelector('a:last-child');
+if (logoutLink) {
+  logoutLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    // Clear auth session
+    localStorage.removeItem("sc_authUser");
+    // Redirect to login page with smooth transition
+    window.redirectWithTransition('login.html');
+  });
+}
