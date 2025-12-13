@@ -1,0 +1,886 @@
+let incidentsData = [];
+
+// Fetch incidents from database
+async function fetchIncidents() {
+  try {
+    const response = await fetch('api/fetch_incidents.php'); // Update path if needed
+    const result = await response.json();
+    
+    if (result.success) {
+      incidentsData = result.data;
+      updateWidgetCounts();
+      renderTable();
+    } else {
+      console.error('Error fetching incidents:', result.error);
+      showError('Failed to load incidents data');
+    }
+  } catch (error) {
+    console.error('Fetch error:', error);
+    showError('Failed to connect to server');
+  }
+}
+
+// Show error message in table
+function showError(message) {
+  const tbody = document.querySelector("tbody");
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="7" class="px-6 py-12 text-center text-red-500">
+        <i class="uil uil-exclamation-triangle text-4xl mb-2"></i>
+        <p class="text-sm">${message}</p>
+        <button onclick="fetchIncidents()" class="mt-4 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors">
+          Retry
+        </button>
+      </td>
+    </tr>`;
+}
+
+// Type Dropdown
+const typeDropdownButton = document.getElementById("typeDropdownButton");
+const typeDropdownMenu = document.getElementById("typeDropdownMenu");
+const typeDropdownIcon = document.getElementById("typeDropdownIcon");
+const typeSelectedText = document.getElementById("typeSelectedText");
+const typeDropdownItems = typeDropdownMenu.querySelectorAll(".dropdown-item");
+
+// Status Dropdown
+const statusDropdownButton = document.getElementById("statusDropdownButton");
+const statusDropdownMenu = document.getElementById("statusDropdownMenu");
+const statusDropdownIcon = document.getElementById("statusDropdownIcon");
+const statusSelectedText = document.getElementById("statusSelectedText");
+const statusDropdownItems =
+  statusDropdownMenu.querySelectorAll(".dropdown-item");
+
+// Date Dropdown
+const dateButton = document.getElementById("dateButton");
+const dateMenu = document.getElementById("dateMenu");
+const dateIcon = document.getElementById("dateIcon");
+const dateText = document.getElementById("dateText");
+const quickDateButtons = document.querySelectorAll(".quick-date");
+const customDates = document.getElementById("customDates");
+const startDate = document.getElementById("startDate");
+const endDate = document.getElementById("endDate");
+const applyCustom = document.getElementById("applyCustom");
+const clearDate = document.getElementById("clearDate");
+
+// Search Input
+const searchInput = document.getElementById("search");
+
+// Clear Filter Button
+const clearFilterBtn = document.getElementById("clearFilterBtn");
+
+const tableBody = document.querySelector("tbody");
+
+// Pagination
+const paginationContainer = document.querySelector(
+  ".inline-flex.items-center.justify-center"
+);
+
+// Filter States
+let selectedDateRange = null;
+let selectedType = "all";
+let selectedStatus = "all";
+let searchQuery = "";
+let currentPage = 1;
+const itemsPerPage = 5;
+
+// Loading skeleton
+function showLoadingSkeleton() {
+  tableBody.style.opacity = "0";
+
+  setTimeout(() => {
+    tableBody.innerHTML = Array(itemsPerPage)
+      .fill(0)
+      .map(
+        () => `
+        <tr>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-24 bg-gray-200 dark:bg-gray-700/50 rounded"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-6 w-[60px] rounded-full bg-gray-200 dark:bg-gray-700/50"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-40 bg-gray-200 dark:bg-gray-700/50 rounded"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-28 bg-gray-200 dark:bg-gray-700/50 rounded"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-3 w-32 bg-gray-200 dark:bg-gray-700/50 rounded"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="skeleton h-6 w-24 rounded-full bg-gray-200 dark:bg-gray-700/50"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-3">
+              <div class="skeleton h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700/50"></div>
+              <div class="skeleton h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700/50"></div>
+            </div>
+          </td>
+        </tr>
+      `
+      )
+      .join("");
+
+    tableBody.style.opacity = "1";
+  }, 100);
+}
+
+// Helper Functions
+function getTypeColor(type) {
+  const colors = {
+    fire: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-600",
+    flood: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-600",
+    crime:
+      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-600",
+  };
+  return (
+    colors[type] ||
+    "bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300"
+  );
+}
+
+function getStatusColor(status) {
+  const colors = {
+    resolved:
+      "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-600",
+    responding:
+      "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-600",
+    pending:
+      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-600",
+  };
+  return (
+    colors[status] ||
+    "bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300"
+  );
+}
+
+function parseDate(dateStr) {
+  // Parse "2025-11-20 10:15 AM" format
+  const parts = dateStr.trim().split(' ');
+  
+  if (parts.length < 3) {
+    console.error('Invalid date format:', dateStr);
+    return new Date();
+  }
+  
+  const [datePart, timePart, period] = parts;
+  const [year, month, day] = datePart.split("-");
+  const [hoursStr, minutesStr] = timePart.split(":");
+  
+  let hours = parseInt(hoursStr);
+  const minutes = parseInt(minutesStr);
+
+  // Convert 12-hour to 24-hour format
+  if (period.toUpperCase() === "PM" && hours !== 12) {
+    hours += 12;
+  }
+  if (period.toUpperCase() === "AM" && hours === 12) {
+    hours = 0;
+  }
+
+  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), hours, minutes);
+}
+
+function filterByDateRange(incident) {
+  if (!selectedDateRange) return true;
+
+  const incidentDate = parseDate(incident.dateTime);
+  
+  // Validate the parsed date
+  if (isNaN(incidentDate.getTime())) {
+    console.error('Invalid date for incident:', incident.id, incident.dateTime);
+    return false;
+  }
+
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+
+  // Trim selectedDateRange to handle any whitespace
+  const dateRange = selectedDateRange.trim();
+
+  if (dateRange === "Today") {
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+    return incidentDate >= startOfDay && incidentDate <= today;
+  }
+
+  if (dateRange === "Last 7 Days") {
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+    return incidentDate >= sevenDaysAgo && incidentDate <= today;
+  }
+
+  if (dateRange === "Last 30 Days") {
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+    return incidentDate >= thirtyDaysAgo && incidentDate <= today;
+  }
+
+  // Custom date range
+  if (startDate.value && endDate.value) {
+    const start = new Date(startDate.value);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate.value);
+    end.setHours(23, 59, 59, 999);
+    return incidentDate >= start && incidentDate <= end;
+  }
+
+  return true;
+}
+
+function filterIncidents() {
+  return incidentsData.filter((incident) => {
+    // Type filter
+    if (selectedType !== "all" && incident.type !== selectedType) {
+      return false;
+    }
+
+    // Status filter
+    if (selectedStatus !== "all" && incident.status !== selectedStatus) {
+      return false;
+    }
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        incident.id.toLowerCase().includes(query) ||
+        incident.type.toLowerCase().includes(query) ||
+        incident.location.toLowerCase().includes(query) ||
+        incident.reporter.toLowerCase().includes(query) ||
+        incident.status.toLowerCase().includes(query)
+      );
+    }
+
+    // Date filter
+    if (!filterByDateRange(incident)) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function renderTable() {
+  const filteredData = filterIncidents();
+  const tbody = document.querySelector("tbody");
+
+  // Pagination
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const pageData = filteredData.slice(startIndex, endIndex);
+
+  // Update count
+  document.querySelector(
+    ".incidents h1 .count"
+  ).textContent = `(${filteredData.length})`;
+
+  // Fade out
+  tbody.style.opacity = "0";
+  tbody.style.transition = "opacity 0.3s ease-in-out";
+
+  // Skeleton
+  setTimeout(() => showLoadingSkeleton(), 300);
+
+  setTimeout(() => {
+    tbody.innerHTML = "";
+
+    if (pageData.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="px-3 md:px-6 py-12 text-center text-gray-500">
+            <i class="uil uil-inbox text-4xl mb-2"></i>
+            <p class="text-sm">No incidents found</p>
+          </td>
+        </tr>`;
+    } else {
+      pageData.forEach((incident, index) => {
+        const row = document.createElement("tr");
+
+        row.className =
+          "hover:bg-gray-50 dark:hover:bg-black/20 transition-colors item-enter";
+        row.style.animationDelay = `${index * 0.05}s`;
+
+        row.innerHTML = `
+          <td class="px-3 md:px-6 py-3 md:py-4"><span class="text-xs font-medium text-blue-600 dark:text-blue-800">${
+            incident.id
+          }</span></td>
+          <td class="px-3 md:px-6 py-3 md:py-4">
+            <span class="inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(
+              incident.type
+            )}">
+              ${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)}
+            </span>
+          </td>
+          <td class="px-3 md:px-6 py-3 md:py-4"><span class="text-xs text-gray-700 dark:text-neutral-400">${
+            incident.location
+          }</span></td>
+          <td class="px-3 md:px-6 py-3 md:py-4"><span class="text-xs text-gray-700 dark:text-neutral-400">${
+            incident.reporter
+          }</span></td>
+          <td class="px-3 md:px-6 py-3 md:py-4"><span class="text-xs text-gray-700 dark:text-neutral-400">${
+            incident.dateTime
+          }</span></td>
+          <td class="px-3 md:px-6 py-3 md:py-4">
+            <span class="inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+              incident.status
+            )}">
+              ${
+                incident.status.charAt(0).toUpperCase() +
+                incident.status.slice(1)
+              }
+            </span>
+          </td>
+          <td class="px-3 md:px-6 py-3 md:py-4">
+            <div class="flex items-center gap-2 md:gap-3">
+              <button onclick="window.location='admin/incidents/details'" class="text-gray-500 dark:text-neutral-400 hover:text-[#01AF78] hover:bg-emerald-50 dark:hover:bg-emerald-700/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-neutral-700 p-1.5 md:p-2 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center transition-all transform hover:scale-105">
+                <i class="uil uil-eye text-lg md:text-xl"></i>
+              </button>
+              <button onclick="archiveIncident('${incident.id}')" 
+                      class="text-gray-500 dark:text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-700/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-neutral-700 p-1.5 md:p-2 rounded-lg w-7 h-7 md:w-8 md:h-8 flex items-center justify-center transition-all transform hover:scale-105">
+                <i class="uil uil-archive-alt text-lg md:text-xl"></i>
+              </button>
+            </div>
+          </td>
+        `;
+
+        tbody.appendChild(row);
+      });
+    }
+
+    tbody.style.opacity = "1";
+    renderPagination(totalPages);
+  }, 800);
+}
+
+function renderPagination(totalPages) {
+  const paginationNumbers = paginationContainer.querySelector("div");
+  paginationNumbers.innerHTML = "";
+
+  if (totalPages <= 1) {
+    paginationContainer.style.display = "none";
+    return;
+  }
+
+  paginationContainer.style.display = "flex";
+
+  // Show first page
+  paginationNumbers.appendChild(createPageButton(1, currentPage === 1));
+
+  if (totalPages <= 7) {
+    // Show all pages
+    for (let i = 2; i <= totalPages; i++) {
+      paginationNumbers.appendChild(createPageButton(i, currentPage === i));
+    }
+  } else {
+    // Show with ellipsis
+    if (currentPage > 3) {
+      paginationNumbers.appendChild(createEllipsis());
+    }
+
+    let start = Math.max(2, currentPage - 1);
+    let end = Math.min(totalPages - 1, currentPage + 1);
+
+    if (currentPage <= 3) {
+      end = 4;
+    }
+
+    if (currentPage >= totalPages - 2) {
+      start = totalPages - 3;
+    }
+
+    for (let i = start; i <= end; i++) {
+      paginationNumbers.appendChild(createPageButton(i, currentPage === i));
+    }
+
+    if (currentPage < totalPages - 2) {
+      paginationNumbers.appendChild(createEllipsis());
+    }
+
+    paginationNumbers.appendChild(
+      createPageButton(totalPages, currentPage === totalPages)
+    );
+  }
+
+  // Update prev/next buttons
+  const prevButton = paginationContainer.querySelector("#prevBtn");
+  const nextButton = paginationContainer.querySelector("#nextBtn");
+
+  prevButton.disabled = currentPage === 1;
+  prevButton.style.opacity = currentPage === 1 ? "0.5" : "1";
+  prevButton.style.cursor = currentPage === 1 ? "not-allowed" : "pointer";
+
+  nextButton.disabled = currentPage === totalPages;
+  nextButton.style.opacity = currentPage === totalPages ? "0.5" : "1";
+  nextButton.style.cursor =
+    currentPage === totalPages ? "not-allowed" : "pointer";
+}
+
+function createPageButton(pageNum, isActive) {
+  const button = document.createElement("button");
+  button.className = `w-8 h-8 flex items-center justify-center rounded-full transition-colors font-medium text-sm ${
+    isActive
+      ? "bg-emerald-500 text-white shadow-md"
+      : "text-neutral-700 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20 "
+  }`;
+  button.textContent = pageNum;
+  button.onclick = () => {
+    currentPage = pageNum;
+    renderTable();
+  };
+  return button;
+}
+
+function createEllipsis() {
+  const span = document.createElement("span");
+  span.className = "text-gray-500 font-medium text-sm px-1";
+  span.textContent = "...";
+  return span;
+}
+
+// Close all dropdowns
+function closeAllDropdowns() {
+  typeDropdownMenu.classList.add("hidden");
+  typeDropdownIcon.style.transform = "rotate(0deg)";
+  statusDropdownMenu.classList.add("hidden");
+  statusDropdownIcon.style.transform = "rotate(0deg)";
+  dateMenu.classList.add("hidden");
+  dateIcon.style.transform = "rotate(0deg)";
+}
+
+// Update filter button visibility
+function updateClearFilterButton() {
+  const hasFilters =
+    selectedType !== "all" ||
+    selectedStatus !== "all" ||
+    selectedDateRange !== null ||
+    searchQuery !== "";
+
+  if (hasFilters) {
+    clearFilterBtn.classList.remove("hidden");
+    setTimeout(() => {
+      clearFilterBtn.classList.remove("opacity-0");
+      clearFilterBtn.classList.add("opacity-100");
+    }, 10);
+  } else {
+    clearFilterBtn.classList.remove("opacity-100");
+    clearFilterBtn.classList.add("opacity-0");
+    setTimeout(() => {
+      clearFilterBtn.classList.add("hidden");
+    }, 300);
+  }
+}
+
+// Event Listeners
+
+const activeDropdownClasses = [
+  "bg-emerald-50",
+  "border-emerald-500",
+  "text-emerald-600",
+  "dark:bg-emerald-700/20",
+  "dark:border-emerald-700/20",
+  "dark:text-emerald-300",
+];
+
+// Search
+searchInput.addEventListener("input", (e) => {
+  searchQuery = e.target.value;
+  currentPage = 1;
+  renderTable();
+  updateClearFilterButton();
+});
+
+// Type Dropdown Toggle
+typeDropdownButton.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const isHidden = typeDropdownMenu.classList.contains("hidden");
+  closeAllDropdowns();
+
+  if (isHidden) {
+    typeDropdownMenu.classList.remove("hidden");
+    typeDropdownIcon.style.transform = "rotate(180deg)";
+  }
+});
+
+// Type Dropdown Selection
+typeDropdownItems.forEach((item) => {
+  item.addEventListener("click", (e) => {
+    const value = e.target.getAttribute("data-value");
+    const text = e.target.textContent.trim();
+
+    selectedType = value;
+    typeSelectedText.textContent = text;
+
+    typeDropdownItems.forEach((i) =>
+      i.classList.remove(...activeDropdownClasses)
+    );
+    e.target.classList.add(...activeDropdownClasses);
+
+    typeDropdownMenu.classList.add("hidden");
+    typeDropdownIcon.style.transform = "rotate(0deg)";
+    currentPage = 1;
+    renderTable();
+    updateClearFilterButton();
+  });
+});
+
+// Status Dropdown Toggle
+statusDropdownButton.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const isHidden = statusDropdownMenu.classList.contains("hidden");
+  closeAllDropdowns();
+
+  if (isHidden) {
+    statusDropdownMenu.classList.remove("hidden");
+    statusDropdownIcon.style.transform = "rotate(180deg)";
+  }
+});
+
+// Status Dropdown Selection
+statusDropdownItems.forEach((item) => {
+  item.addEventListener("click", (e) => {
+    const value = e.target.getAttribute("data-value");
+    const text = e.target.textContent.trim();
+
+    selectedStatus = value;
+    statusSelectedText.textContent = text;
+
+    statusDropdownItems.forEach((i) =>
+      i.classList.remove(...activeDropdownClasses)
+    );
+    e.target.classList.add(...activeDropdownClasses);
+
+    statusDropdownMenu.classList.add("hidden");
+    statusDropdownIcon.style.transform = "rotate(0deg)";
+    currentPage = 1;
+    renderTable();
+    updateClearFilterButton();
+  });
+});
+
+// Date Dropdown Toggle
+dateButton.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const isHidden = dateMenu.classList.contains("hidden");
+  closeAllDropdowns();
+
+  if (isHidden) {
+    dateMenu.classList.remove("hidden");
+    dateIcon.style.transform = "rotate(180deg)";
+  }
+});
+
+dateMenu.addEventListener("click", (e) => {
+  e.stopPropagation();
+});
+
+// Quick date selections
+quickDateButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const days = button.getAttribute("data-days");
+
+    // Remove active classes from all buttons
+    quickDateButtons.forEach((btn) => btn.classList.remove(...activeDropdownClasses));
+
+    // Add active classes to selected button
+    button.classList.add(...activeDropdownClasses);
+
+    if (days === "custom") {
+      customDates.classList.remove("hidden");
+    } else {
+      customDates.classList.add("hidden");
+      const text = button.textContent.trim(); 
+      dateText.textContent = text;
+      selectedDateRange = text; 
+
+      console.log('selectedDateRange set to:', selectedDateRange); 
+
+      dateMenu.classList.add("hidden");
+      dateIcon.style.transform = "rotate(0deg)";
+      currentPage = 1;
+      renderTable();
+      updateClearFilterButton();
+    }
+  });
+});
+
+// Apply custom date range
+applyCustom.addEventListener("click", () => {
+  if (startDate.value && endDate.value) {
+    const start = new Date(startDate.value).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+    const end = new Date(endDate.value).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+    dateText.textContent = `${start} - ${end}`;
+    selectedDateRange = `${start} - ${end}`;
+    dateMenu.classList.add("hidden");
+    dateIcon.style.transform = "rotate(0deg)";
+    currentPage = 1;
+    renderTable();
+    updateClearFilterButton();
+  }
+});
+
+// Clear date filter
+clearDate.addEventListener("click", () => {
+  dateText.textContent = "Date Range";
+  selectedDateRange = null;
+  startDate.value = "";
+  endDate.value = "";
+  customDates.classList.add("hidden");
+  quickDateButtons.forEach((btn) =>
+    btn.classList.remove(
+      "bg-emerald-50",
+      "border-emerald-500",
+      "text-emerald-600"
+    )
+  );
+  dateMenu.classList.add("hidden");
+  dateIcon.style.transform = "rotate(0deg)";
+  currentPage = 1;
+  renderTable();
+  updateClearFilterButton();
+});
+
+// Clear All Filters
+clearFilterBtn.addEventListener("click", () => {
+  // Reset search
+  searchInput.value = "";
+  searchQuery = "";
+
+  // Reset type
+  selectedType = "all";
+  typeSelectedText.textContent = "All Types";
+  typeDropdownItems.forEach((i) =>
+    i.classList.remove(...activeDropdownClasses)
+  );
+
+  // Reset status
+  selectedStatus = "all";
+  statusSelectedText.textContent = "All Status";
+  statusDropdownItems.forEach((i) =>
+    i.classList.remove(...activeDropdownClasses)
+  );
+
+  // Reset date
+  dateText.textContent = "Date Range";
+  selectedDateRange = null;
+  startDate.value = "";
+  endDate.value = "";
+  customDates.classList.add("hidden");
+  quickDateButtons.forEach((btn) =>
+    btn.classList.remove(...activeDropdownClasses)
+  );
+
+  currentPage = 1;
+  renderTable();
+  updateClearFilterButton();
+});
+
+// Pagination buttons
+const prevButton = paginationContainer.querySelector("#prevBtn");
+const nextButton = paginationContainer.querySelector("#nextBtn");
+
+prevButton.addEventListener("click", (e) => {
+  e.preventDefault();
+  if (currentPage > 1) {
+    currentPage--;
+    renderTable();
+  }
+});
+
+nextButton.addEventListener("click", (e) => {
+  e.preventDefault();
+  const totalPages = Math.ceil(filterIncidents().length / itemsPerPage);
+  if (currentPage < totalPages) {
+    currentPage++;
+    renderTable();
+  }
+});
+
+// Close dropdowns when clicking outside
+document.addEventListener("click", () => {
+  closeAllDropdowns();
+});
+
+// Set max dates to today
+const today = new Date().toISOString().split("T")[0];
+startDate.max = today;
+endDate.max = today;
+
+startDate.addEventListener("change", () => {
+  endDate.min = startDate.value;
+});
+
+function updateWidgetCounts() {
+  const totalIncidents = incidentsData.length;
+  const activeIncidents = incidentsData.filter(
+    (i) => i.status === "responding"
+  ).length;
+  const resolvedIncidents = incidentsData.filter(
+    (i) => i.status === "resolved"
+  ).length;
+  const pendingIncidents = incidentsData.filter(
+    (i) => i.status === "pending"
+  ).length;
+
+  // Calculate resolution rate
+  const resolutionRate =
+    totalIncidents > 0
+      ? Math.round((resolvedIncidents / totalIncidents) * 100)
+      : 0;
+
+  // Update the DOM
+  document.getElementById("incidentCount").textContent = totalIncidents;
+  document.getElementById("activeCount").textContent = activeIncidents;
+  document.getElementById("resolvedCount").textContent = resolvedIncidents;
+  document.getElementById("pendingCount").textContent = pendingIncidents;
+
+  // Update resolution rate
+  const resolutionRateElement = document.querySelector(
+    ".card:nth-child(3) .subtitle"
+  );
+  resolutionRateElement.innerHTML = `<i class="uil uil-arrow-up"></i> ${resolutionRate}% resolution rate`;
+}
+
+// Archive Modal Functions
+function archiveIncident(id) {
+  const incident = incidentsData.find((i) => i.id === id);
+  if (!incident) return;
+
+  const archiveBody = `
+    <p class="text-xs text-gray-600 dark:text-gray-200 text-center leading-relaxed">
+      Are you sure you want to move incident <span class="font-semibold" style="color: #27c291">${incident.id}</span> to Archive? You can restore this incident anytime from the archive.
+    </p>
+  `;
+
+  // Store current archiving ID
+  window.currentArchivingId = id;
+
+  modalManager.create({
+    id: "archiveModal",
+    icon: "uil-archive",
+    iconColor: "text-emerald-500",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/60",
+    title: "Move Incident to Archive",
+    subtitle: "This incident can be restored anytime.",
+    body: archiveBody,
+    primaryButton: {
+      text: "Move to Archive",
+      icon: "uil-archive",
+      class: "bg-[#27C291] hover:bg-[#22A87B]",
+    },
+    secondaryButton: {
+      text: "Close",
+    },
+    onPrimary: confirmArchiveIncident,
+    onSecondary: () => modalManager.close("archiveModal"),
+  });
+
+  modalManager.show("archiveModal");
+}
+
+async function confirmArchiveIncident() {
+  const id = window.currentArchivingId;
+  if (!id) return;
+
+  try {
+    const response = await fetch('api/archive_incident.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id: id })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // Refresh the incidents data from database
+      await fetchIncidents();
+      currentPage = 1;
+      updateWidgetCounts();
+      renderTable();
+      showToast(
+        "success",
+        `${id} has been moved to archive successfully!`
+      );
+    } else {
+      showToast("error", "Failed to archive incident: " + result.error);
+    }
+  } catch (error) {
+    console.error('Archive error:', error);
+    showToast("error", "Failed to archive incident. Please try again.");
+  }
+
+  modalManager.close("archiveModal");
+}
+
+// Page load animations
+function initPageAnimations() {
+  const header = document.querySelector(".header");
+  const statsWidget = document.querySelector(".widget");
+  const residentsSection = document.querySelector(".incidents");
+
+  if (header) {
+    header.classList.add("animate-fade-in-up", "stagger-1");
+  }
+  if (statsWidget) {
+    statsWidget.classList.add("animate-fade-in-up", "stagger-2");
+  }
+  if (residentsSection) {
+    residentsSection.classList.add("animate-fade-in-up", "stagger-3");
+  }
+}
+
+// Refresh incidents from database
+async function refreshIncidents() {
+  const refreshButton = event.target.closest('button');
+  const icon = refreshButton.querySelector('i');
+  
+  icon.classList.add('animate-spin');
+  refreshButton.disabled = true;
+  
+  try {
+    showLoadingSkeleton();
+    
+    await fetchIncidents();
+    
+    currentPage = 1;
+    
+    updateWidgetCounts();
+    renderTable();
+    
+  } catch (error) {
+    console.error('Refresh error:', error);
+    showToast("error", "Failed to refresh incidents");
+  } finally {
+    setTimeout(() => {
+      icon.classList.remove('animate-spin');
+      refreshButton.disabled = false;
+    }, 500);
+  }
+}
+
+// Initialize
+window.addEventListener("DOMContentLoaded", () => {
+  initPageAnimations();
+
+  updateWidgetCounts();
+  updateClearFilterButton();
+
+  showLoadingSkeleton();
+  fetchIncidents();
+
+  setTimeout(() => {
+    renderTable();
+  }, 1000);
+});

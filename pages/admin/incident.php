@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeChain | Incident Log</title>
+  <base href="/safechain/" />
+  <link rel="stylesheet" href="assets/unicons/line.css" />
+  <script src="assets/js/tailwind/tailwind.min.js"></script>
+  <link href="assets/css/font.css" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/sidebar.css" />
+  <link rel="stylesheet" href="assets/css/page-load-animation.css" />
+  <link rel="icon" type="image/x-icon" href="assets/img/logo.png">
+  <link rel="stylesheet" href="assets/css/toast.css" />
+  <script>
+    tailwind.config = {
+      darkMode: ["class", '[data-theme="dark"]'],
+    };
+  </script>
+</head>
+
+<body
+  class="min-h-screen flex transition-all duration-300 dark:bg-neutral-900">
+  <?php include $_SERVER['DOCUMENT_ROOT'] . '/safechain/includes/sidebar.php'; ?>
+
+  <main
+    id="mainContent"
+    class="transition-all duration-500 ease-in-out ml-[302px] flex-1 p-8">
+    <div class="header flex items-center justify-between mb-5 animate-target">
+      <div class="title">
+        <h4
+          class="text-bs font-semibold text-[#4b4b4b] dark:text-neutral-400">
+          Incident Log
+        </h4>
+        <p class="text-sm text-neutral-500 dark:text-neutral-500">
+          Comprehensive emergency incident tracking and management
+        </p>
+      </div>
+      <button
+        onclick="refreshIncidents()"
+        class="py-3 px-5 flex gap-2 bg-emerald-500 text-white text-xs rounded-xl hover:bg-emerald-600 transition-all ease-in-out duration-200 focus:ring-4 focus:ring-emerald-100">
+        <i class="uil uil-sync"></i>
+        Refresh
+      </button>
+    </div>
+
+    <div
+      class="widget grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-9 mb-7 animate-target">
+      <div
+        class="card bg-white dark:bg-neutral-800 rounded-2xl p-4 md:p-8 flex flex-col gap-2 md:gap-3 w-full shadow-[0_0_59px_rgba(0,0,0,0.1)] hover:scale-[1.02] transition-transform duration-300">
+        <div
+          class="icon p-2 md:p-3 rounded-2xl bg-red-100 w-[40px] h-[40px] md:w-[50px] md:h-[50px] flex items-center justify-center dark:bg-red-900/40">
+          <i
+            class="uil uil-exclamation-circle text-red-400 dark:text-red-300 text-xl md:text-2xl"></i>
+        </div>
+        <p
+          id="incidentCount"
+          class="count text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400">
+          <i class="uil uil-ellipsis-h"></i>
+        </p>
+        <p
+          class="title text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">
+          Total Incidents
+        </p>
+        <p
+          class="subtitle text-[10px] md:text-xs flex items-center text-red-400">
+          <i class="uil uil-arrow-up"></i> 12% from last month
+        </p>
+      </div>
+
+      <div
+        class="card bg-white dark:bg-neutral-800 rounded-2xl p-4 md:p-8 flex flex-col gap-2 md:gap-3 w-full shadow-[0_0_59px_rgba(0,0,0,0.1)] hover:scale-[1.02] transition-transform duration-300">
+        <div
+          class="icon p-2 md:p-3 rounded-2xl bg-[#DBEAFE] w-[40px] h-[40px] md:w-[50px] md:h-[50px] flex items-center justify-center dark:bg-blue-900/40">
+          <i
+            class="uil uil-bolt-alt text-[#3B82F6] dark:text-blue-300 text-xl md:text-2xl"></i>
+        </div>
+        <p
+          id="activeCount"
+          class="count text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400">
+          <i class="uil uil-ellipsis-h"></i>
+        </p>
+        <p
+          class="title text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">
+          Active Incidents
+        </p>
+        <p
+          class="subtitle text-[10px] md:text-xs flex items-center text-[#3B82F6]">
+          Currently responding
+        </p>
+      </div>
+
+      <div
+        class="card bg-white dark:bg-neutral-800 rounded-2xl p-4 md:p-8 flex flex-col gap-2 md:gap-3 w-full shadow-[0_0_59px_rgba(0,0,0,0.1)] hover:scale-[1.02] transition-transform duration-300">
+        <div
+          class="icon p-2 md:p-3 rounded-2xl bg-emerald-100 w-[40px] h-[40px] md:w-[50px] md:h-[50px] flex items-center justify-center dark:bg-emerald-900/40">
+          <i
+            class="uil uil-check-circle text-emerald-400 dark:text-emerald-300 text-xl md:text-2xl"></i>
+        </div>
+        <p
+          id="resolvedCount"
+          class="count text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400">
+          <i class="uil uil-ellipsis-h"></i>
+        </p>
+        <p
+          class="title text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">
+          Resolved
+        </p>
+        <p
+          class="subtitle text-[10px] md:text-xs flex items-center text-emerald-400">
+          <i class="uil uil-arrow-up"></i> 88% resolution rate
+        </p>
+      </div>
+
+      <div
+        class="card bg-white dark:bg-neutral-800 rounded-2xl p-4 md:p-8 flex flex-col gap-2 md:gap-3 w-full shadow-[0_0_59px_rgba(0,0,0,0.1)] hover:scale-[1.02] transition-transform duration-300">
+        <div
+          class="icon p-2 md:p-3 rounded-2xl bg-[#FEF3C7] w-[40px] h-[40px] md:w-[50px] md:h-[50px] flex items-center justify-center dark:bg-yellow-900/40">
+          <i
+            class="uil uil-clock text-[#ECA613] dark:text-yellow-300 text-xl md:text-2xl"></i>
+        </div>
+        <p
+          id="pendingCount"
+          class="count text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400">
+          <i class="uil uil-ellipsis-h"></i>
+        </p>
+        <p
+          class="title text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">
+          Pending
+        </p>
+        <p
+          class="subtitle text-[10px] md:text-xs flex items-center text-[#ECA613]">
+          Awaiting Response
+        </p>
+      </div>
+    </div>
+
+    <section class="incidents animate-target">
+      <h1 class="text-sm font-medium text-[#4b4b4b] mb-4 dark:text-white/90">
+        All Incidents <span class="count font-medium">(127)</span>
+      </h1>
+
+      <div
+        class="filter-control w-full bg-white dark:bg-neutral-800 rounded-2xl p-3 md:p-4 flex flex-col md:flex-row md:justify-between gap-3 md:gap-6">
+        <!-- Search - Full width on mobile, limited width on desktop -->
+        <div class="search flex flex-col gap-1 w-full md:max-w-[400px]">
+          <label
+            for="search"
+            class="text-xs text-gray-700 dark:text-neutral-400">Search</label>
+          <div class="search-input relative w-full">
+            <i
+              class="uil uil-search absolute top-1/2 -translate-y-1/2 left-2 text-xl dark:text-neutral-400"></i>
+            <input
+              type="text"
+              name="search"
+              id="search"
+              autocomplete="off"
+              placeholder="Search incidents..."
+              class="py-3 pl-9 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-400 rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border-2 border-transparent focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-600 transition" />
+          </div>
+        </div>
+
+        <!-- Dropdown filters wrapper -->
+        <div class="dropdown flex flex-col md:flex-row gap-3 w-full">
+          <!-- Type Dropdown -->
+          <div class="types flex flex-col gap-1 w-full">
+            <label
+              for="types"
+              class="text-xs text-gray-700 dark:text-neutral-400">Type</label>
+            <div class="relative max-h-[46px]">
+              <button
+                id="typeDropdownButton"
+                class="w-full h-full bg-[#F1F5F9] dark:bg-neutral-700 rounded-lg px-4 py-[10px] text-left flex border-2 border-transparent items-center justify-between focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-600 transition">
+                <span
+                  id="typeSelectedText"
+                  class="text-gray-700 text-xs dark:text-white/85">All Types</span>
+                <i
+                  id="typeDropdownIcon"
+                  class="uil uil-angle-down text-xl text-gray-400 transition-transform duration-200"></i>
+              </button>
+
+              <div
+                id="typeDropdownMenu"
+                class="hidden absolute z-10 w-full mt-2 bg-white dark:bg-neutral-700 dark:border-gray-800 border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                <div class="py-1">
+                  <button
+                    class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    data-value="all">
+                    All Types
+                  </button>
+                  <button
+                    class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    data-value="crime">
+                    Crime
+                  </button>
+                  <button
+                    class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    data-value="flood">
+                    Flood
+                  </button>
+                  <button
+                    class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    data-value="fire">
+                    Fire
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status Dropdown -->
+          <div class="status flex flex-col gap-1 w-full">
+            <label
+              for="status"
+              class="text-xs text-gray-700 dark:text-white/85">Status</label>
+            <div class="relative max-h-[46px]">
+              <button
+                id="statusDropdownButton"
+                class="w-full h-full bg-[#F1F5F9] dark:bg-neutral-700 rounded-lg px-4 py-[10px] text-left flex items-center justify-between focus:outline-none border-2 border-transparent focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-600 transition">
+                <span
+                  id="statusSelectedText"
+                  class="text-gray-700 text-xs dark:text-white/85">All Status</span>
+                <i
+                  id="statusDropdownIcon"
+                  class="uil uil-angle-down text-xl text-gray-400 transition-transform duration-200"></i>
+              </button>
+
+              <div
+                id="statusDropdownMenu"
+                class="hidden absolute z-10 w-full mt-2 bg-white dark:bg-neutral-700 dark:border-gray-800 border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                <div class="py-1">
+                  <button
+                    class="dropdown-item dark:hover:bg-emerald-700/20 w-full text-sm text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    data-value="all">
+                    All Status
+                  </button>
+                  <button
+                    class="dropdown-item dark:hover:bg-emerald-700/20 w-full text-sm text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    data-value="resolved">
+                    Resolved
+                  </button>
+                  <button
+                    class="dropdown-item dark:hover:bg-emerald-700/20 w-full text-sm text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    data-value="pending">
+                    Pending
+                  </button>
+                  <button
+                    class="dropdown-item dark:hover:bg-emerald-700/20 w-full text-sm text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    data-value="responding">
+                    Responding
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Date Range Picker -->
+          <div class="date-range flex flex-col gap-1 w-full">
+            <label
+              for="date-range"
+              class="text-xs text-gray-700 dark:text-white/85">Date Range</label>
+            <div class="relative max-h-[46px]">
+              <button
+                id="dateButton"
+                class="bg-[#F1F5F9] dark:bg-neutral-700 w-full h-full whitespace-nowrap rounded-lg px-4 py-2.5 flex justify-between items-center gap-2 focus:outline-none border-2 border-transparent focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-600 transition">
+                <i class="uil uil-calendar-alt text-lg text-gray-400"></i>
+                <span
+                  id="dateText"
+                  class="text-xs text-gray-700 dark:text-white/85">Date Range</span>
+                <i
+                  id="dateIcon"
+                  class="uil uil-angle-down text-lg text-gray-400 transition-transform duration-200"></i>
+              </button>
+
+              <div
+                id="dateMenu"
+                class="hidden absolute z-10 right-0 mt-2 w-72 bg-white dark:bg-neutral-700 dark:border-gray-800 border border-gray-200 rounded-lg shadow-lg p-3">
+                <!-- Quick Filters -->
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                  <button
+                    class="quick-date px-3 py-1.5 text-xs border border-gray-200 dark:text-white/85 dark:border-neutral-600 rounded hover:bg-emerald-50 dark:hover:border-emerald-700 dark:hover:bg-emerald-700/20 hover:border-emerald-500 hover:text-emerald-600"
+                    data-days="0">
+                    Today
+                  </button>
+                  <button
+                    class="quick-date px-3 py-1.5 text-xs border border-gray-200 dark:text-white/85 dark:border-neutral-600 rounded hover:bg-emerald-50 dark:hover:border-emerald-700 dark:hover:bg-emerald-700/20 hover:border-emerald-500 hover:text-emerald-600"
+                    data-days="7">
+                    Last 7 Days
+                  </button>
+                  <button
+                    class="quick-date px-3 py-1.5 text-xs border border-gray-200 dark:text-white/85 dark:border-neutral-600 rounded hover:bg-emerald-50 dark:hover:border-emerald-700 dark:hover:bg-emerald-700/20 hover:border-emerald-500 hover:text-emerald-600"
+                    data-days="30">
+                    Last 30 Days
+                  </button>
+                  <button
+                    class="quick-date px-3 py-1.5 text-xs border border-gray-200 dark:text-white/85 dark:border-neutral-600 rounded dark:hover:border-emerald-700 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:border-emerald-500 hover:text-emerald-600"
+                    data-days="custom">
+                    Custom
+                  </button>
+                </div>
+
+                <!-- Custom Date Inputs -->
+                <div
+                  id="customDates"
+                  class="hidden border-t border-neutral-500 pt-3">
+                  <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div>
+                      <label
+                        class="block text-xs text-neutral-600 dark:text-neutral-400 mb-1">From</label>
+                      <input
+                        type="date"
+                        id="startDate"
+                        class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                    </div>
+                    <div>
+                      <label
+                        class="block text-xs text-neutral-600 dark:text-neutral-400 mb-1">To</label>
+                      <input
+                        type="date"
+                        id="endDate"
+                        class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                    </div>
+                  </div>
+                  <button
+                    id="applyCustom"
+                    class="w-full px-3 py-1.5 text-xs bg-emerald-500 text-white rounded hover:bg-emerald-600">
+                    Apply
+                  </button>
+                </div>
+
+                <button
+                  id="clearDate"
+                  class="w-full mt-2 px-3 py-1.5 text-xs border border-gray-300 rounded dark:hover:bg-black/20 hover:bg-gray-50 dark:text-white/85 dark:border-neutral-600">
+                  Clear Filter
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Clear Filter Button - Full width on mobile, auto on desktop -->
+          <div
+            class="clear-filter-btn flex flex-col justify-end w-full md:w-auto">
+            <button
+              id="clearFilterBtn"
+              class="hidden py-2 px-4 font-medium flex gap-2 items-center justify-center md:justify-start whitespace-nowrap border border-[#01AF78] rounded-lg text-[#01AF78] text-xs hover:bg-emerald-50 dark:hover:bg-emerald-700/20 transition ease-in-out duration-200 opacity-0">
+              <i class="uil uil-times text-xl"></i>Clear Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="table w-full mx-auto mt-5 bg-white dark:bg-neutral-800 rounded-2xl shadow-sm overflow-hidden p-3 md:p-5">
+        <div class="overflow-x-auto -mx-3 md:mx-0">
+          <!-- Table -->
+          <table class="w-full min-w-[800px]">
+            <thead class="bg-[#F1F5F9] dark:bg-neutral-700">
+              <tr>
+                <th
+                  class="px-3 md:px-6 py-3 md:py-4 text-left text-xs font-semibold text-gray-600 dark:text-neutral-300 uppercase tracking-wider">
+                  Incident ID
+                </th>
+                <th
+                  class="px-3 md:px-6 py-3 md:py-4 text-left text-xs font-semibold text-gray-600 dark:text-neutral-300 uppercase tracking-wider">
+                  Type
+                </th>
+                <th
+                  class="px-3 md:px-6 py-3 md:py-4 text-left text-xs font-semibold text-gray-600 dark:text-neutral-300 uppercase tracking-wider">
+                  Location
+                </th>
+                <th
+                  class="px-3 md:px-6 py-3 md:py-4 text-left text-xs font-semibold text-gray-600 dark:text-neutral-300 uppercase tracking-wider">
+                  Reporter
+                </th>
+                <th
+                  class="px-3 md:px-6 py-3 md:py-4 text-left text-xs font-semibold text-gray-600 uppercase dark:text-neutral-300 tracking-wider">
+                  Date & Time
+                </th>
+                <th
+                  class="px-3 md:px-6 py-3 md:py-4 text-left text-xs font-semibold text-gray-600 uppercase dark:text-neutral-300 tracking-wider">
+                  Status
+                </th>
+                <th
+                  class="px-3 md:px-6 py-3 md:py-4 text-left text-xs font-semibold text-gray-600 uppercase dark:text-neutral-300 tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-white/10">
+              <!-- Table rows will be dynamically inserted here -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div
+          class="inline-flex items-center justify-center w-full gap-2 mt-4">
+          <button
+            id="prevBtn"
+            class="w-9 h-9 dark:bg-neutral-700 flex items-center justify-center rounded-full bg-[#F1F5F9] text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition-colors shadow-sm">
+            <i class="uil uil-angle-left text-xl"></i>
+          </button>
+
+          <div
+            class="bg-[#F1F5F9] dark:bg-neutral-700 rounded-full p-1 inline-flex items-center gap-2"></div>
+          <button
+            id="nextBtn"
+            class="w-9 h-9 dark:bg-neutral-700 flex items-center justify-center rounded-full bg-[#F1F5F9] text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition-colors shadow-sm">
+            <i class="uil uil-angle-right text-xl"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Archive Incident Modal Overlay -->
+    <div
+      id="archiveModalOverlay"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity duration-300 opacity-0"></div>
+
+    <!-- Archive Incident Modal -->
+    <div
+      id="incidentArchiveModal"
+      class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl shadow-2xl z-50 w-full max-w-lg transition-all duration-300 opacity-0 scale-95">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-6 pb-4">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+            <i class="uil uil-archive text-2xl" style="color: #27c291"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-gray-800">
+              Move Incident to Archive
+            </h3>
+            <p class="text-xs text-gray-500 mt-0.5">
+              This incident can be restored anytime.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="px-6 py-4">
+        <p class="text-xs text-gray-600 text-center leading-relaxed">
+          Are you sure you want to move
+          <span
+            id="incidentArchive"
+            class="font-semibold"
+            style="color: #27c291">EMG-2024-1001</span>
+          to Archive? You can restore this incident anytime from the archive.
+        </p>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center gap-3 p-6 pt-4">
+        <button
+          onclick="closeArchiveModal()"
+          class="flex-1 px-4 py-3.5 min-h-[45px] text-xs font-medium text-[#64748B] bg-white border border-[#96A9C4] rounded-full hover:bg-gray-200 transition-colors">
+          Close
+        </button>
+        <button
+          onclick="confirmArchiveIncident()"
+          class="flex-1 px-4 py-3.5 max-h-[45px] text-xs font-medium text-white rounded-full transition-colors flex items-center justify-center gap-2"
+          style="background-color: #27c291"
+          onmouseover="this.style.backgroundColor='#22A87B'"
+          onmouseout="this.style.backgroundColor='#27C291'">
+          <i class="uil uil-archive text-lg"></i>
+          Move to Archive
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Container -->
+  <div
+    id="toastContainer"
+    class="fixed top-4 right-4 z-50 space-y-3 max-w-md w-full"></div>
+
+  <script src="assets/js/sidebar.js"></script>
+  <script src="assets/js/toast.js"></script>
+  <script src="assets/js/modal.js"></script>
+  <script src="assets/js/incident.js"></script>
+</body>
+
+</html>
