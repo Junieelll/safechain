@@ -84,9 +84,7 @@ function handleNewIncident($conn, $data, $resident) {
     // Prepare data
     $lat = floatval($data['lat']);
     $lng = floatval($data['lng']);
-    $location = mysqli_real_escape_string($conn, 
-        sprintf("%.6f°N, %.6f°E - %s", $lat, $lng, $resident['address'])
-    );
+    $location = mysqli_real_escape_string($conn, $resident['address']);
     $reporter_id = mysqli_real_escape_string($conn, $resident['resident_id']);
     $reporter_name = mysqli_real_escape_string($conn, $resident['name']);
     $device_id = mysqli_real_escape_string($conn, $data['device_id']);

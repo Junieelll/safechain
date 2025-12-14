@@ -1,5 +1,10 @@
 <?php
+session_start();
 require_once '../config/conn.php';
+require_once '../includes/auth_helper.php';
+
+// Require authentication
+AuthChecker::requireAuth();
 
 header('Content-Type: application/json');
 
@@ -13,7 +18,12 @@ try {
     
     $incidentId = mysqli_real_escape_string($conn, $data['incident_id']);
     $note = mysqli_real_escape_string($conn, $data['note']);
-    $adminName = mysqli_real_escape_string($conn, $data['admin_name'] ?? 'Admin');
+    
+    // Get admin name from session via AuthChecker
+    // If admin_name is provided in request, use it, otherwise get from session
+    $adminName = isset($data['admin_name']) 
+        ? mysqli_real_escape_string($conn, $data['admin_name'])
+        : 'Admin: ' . AuthChecker::getName();
     
     $query = "INSERT INTO incident_notes (incident_id, admin_name, note) 
               VALUES ('$incidentId', '$adminName', '$note')";
@@ -27,7 +37,8 @@ try {
         echo json_encode([
             'success' => true,
             'message' => 'Note added successfully',
-            'time' => date('h:i A')
+            'time' => date('h:i A'),
+            'admin_name' => $adminName
         ]);
     } else {
         throw new Exception(mysqli_error($conn));
