@@ -1,139 +1,385 @@
-const incidentData = {
-  fire: [
-    {
-      id: "EMG-2024-1047",
-      type: "Fire Emergency",
-      icon: "uil-fire",
-      color: "red",
-      time: "2:34 PM",
-      user: {
-        name: "Maria Santos",
-        contact: "+63 912 345 6789",
-        id: "USR-45821",
-      },
-      location: {
-        address: "63 San Nicasio St., Villaflor",
-        barangay: "Gulod",
-        city: "Quezon City",
-        coords: "14.6837° N, 121.0253° E",
-      },
-      lat: 14.716412,
-      lng: 121.040834,
-      timeline: [
-        { time: "2:34 PM", event: "Emergency reported by Maria Santos" },
-        { time: "2:35 PM", event: "Location verified" },
-        {
-          time: "2:36 PM",
-          event: "Awaiting response team dispatch",
-          pending: true,
-        },
-      ],
-    },
-    {
-      id: "EMG-2024-1048",
-      type: "Fire Alert",
-      icon: "uil-fire",
-      color: "red",
-      time: "3:15 PM",
-      user: {
-        name: "Juan Cruz",
-        contact: "+63 923 456 7890",
-        id: "USR-45822",
-      },
-      location: {
-        address: "45 Santol St., Bagong Silang",
-        barangay: "Gulod",
-        city: "Quezon City",
-        coords: "14.6845° N, 121.0240° E",
-      },
-      lat: 14.711874,
-      lng: 121.038715,
-      timeline: [
-        { time: "3:15 PM", event: "Smoke detected by Juan Cruz" },
-        { time: "3:16 PM", event: "Fire department notified" },
-      ],
-    },
-  ],
-  crime: [
-    {
-      id: "EMG-2024-1049",
-      type: "Crime Report",
-      icon: "uil-shield-plus",
-      color: "yellow",
-      time: "1:20 PM",
-      user: {
-        name: "Pedro Reyes",
-        contact: "+63 934 567 8901",
-        id: "USR-45823",
-      },
-      location: {
-        address: "28 Mahogany St., Villa Rosa",
-        barangay: "Gulod",
-        city: "Quezon City",
-        coords: "14.6842° N, 121.0248° E",
-      },
-      lat: 14.714923,
-      lng: 121.040745,
-      timeline: [
-        { time: "1:20 PM", event: "Theft reported by Pedro Reyes" },
-        { time: "1:22 PM", event: "Police dispatch requested" },
-      ],
-    },
-  ],
-  flood: [
-    {
-      id: "EMG-2024-1050",
-      type: "Flood Warning",
-      icon: "uil-water",
-      color: "blue",
-      time: "4:05 PM",
-      user: {
-        name: "Ana Lopez",
-        contact: "+63 945 678 9012",
-        id: "USR-45824",
-      },
-      location: {
-        address: "12 Riverside Ave., San Roque",
-        barangay: "Gulod",
-        city: "Quezon City",
-        coords: "14.6830° N, 121.0265° E",
-      },
-      lat: 14.71162,
-      lng: 121.043019,
-      timeline: [
-        { time: "4:05 PM", event: "Water level rising reported" },
-        { time: "4:07 PM", event: "Evacuation alert issued" },
-      ],
-    },
-    {
-      id: "EMG-2024-1051",
-      type: "Flood Alert",
-      icon: "uil-water",
-      color: "blue",
-      time: "4:30 PM",
-      user: {
-        name: "Carlos Mendoza",
-        contact: "+63 956 789 0123",
-        id: "USR-45825",
-      },
-      location: {
-        address: "89 Creek Lane, Nueva Vista",
-        barangay: "Gulod",
-        city: "Quezon City",
-        coords: "14.6850° N, 121.0230° E",
-      },
-      lat: 14.714173,
-      lng: 121.036679,
-      timeline: [
-        {
-          time: "4:30 PM",
-          event: "Heavy rainfall reported by Carlos Mendoza",
-        },
-        { time: "4:31 PM", event: "Monitoring in progress" },
-      ],
-    },
-  ],
+// ============================================
+// SAFECHAIN DASHBOARD - CONFIGURATION
+// ============================================
+
+const API_BASE = "api/";
+const POLL_INTERVAL = 3000; // Poll every 3 seconds
+let lastUpdateTime = null;
+let pollingActive = true;
+let activeIncidentId = null;
+
+// Store incident data
+let incidentData = {
+  fire: [],
+  crime: [],
+  flood: [],
 };
+
+// Historical incidents for heatmap (from database)
+let historicalIncidents = {
+  fire: [],
+  crime: [],
+  flood: [],
+};
+
+// ============================================
+// HEATMAP CONFIGURATION
+// ============================================
+
+const heatmapLayers = {
+  fire: null,
+  crime: null,
+  flood: null,
+};
+
+const heatmapVisible = {
+  fire: true,
+  crime: true,
+  flood: true,
+};
+
+const heatmapConfigs = {
+  fire: {
+    radius: 30,
+    blur: 20,
+    maxZoom: 17,
+    max: 1.0,
+    minOpacity: 0.3,
+    gradient: {
+      0.0: "rgba(255, 68, 68, 0)",
+      0.3: "rgba(255, 68, 68, 0.35)",
+      0.5: "rgba(220, 40, 40, 0.55)",
+      0.7: "rgba(200, 30, 30, 0.75)",
+      0.9: "rgba(170, 20, 20, 0.9)",
+      1.0: "rgba(140, 10, 10, 1)",
+    },
+  },
+  crime: {
+    radius: 28,
+    blur: 18,
+    maxZoom: 17,
+    max: 1.0,
+    minOpacity: 0.3,
+    gradient: {
+      0.0: "rgba(251, 191, 36, 0)",
+      0.3: "rgba(251, 191, 36, 0.35)",
+      0.5: "rgba(245, 158, 11, 0.55)",
+      0.7: "rgba(217, 119, 6, 0.75)",
+      0.9: "rgba(180, 83, 9, 0.9)",
+      1.0: "rgba(120, 50, 5, 1)",
+    },
+  },
+  flood: {
+    radius: 32,
+    blur: 22,
+    maxZoom: 17,
+    max: 1.0,
+    minOpacity: 0.3,
+    gradient: {
+      0.0: "rgba(59, 130, 246, 0)",
+      0.3: "rgba(59, 130, 246, 0.3)",
+      0.5: "rgba(37, 99, 235, 0.5)",
+      0.7: "rgba(29, 78, 216, 0.7)",
+      0.9: "rgba(30, 64, 175, 0.85)",
+      1.0: "rgba(23, 37, 84, 1)",
+    },
+  },
+};
+
+// ============================================
+// API FUNCTIONS
+// ============================================
+
+async function fetchLiveIncidents() {
+  try {
+    const url = lastUpdateTime
+      ? `${API_BASE}get_incidents.php?since=${encodeURIComponent(
+          lastUpdateTime
+        )}`
+      : `${API_BASE}get_incidents.php`;
+
+    const response = await fetch(url);
+    const result = await response.json();
+
+    if (result.success) {
+      // Update incident data
+      incidentData = result.data;
+
+      // Update historical heatmap data from database
+      if (result.heatmap) {
+        historicalIncidents = result.heatmap;
+      }
+
+      lastUpdateTime = result.timestamp;
+
+      // Update UI
+      updateMapMarkers();
+      updateAllHeatmaps();
+
+      // Check for new incidents
+      checkForNewIncidents(result.data);
+
+      console.log(`✓ Updated at ${result.timestamp}`, result.count);
+    }
+  } catch (error) {
+    console.error("Failed to fetch incidents:", error);
+  }
+}
+
+// ============================================
+// NOTIFICATION SYSTEM
+// ============================================
+
+// Add at the top with other initializations
+let notificationAudio = null;
+let audioInitialized = false;
+
+// Initialize audio on first user interaction with the page
+function initializeAudio() {
+  if (!audioInitialized) {
+    notificationAudio = new Audio("assets/sounds/alert.mp3");
+    notificationAudio.volume = 0.7;
+    notificationAudio.load();
+    audioInitialized = true;
+    console.log("✓ Audio initialized");
+  }
+}
+
+// Listen for ANY user interaction to enable audio
+["click", "keydown", "touchstart"].forEach((event) => {
+  document.addEventListener(event, initializeAudio, { once: true });
+});
+
+let knownIncidentIds = new Set(
+  JSON.parse(localStorage.getItem("knownIncidentIds") || "[]")
+);
+let isInitialLoad = true; // Flag to track first load
+
+function checkForNewIncidents(data) {
+  ["fire", "crime", "flood"].forEach((type) => {
+    data[type].forEach((incident) => {
+      if (!knownIncidentIds.has(incident.id)) {
+        knownIncidentIds.add(incident.id);
+
+        // Save to localStorage
+        localStorage.setItem(
+          "knownIncidentIds",
+          JSON.stringify([...knownIncidentIds])
+        );
+
+        // Only show notification if NOT initial load
+        if (!isInitialLoad && typeof showToast === "function") {
+          const typeColors = {
+            fire: "info",
+            crime: "info",
+            flood: "info",
+          };
+          showToast(
+            typeColors[type],
+            `New ${type} incident: ${incident.user.name}`
+          );
+          playNotificationSound();
+        }
+      }
+    });
+  });
+
+  // After first check, mark as no longer initial load
+  if (isInitialLoad) {
+    isInitialLoad = false;
+  }
+}
+
+function playNotificationSound() {
+  // Initialize audio if not done yet (fallback)
+  if (!audioInitialized) {
+    initializeAudio();
+  }
+
+  if (notificationAudio) {
+    notificationAudio.currentTime = 0; // Reset to beginning
+    notificationAudio.play().catch((e) => {
+      console.warn("Audio autoplay blocked. User interaction needed first.");
+    });
+
+    // Stop after 3 seconds
+    setTimeout(() => {
+      notificationAudio.pause();
+      notificationAudio.currentTime = 0; // Reset for next play
+    }, 3000);
+  }
+}
+
+// ============================================
+// HEATMAP FUNCTIONS
+// ============================================
+
+function generateHeatmapData(type) {
+  const heatData = [];
+
+  // Current active incidents (high intensity)
+  if (incidentData[type]) {
+    incidentData[type].forEach((incident) => {
+      const intensity = type === "fire" ? 1.0 : type === "crime" ? 0.8 : 0.7;
+      heatData.push([incident.lat, incident.lng, intensity]);
+    });
+  }
+
+  // Historical incidents from database (varied intensity based on age)
+  if (historicalIncidents[type]) {
+    historicalIncidents[type].forEach((incident) => {
+      heatData.push([incident.lat, incident.lng, incident.intensity]);
+    });
+  }
+
+  return heatData;
+}
+
+function updateAllHeatmaps() {
+  ["fire", "crime", "flood"].forEach((type) => {
+    // Remove old layer
+    if (heatmapLayers[type]) {
+      map.removeLayer(heatmapLayers[type]);
+    }
+
+    // Add new layer if visible
+    if (heatmapVisible[type]) {
+      const heatData = generateHeatmapData(type);
+      heatmapLayers[type] = L.heatLayer(heatData, heatmapConfigs[type]).addTo(
+        map
+      );
+    }
+  });
+}
+
+function updateHeatmapsForTheme(isDark) {
+  Object.keys(heatmapLayers).forEach((type) => {
+    if (heatmapLayers[type] && heatmapVisible[type]) {
+      const heatData = generateHeatmapData(type);
+      map.removeLayer(heatmapLayers[type]);
+
+      const config = { ...heatmapConfigs[type] };
+      if (isDark) {
+        config.minOpacity = 0.4;
+      }
+
+      heatmapLayers[type] = L.heatLayer(heatData, config).addTo(map);
+    }
+  });
+}
+
+// ============================================
+// MAP MARKERS
+// ============================================
+
+const markers = { fire: [], crime: [], flood: [] };
+
+const fireIcon = L.divIcon({
+  className:
+    "custom-marker marker-fire rounded-full flex items-center justify-center",
+  html: '<i class="uil uil-fire"></i>',
+  iconSize: [35, 35],
+  iconAnchor: [17, 17],
+});
+
+const crimeIcon = L.divIcon({
+  className:
+    "custom-marker marker-crime rounded-full flex items-center justify-center",
+  html: '<i class="uil uil-shield-plus"></i>',
+  iconSize: [35, 35],
+  iconAnchor: [17, 17],
+});
+
+const floodIcon = L.divIcon({
+  className:
+    "custom-marker marker-flood rounded-full flex items-center justify-center",
+  html: '<i class="uil uil-water"></i>',
+  iconSize: [35, 35],
+  iconAnchor: [17, 17],
+});
+
+const iconMap = {
+  fire: fireIcon,
+  crime: crimeIcon,
+  flood: floodIcon,
+};
+
+function updateMapMarkers() {
+  // Clear existing markers
+  Object.keys(markers).forEach((type) => {
+    markers[type].forEach((marker) => map.removeLayer(marker));
+    markers[type] = [];
+  });
+
+  // Add new markers
+  Object.keys(incidentData).forEach((type) => {
+    incidentData[type].forEach((incident) => {
+      const marker = L.marker([incident.lat, incident.lng], {
+        icon: iconMap[type],
+      }).addTo(map).bindPopup(`
+          <div class="p-2">
+            <strong class="text-sm">${incident.type}</strong><br>
+            <span class="text-xs">${incident.user.name}</span><br>
+            <span class="text-xs text-gray-600">${incident.time}</span>
+          </div>
+        `);
+
+      marker.on("click", () => {
+        if (
+          typeof incidentContent !== "undefined" &&
+          typeof renderIncidentDetails === "function"
+        ) {
+          incidentContent.innerHTML = renderIncidentDetails(incident);
+          if (isRightPanelCollapsed) {
+            rightPanelToggle.click();
+          }
+        }
+      });
+
+      markers[type].push(marker);
+    });
+  });
+}
+
+// ============================================
+// POLLING
+// ============================================
+
+function startPolling() {
+  pollingActive = true;
+  fetchLiveIncidents(); // Initial fetch
+
+  setInterval(() => {
+    if (pollingActive) {
+      fetchLiveIncidents();
+    }
+  }, POLL_INTERVAL);
+}
+
+// Pause polling when page hidden (saves resources)
+// document.addEventListener('visibilitychange', () => {
+//   pollingActive = !document.hidden;
+//   if (pollingActive) {
+//     fetchLiveIncidents();
+//   }
+// });
+
+// ============================================
+// INITIALIZE
+// ============================================
+
+// Start polling when page loads
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", startPolling);
+} else {
+  startPolling();
+}
+
+console.log(
+  "SafeChain Dashboard initialized - Polling every " +
+    POLL_INTERVAL / 1000 +
+    " seconds"
+);
 
 // Data structure for different years
 const chartDataByYear = {
@@ -163,159 +409,6 @@ const chartDataByYear = {
     crime: [16, 8, 15, 11, 8, 18, 15, 18, 15, 9, 18, 11],
   },
 };
-
-// Historical incident data separated by type
-const historicalIncidents = {
-  fire: [
-    { lat: 14.7145, lng: 121.0395, intensity: 0.9 },
-    { lat: 14.7152, lng: 121.0418, intensity: 0.8 },
-    { lat: 14.7138, lng: 121.0402, intensity: 0.85 },
-    { lat: 14.7168, lng: 121.0391, intensity: 0.9 },
-    { lat: 14.7129, lng: 121.0425, intensity: 0.75 },
-    { lat: 14.7141, lng: 121.0387, intensity: 0.8 },
-    { lat: 14.7156, lng: 121.0434, intensity: 0.85 },
-    { lat: 14.7133, lng: 121.0396, intensity: 0.7 },
-    { lat: 14.7171, lng: 121.0406, intensity: 0.88 },
-    { lat: 14.7149, lng: 121.0443, intensity: 0.82 },
-    { lat: 14.7137, lng: 121.0378, intensity: 0.9 },
-  ],
-  crime: [
-    { lat: 14.7147, lng: 121.0411, intensity: 0.7 },
-    { lat: 14.7159, lng: 121.0399, intensity: 0.75 },
-    { lat: 14.7142, lng: 121.0428, intensity: 1.65 },
-    { lat: 14.7136, lng: 121.0384, intensity: 0.7 },
-    { lat: 14.7151, lng: 121.0407, intensity: 0.68 },
-    { lat: 14.7128, lng: 121.0419, intensity: 1.72 },
-    { lat: 14.7165, lng: 121.0393, intensity: 1.67 },
-    { lat: 14.7144, lng: 121.0401, intensity: 0.73 },
-    { lat: 14.7139, lng: 121.0415, intensity: 1.69 },
-    { lat: 14.7158, lng: 121.0380, intensity: 0.71 },
-    { lat: 14.7162, lng: 121.0429, intensity: 0.68 },
-    { lat: 14.7131, lng: 121.0408, intensity: 1.74 },
-  ],
-  flood: [
-    { lat: 14.7112, lng: 121.0431, intensity: 0.6 },
-    { lat: 14.7148, lng: 121.0389, intensity: 0.65 },
-    { lat: 14.7125, lng: 121.0404, intensity: 0.62 },
-    { lat: 14.7161, lng: 121.0422, intensity: 1.58 },
-    { lat: 14.7134, lng: 121.0412, intensity: 1.63 },
-    { lat: 14.7119, lng: 121.0397, intensity: 1.61 },
-    { lat: 14.7154, lng: 121.0385, intensity: 1.59 },
-    { lat: 14.7127, lng: 121.0438, intensity: 0.64 },
-    { lat: 14.7115, lng: 121.0413, intensity: 0.65 },
-    { lat: 14.7123, lng: 121.0391, intensity: 0.6 },
-  ]
-};
-
-// Heatmap layers for each type
-const heatmapLayers = {
-  fire: null,
-  crime: null,
-  flood: null
-};
-
-const heatmapVisible = {
-  fire: true,
-  crime: true,
-  flood: true
-};
-
-// Function to generate heatmap data for specific type
-function generateHeatmapData(type) {
-  const heatData = [];
-  
-  // Add current incidents of this type
-  if (incidentData[type]) {
-    incidentData[type].forEach((incident) => {
-      const intensity = type === 'fire' ? 1.0 : type === 'crime' ? 0.8 : 0.7;
-      heatData.push([incident.lat, incident.lng, intensity]);
-    });
-  }
-  
-  // Add historical incidents of this type
-  if (historicalIncidents[type]) {
-    historicalIncidents[type].forEach((incident) => {
-      heatData.push([incident.lat, incident.lng, incident.intensity]);
-    });
-  }
-  
-  return heatData;
-}
-
-// Heatmap configurations for each type
-const heatmapConfigs = {
-  fire: {
-    radius: 30,
-    blur: 20,
-    maxZoom: 17,
-    max: 1.0,
-    minOpacity: 0.3,
-    gradient: {
-      0.0: 'rgba(255, 68, 68, 0)',      // Lightest, matches icon
-      0.3: 'rgba(255, 68, 68, 0.35)',
-      0.5: 'rgba(220, 40, 40, 0.55)',   // Slightly darker red
-      0.7: 'rgba(200, 30, 30, 0.75)',
-      0.9: 'rgba(170, 20, 20, 0.9)',
-      1.0: 'rgba(140, 10, 10, 1)'       // Deep red for high intensity
-    }
-  },
-
-  crime: {
-    radius: 28,
-    blur: 18,
-    maxZoom: 17,
-    max: 1.0,
-    minOpacity: 0.3,
-    gradient: {
-      0.0: 'rgba(251, 191, 36, 0)',      // Light yellow (icon color)
-      0.3: 'rgba(251, 191, 36, 0.35)',
-      0.5: 'rgba(245, 158, 11, 0.55)',   // Deeper amber
-      0.7: 'rgba(217, 119, 6, 0.75)',
-      0.9: 'rgba(180, 83, 9, 0.9)',
-      1.0: 'rgba(120, 50, 5, 1)'         // Darker brownish-orange
-    }
-  },
-
-  flood: {
-    radius: 32,
-    blur: 22,
-    maxZoom: 17,
-    max: 1.0,
-    minOpacity: 0.3,
-    gradient: {
-      0.0: 'rgba(59, 130, 246, 0)',
-      0.3: 'rgba(59, 130, 246, 0.3)',
-      0.5: 'rgba(37, 99, 235, 0.5)',
-      0.7: 'rgba(29, 78, 216, 0.7)',
-      0.9: 'rgba(30, 64, 175, 0.85)',
-      1.0: 'rgba(23, 37, 84, 1)'
-    }
-  }
-};
-
-// Function to initialize individual heatmap
-function initializeHeatmap(type) {
-  const heatData = generateHeatmapData(type);
-  heatmapLayers[type] = L.heatLayer(heatData, heatmapConfigs[type]).addTo(map);
-}
-
-// Update theme switcher to handle all heatmaps
-function updateHeatmapsForTheme(isDark) {
-  Object.keys(heatmapLayers).forEach(type => {
-    if (heatmapLayers[type] && heatmapVisible[type]) {
-      const heatData = generateHeatmapData(type);
-      map.removeLayer(heatmapLayers[type]);
-      
-      // Adjust opacity for dark mode
-      const config = { ...heatmapConfigs[type] };
-      if (isDark) {
-        config.minOpacity = 0.4;
-      }
-      
-      heatmapLayers[type] = L.heatLayer(heatData, config).addTo(map);
-    }
-  });
-}
 
 function renderSkeletonLoading() {
   return `
@@ -405,6 +498,19 @@ function renderSkeletonLoading() {
 }
 
 function renderIncidentDetails(incident) {
+  // Safety check - return empty state if no incident
+  if (!incident || !incident.id) {
+    return `
+      <div class="flex flex-col items-center justify-center h-full text-center p-6">
+        <i class="uil uil-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Incident Selected</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Select an incident from the map to view details.</p>
+      </div>
+    `;
+  }
+
+  activeIncidentId = incident.id;
+
   const colorClasses = {
     red: "bg-red-50 text-red-600 dark:bg-red-900/40 dark:text-red-300",
     yellow:
@@ -525,6 +631,17 @@ function renderIncidentDetails(incident) {
         `;
 }
 
+function goToIncidentDetails() {
+  if (!activeIncidentId) {
+    alert("No incident selected");
+    return;
+  }
+
+  window.location.href = `admin/incidents/details?id=${encodeURIComponent(
+    activeIncidentId
+  )}`;
+}
+
 const rightPanel = document.getElementById("rightPanel");
 const rightPanelToggle = document.getElementById("rightPanelToggle");
 const incidentContent = document.getElementById("incidentContent");
@@ -532,21 +649,15 @@ let isRightPanelCollapsed = false;
 
 var map = L.map("map").setView([14.7158532, 121.0403842], 16);
 
-const lightLayer = L.tileLayer(
-  "assets/tiles/streets-v2/{z}/{x}/{y}.png",
-  {
-    attribution:
-      '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-  }
-);
+const lightLayer = L.tileLayer("assets/tiles/streets-v2/{z}/{x}/{y}.png", {
+  attribution:
+    '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+});
 
-const darkLayer = L.tileLayer(
-  "assets/tiles/streets-v2-dark/{z}/{x}/{y}.png",
-  {
-    attribution:
-      '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-  }
-);
+const darkLayer = L.tileLayer("assets/tiles/streets-v2-dark/{z}/{x}/{y}.png", {
+  attribution:
+    '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+});
 
 // Add the appropriate layer based on current theme
 const currentTheme = document.documentElement.getAttribute("data-theme");
@@ -565,46 +676,10 @@ function switchMapTheme(isDark) {
     map.removeLayer(darkLayer);
     map.addLayer(lightLayer);
   }
-  
+
   // Update heatmaps for theme
   updateHeatmapsForTheme(isDark);
 }
-
-const fireIcon = L.divIcon({
-  className:
-    "custom-marker marker-fire rounded-full flex items-center justify-center",
-  html: '<i class="uil uil-fire"></i>',
-  iconSize: [35, 35],
-  iconAnchor: [17, 17],
-});
-
-const crimeIcon = L.divIcon({
-  className:
-    "custom-marker marker-crime rounded-full flex items-center justify-center",
-  html: '<i class="uil uil-shield-plus"></i>',
-  iconSize: [35, 35],
-  iconAnchor: [17, 17],
-});
-
-const floodIcon = L.divIcon({
-  className:
-    "custom-marker marker-flood rounded-full flex items-center justify-center",
-  html: '<i class="uil uil-water"></i>',
-  iconSize: [35, 35],
-  iconAnchor: [17, 17],
-});
-
-const markers = {
-  fire: [],
-  crime: [],
-  flood: [],
-};
-
-const iconMap = {
-  fire: fireIcon,
-  crime: crimeIcon,
-  flood: floodIcon,
-};
 
 // Add all markers with staggered animation
 setTimeout(() => {
@@ -638,23 +713,16 @@ setTimeout(() => {
   });
 }, 1000);
 
-// Initialize all heatmaps after markers are loaded
-setTimeout(() => {
-  initializeHeatmap("fire");
-  initializeHeatmap("crime");
-  initializeHeatmap("flood");
-}, 2000);
-
 // Heatmap toggle button handlers
-const heatmapToggleButtons = document.querySelectorAll('[data-heatmap]');
-heatmapToggleButtons.forEach(btn => {
-  btn.addEventListener('click', (e) => {
+const heatmapToggleButtons = document.querySelectorAll("[data-heatmap]");
+heatmapToggleButtons.forEach((btn) => {
+  btn.addEventListener("click", (e) => {
     e.stopPropagation();
     const heatmapType = btn.dataset.heatmap;
-    
-    btn.classList.toggle('active');
+
+    btn.classList.toggle("active");
     heatmapVisible[heatmapType] = !heatmapVisible[heatmapType];
-    
+
     if (heatmapVisible[heatmapType]) {
       if (heatmapLayers[heatmapType]) {
         heatmapLayers[heatmapType].addTo(map);
@@ -667,10 +735,42 @@ heatmapToggleButtons.forEach(btn => {
   });
 });
 
-// Load default incident
+// Load default incident -
 incidentContent.innerHTML = renderSkeletonLoading();
 setTimeout(() => {
-  incidentContent.innerHTML = renderIncidentDetails(incidentData.fire[0]);
+  // Find any available incident from any type
+  let defaultIncident = null;
+
+  // Check all incident types for the first available incident
+  for (const type of ["fire", "crime", "flood"]) {
+    if (incidentData[type] && incidentData[type].length > 0) {
+      defaultIncident = incidentData[type][0];
+      break;
+    }
+  }
+
+  // If there's an incident, show it. Otherwise hide the panel and show a message
+  if (defaultIncident) {
+    incidentContent.innerHTML = renderIncidentDetails(defaultIncident);
+    // Make sure panel is visible
+    if (isRightPanelCollapsed) {
+      rightPanelToggle.click();
+    }
+  } else {
+    // No incidents available - show empty state and hide panel
+    incidentContent.innerHTML = `
+      <div class="flex flex-col items-center justify-center h-full text-center p-6">
+        <i class="uil uil-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Incidents</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400">There are currently no active incidents to display.</p>
+      </div>
+    `;
+
+    // Hide the right panel
+    if (!isRightPanelCollapsed) {
+      rightPanelToggle.click();
+    }
+  }
 }, 1500); // Show skeleton for 1.5 seconds
 
 document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
@@ -698,8 +798,8 @@ const userLocationIcon = L.divIcon({
 // Update the locate button functionality
 document.getElementById("locate").addEventListener("click", () => {
   if (navigator.geolocation) {
-    showToast('info', 'Getting your location...');
-    
+    showToast("info", "Getting your location...");
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const userLat = position.coords.latitude;
@@ -716,8 +816,8 @@ document.getElementById("locate").addEventListener("click", () => {
 
         // Add accuracy circle
         userLocationCircle = L.circle([userLat, userLng], {
-          color: '#3B82F6',
-          fillColor: '#3B82F6',
+          color: "#3B82F6",
+          fillColor: "#3B82F6",
           fillOpacity: 0.1,
           radius: accuracy,
           weight: 1,
@@ -726,9 +826,7 @@ document.getElementById("locate").addEventListener("click", () => {
         // Add user location marker with blue dot
         userLocationMarker = L.marker([userLat, userLng], {
           icon: userLocationIcon,
-        })
-          .addTo(map)
-          .bindPopup(`
+        }).addTo(map).bindPopup(`
             <div class="p-2">
               <div class="font-semibold text-sm text-gray-800 dark:text-white mb-1">Your Location</div>
               <div class="text-xs text-gray-600 dark:text-gray-400">
@@ -739,34 +837,34 @@ document.getElementById("locate").addEventListener("click", () => {
 
         // Center map on user location
         map.setView([userLat, userLng], 16);
-        
-        showToast('success', 'Location found!');
+
+        showToast("success", "Location found!");
       },
       (error) => {
-        let errorMessage = 'Could not get your location';
-        
-        switch(error.code) {
+        let errorMessage = "Could not get your location";
+
+        switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = 'Location permission denied';
+            errorMessage = "Location permission denied";
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information unavailable';
+            errorMessage = "Location information unavailable";
             break;
           case error.TIMEOUT:
-            errorMessage = 'Location request timed out';
+            errorMessage = "Location request timed out";
             break;
         }
-        
-        showToast('error', errorMessage);
+
+        showToast("error", errorMessage);
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 0
+        maximumAge: 0,
       }
     );
   } else {
-    showToast('error', 'Geolocation is not supported by your browser');
+    showToast("error", "Geolocation is not supported by your browser");
   }
 });
 
@@ -791,53 +889,56 @@ filterButtons.forEach((btn) => {
 });
 
 // Heatmap menu toggle functionality
-const heatmapMenuToggle = document.getElementById('heatmapMenuToggle');
-const heatmapControlsContainer = document.getElementById('heatmapControlsContainer');
+const heatmapMenuToggle = document.getElementById("heatmapMenuToggle");
+const heatmapControlsContainer = document.getElementById(
+  "heatmapControlsContainer"
+);
 let isHeatmapMenuOpen = false;
 
-heatmapMenuToggle.addEventListener('click', (e) => {
+heatmapMenuToggle.addEventListener("click", (e) => {
   e.stopPropagation();
   isHeatmapMenuOpen = !isHeatmapMenuOpen;
-  
+
   // Toggle container visibility
-  heatmapControlsContainer.classList.toggle('hidden');
-  heatmapControlsContainer.classList.toggle('flex');
-  
+  heatmapControlsContainer.classList.toggle("hidden");
+  heatmapControlsContainer.classList.toggle("flex");
+
   // Toggle button active state
-  heatmapMenuToggle.classList.toggle('active');
-  
+  heatmapMenuToggle.classList.toggle("active");
+
   // Change icon
-  const icon = heatmapMenuToggle.querySelector('i');
+  const icon = heatmapMenuToggle.querySelector("i");
   if (isHeatmapMenuOpen) {
-    icon.classList.remove('uil-ellipsis-h');
-    icon.classList.add('uil-times');
+    icon.classList.remove("uil-ellipsis-h");
+    icon.classList.add("uil-times");
   } else {
-    icon.classList.remove('uil-times');
-    icon.classList.add('uil-ellipsis-h');
+    icon.classList.remove("uil-times");
+    icon.classList.add("uil-ellipsis-h");
   }
 });
 
 // Close heatmap menu when clicking outside
-document.addEventListener('click', (e) => {
-  if (isHeatmapMenuOpen && 
-      !heatmapMenuToggle.contains(e.target) && 
-      !heatmapControlsContainer.contains(e.target)) {
-    
+document.addEventListener("click", (e) => {
+  if (
+    isHeatmapMenuOpen &&
+    !heatmapMenuToggle.contains(e.target) &&
+    !heatmapControlsContainer.contains(e.target)
+  ) {
     // Close the menu
     isHeatmapMenuOpen = false;
-    heatmapControlsContainer.classList.add('hidden');
-    heatmapControlsContainer.classList.remove('flex');
-    heatmapMenuToggle.classList.remove('active');
-    
+    heatmapControlsContainer.classList.add("hidden");
+    heatmapControlsContainer.classList.remove("flex");
+    heatmapMenuToggle.classList.remove("active");
+
     // Reset icon
-    const icon = heatmapMenuToggle.querySelector('i');
-    icon.classList.remove('uil-times');
-    icon.classList.add('uil-ellipsis-h');
+    const icon = heatmapMenuToggle.querySelector("i");
+    icon.classList.remove("uil-times");
+    icon.classList.add("uil-ellipsis-h");
   }
 });
 
 // Prevent clicks inside container from closing it
-heatmapControlsContainer.addEventListener('click', (e) => {
+heatmapControlsContainer.addEventListener("click", (e) => {
   e.stopPropagation();
 });
 
@@ -952,7 +1053,7 @@ setTimeout(() => {
           display: true,
           labels: {
             usePointStyle: true,
-            pointStyle: 'circle',
+            pointStyle: "circle",
             padding: 10,
             font: {
               size: 13,

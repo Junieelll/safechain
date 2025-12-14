@@ -1,34 +1,6 @@
-let allItems = [
-  {
-    id: 1,
-    type: "incident",
-    title: "Fire Emergency #EMG-2024-1047",
-    time: "2 hrs ago",
-  },
-  {
-    id: 2,
-    type: "incident",
-    title: "Flood Alert #EMG-2024-1046",
-    time: "3 hrs ago",
-  },
-  { id: 3, type: "user", title: "Pedro Martinez", time: "2 hrs ago" },
-  {
-    id: 4,
-    type: "device",
-    title: "Keychain Device #KC-00142",
-    time: "2 hrs ago",
-  },
-  { id: 5, type: "user", title: "Maria Santos", time: "2 hrs ago" },
-  {
-    id: 6,
-    type: "device",
-    title: "Keychain Device #KC-00143",
-    time: "2 hrs ago",
-  },
-];
-
+let allItems = [];
 let currentTab = "all";
-let filteredItems = [...allItems];
+let filteredItems = [];
 let previousTabIndex = 0;
 let isLoading = false;
 
@@ -42,6 +14,47 @@ const tabIndicator = document.getElementById("tabIndicator");
 const searchInput = document.getElementById("search");
 
 const tabOrder = ["all", "incidents", "users", "devices"];
+
+// Fetch all archived items
+async function fetchArchivedItems() {
+  try {
+    const response = await fetch('api/fetch_all_archived.php');
+    const result = await response.json();
+    
+    if (result.success) {
+      allItems = result.data.map((item, index) => ({
+        id: `${item.type}-${item.id}`, // Unique composite ID
+        originalId: item.id,
+        type: item.type,
+        incidentType: item.incidentType,
+        title: item.title,
+        time: item.time,
+        archived_at: item.archived_at
+      }));
+      
+      filterItems(currentTab, true);
+      updateTabCounts();
+    } else {
+      console.error('Error fetching archived items:', result.error);
+      showError('Failed to load archived items');
+    }
+  } catch (error) {
+    console.error('Fetch error:', error);
+    showError('Failed to connect to server');
+  }
+}
+
+// Show error message
+function showError(message) {
+  itemsList.innerHTML = `
+    <div class="px-6 py-12 text-center text-red-500">
+      <i class="uil uil-exclamation-triangle text-4xl mb-2"></i>
+      <p class="text-sm">${message}</p>
+      <button onclick="fetchArchivedItems()" class="mt-4 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors">
+        Retry
+      </button>
+    </div>`;
+}
 
 // Page load animations
 function initPageAnimations() {
@@ -99,9 +112,10 @@ function getIcon(type) {
   }
 }
 
-function getBadge(type) {
+function getBadge(type, incidentType) {
   if (type === "incident") {
-    return '<span class="px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/40 dark:text-red-700 text-red-700 rounded-full">INCIDENT</span>';
+    const typeLabel = incidentType ? incidentType.toUpperCase() : 'INCIDENT';
+    return `<span class="px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/40 dark:text-red-700 text-red-700 rounded-full">${typeLabel}</span>`;
   } else if (type === "user") {
     return '<span class="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/40 dark:text-blue-700 text-blue-700 rounded-full">USER</span>';
   } else {
@@ -121,7 +135,6 @@ function filterItems(tab, skipAnimation = false) {
     itemsContainer.classList.add(slideOutClass);
   }
 
-  // Show loading skeleton
   setTimeout(
     () => {
       showLoadingSkeleton();
@@ -197,7 +210,7 @@ function renderItems() {
           <div class="flex-1">
               <h4 class="text-sm font-medium text-gray-900 dark:text-neutral-300">${item.title}</h4>
               <div class="flex items-center gap-3 mt-1">
-                  ${getBadge(item.type)}
+                  ${getBadge(item.type, item.incidentType)}
                   <span class="flex items-center gap-1 text-xs text-gray-500">
                       <i class="uil uil-clock"></i>
                       ${item.time}
@@ -233,7 +246,7 @@ function attachActionButtonListeners() {
   restoreButtons.forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const id = parseInt(btn.dataset.id);
+      const id = btn.dataset.id;
       const item = allItems.find((i) => i.id === id);
       if (item) showRestoreModal([item]);
     });
@@ -243,7 +256,7 @@ function attachActionButtonListeners() {
   deleteButtons.forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const id = parseInt(btn.dataset.id);
+      const id = btn.dataset.id;
       const item = allItems.find((i) => i.id === id);
       if (item) showDeleteModal([item]);
     });
@@ -374,7 +387,7 @@ selectAllCheckbox.addEventListener("change", (e) => {
   updateActionBar();
 });
 
-// MODAL FUNCTIONS USING MODALMANAGER
+// MODAL FUNCTIONS
 function showRestoreModal(items) {
   const itemText = items.length === 1 ? items[0].title : `${items.length} items`;
 
@@ -467,126 +480,165 @@ function showEmptyArchiveModal() {
       text: 'Cancel'
     },
     onPrimary: () => {
-      confirmEmptyArchive(totalItems);
+      confirmEmptyArchive();
     }
   });
 
   modalManager.show('emptyArchiveModal');
 }
 
-function confirmRestore(items) {
+async function confirmRestore(items) {
   if (!items || items.length === 0) return;
 
-  // Store item info
   const itemCount = items.length;
   const itemText = itemCount === 1 ? items[0].title : `${itemCount} items`;
 
-  // Get IDs to remove
-  const idsToRemove = items.map((item) => item.id);
+  // Prepare items for API
+  const itemsToRestore = items.map(item => ({
+    id: item.originalId,
+    type: item.type
+  }));
 
   // Close modal
   modalManager.close('restoreModal');
 
-  // Add exit animation for all items
-  idsToRemove.forEach((id) => {
-    const checkbox = document.querySelector(`.item-checkbox[data-id="${id}"]`);
+  // Add exit animation
+  items.forEach((item) => {
+    const checkbox = document.querySelector(`.item-checkbox[data-id="${item.id}"]`);
     if (checkbox) {
       const row = checkbox.closest(".item-row");
       row.classList.add("item-exit");
     }
   });
 
-  setTimeout(() => {
-    // Remove from allItems
-    idsToRemove.forEach((id) => {
-      const index = allItems.findIndex((item) => item.id === id);
-      if (index !== -1) {
-        allItems.splice(index, 1);
-      }
+  try {
+    const response = await fetch('api/restore_archived.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ items: itemsToRestore })
     });
-
-    // Re-filter and update
-    filterItems(currentTab, true);
-    updateActionBar();
-    updateTabCounts();
     
-    // Show success toast
-    showToast('success', `${itemText} restored successfully!`);
-  }, 300);
+    const result = await response.json();
+    
+    if (result.success) {
+      setTimeout(async () => {
+        await fetchArchivedItems();
+        showToast('success', `${itemText} restored successfully!`);
+      }, 300);
+    } else {
+      showToast('error', 'Failed to restore: ' + result.error);
+      await fetchArchivedItems();
+    }
+  } catch (error) {
+    console.error('Restore error:', error);
+    showToast('error', 'Failed to restore items');
+    await fetchArchivedItems();
+  }
 }
 
-function confirmDelete(items) {
+async function confirmDelete(items) {
   if (!items || items.length === 0) return;
 
-  // Store item info
   const itemCount = items.length;
   const itemText = itemCount === 1 ? items[0].title : `${itemCount} items`;
 
-  // Get IDs to remove
-  const idsToRemove = items.map((item) => item.id);
+  // Prepare items for API
+  const itemsToDelete = items.map(item => ({
+    id: item.originalId,
+    type: item.type
+  }));
 
   // Close modal
   modalManager.close('deleteModal');
 
-  // Add exit animation for all items
-  idsToRemove.forEach((id) => {
-    const checkbox = document.querySelector(`.item-checkbox[data-id="${id}"]`);
+  // Add exit animation
+  items.forEach((item) => {
+    const checkbox = document.querySelector(`.item-checkbox[data-id="${item.id}"]`);
     if (checkbox) {
       const row = checkbox.closest(".item-row");
       row.classList.add("item-exit");
     }
   });
 
-  setTimeout(() => {
-    // Remove from allItems
-    idsToRemove.forEach((id) => {
-      const index = allItems.findIndex((item) => item.id === id);
-      if (index !== -1) {
-        allItems.splice(index, 1);
-      }
+  try {
+    const response = await fetch('api/delete_archived.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ items: itemsToDelete })
     });
-
-    // Re-filter and update
-    filterItems(currentTab, true);
-    updateActionBar();
-    updateTabCounts();
     
-    // Show success toast
-    showToast('success', `${itemText} deleted permanently!`);
-  }, 300);
+    const result = await response.json();
+    
+    if (result.success) {
+      setTimeout(async () => {
+        await fetchArchivedItems();
+        showToast('success', `${itemText} deleted permanently!`);
+      }, 300);
+    } else {
+      showToast('error', 'Failed to delete: ' + result.error);
+      await fetchArchivedItems();
+    }
+  } catch (error) {
+    console.error('Delete error:', error);
+    showToast('error', 'Failed to delete items');
+    await fetchArchivedItems();
+  }
 }
 
-function confirmEmptyArchive(totalCount) {
-  if (allItems.length === 0) return;
+async function confirmEmptyArchive() {
+  const totalCount = allItems.length;
+  
+  // Prepare all items for deletion
+  const itemsToDelete = allItems.map(item => ({
+    id: item.originalId,
+    type: item.type
+  }));
 
   // Close modal
   modalManager.close('emptyArchiveModal');
 
-  // Add exit animation for all visible items
+  // Add exit animation
   const allRows = document.querySelectorAll(".item-row");
   allRows.forEach((row) => {
     row.classList.add("item-exit");
   });
 
-  setTimeout(() => {
-    // Clear all items
-    allItems.splice(0, allItems.length);
+  try {
+    const response = await fetch('api/delete_archived.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ items: itemsToDelete })
+    });
     
-    // Re-filter and update
-    filterItems(currentTab, true);
-    updateActionBar();
-    updateTabCounts();
+    const result = await response.json();
     
-    // Show success toast
-    showToast('success', `Archive emptied! ${totalCount} items deleted permanently.`);
-  }, 300);
+    if (result.success) {
+      setTimeout(async () => {
+        await fetchArchivedItems();
+        showToast('success', `Archive emptied! ${totalCount} items deleted permanently.`);
+      }, 300);
+    } else {
+      showToast('error', 'Failed to empty archive: ' + result.error);
+      await fetchArchivedItems();
+    }
+  } catch (error) {
+    console.error('Empty archive error:', error);
+    showToast('error', 'Failed to empty archive');
+    await fetchArchivedItems();
+  }
 }
 
 // Action buttons
 document.getElementById("restoreBtn").addEventListener("click", () => {
   const checkedBoxes = document.querySelectorAll(".item-checkbox:checked");
   const items = Array.from(checkedBoxes).map((cb) => {
-    const id = parseInt(cb.dataset.id);
+    const id = cb.dataset.id;
     return allItems.find((i) => i.id === id);
   }).filter(Boolean);
 
@@ -598,7 +650,7 @@ document.getElementById("restoreBtn").addEventListener("click", () => {
 document.getElementById("deleteBtn").addEventListener("click", () => {
   const checkedBoxes = document.querySelectorAll(".item-checkbox:checked");
   const items = Array.from(checkedBoxes).map((cb) => {
-    const id = parseInt(cb.dataset.id);
+    const id = cb.dataset.id;
     return allItems.find((i) => i.id === id);
   }).filter(Boolean);
 
@@ -607,7 +659,7 @@ document.getElementById("deleteBtn").addEventListener("click", () => {
   }
 });
 
-// Restore All button (from filter controls)
+// Restore All button
 const restoreAllBtn = document.querySelector('button:has(.uil-sync)');
 if (restoreAllBtn) {
   restoreAllBtn.addEventListener("click", () => {
@@ -619,7 +671,7 @@ if (restoreAllBtn) {
   });
 }
 
-// Empty Archive button (from filter controls)
+// Empty Archive button
 const emptyArchiveBtn = document.querySelector('button:has(.uil-trash-alt)');
 if (emptyArchiveBtn) {
   emptyArchiveBtn.addEventListener("click", () => {
@@ -637,12 +689,8 @@ window.addEventListener("DOMContentLoaded", () => {
   updateTabStyles();
   updateTabIndicator();
 
-  // Show items container after slight delay for better animation
   itemsContainer.classList.add("animate-fade-in-up", "stagger-4");
 
-  // Simulate loading initial data
   showLoadingSkeleton();
-  setTimeout(() => {
-    renderItems();
-  }, 800);
+  fetchArchivedItems();
 });

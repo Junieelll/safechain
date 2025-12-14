@@ -48,25 +48,25 @@
             class="tab-btn px-6 py-3 text-sm font-medium transition-all"
             data-tab="all">
             All Items
-            <span class="ml-2 px-2 py-0.5 text-xs rounded-full tab-count">6</span>
+            <span class="ml-2 px-2 py-0.5 text-xs rounded-full tab-count"><i class="uil uil-ellipsis-h"></i></span>
           </button>
           <button
             class="tab-btn px-6 py-3 text-sm font-medium transition-all"
             data-tab="incidents">
             Incidents
-            <span class="ml-2 px-2 py-0.5 text-xs rounded-full tab-count">2</span>
+            <span class="ml-2 px-2 py-0.5 text-xs rounded-full tab-count"><i class="uil uil-ellipsis-h"></i></span>
           </button>
           <button
             class="tab-btn px-6 py-3 text-sm font-medium transition-all"
             data-tab="users">
             Users
-            <span class="ml-2 px-2 py-0.5 text-xs rounded-full tab-count">2</span>
+            <span class="ml-2 px-2 py-0.5 text-xs rounded-full tab-count"><i class="uil uil-ellipsis-h"></i></span>
           </button>
           <button
             class="tab-btn px-6 py-3 text-sm font-medium transition-all"
             data-tab="devices">
             Devices
-            <span class="ml-2 px-2 py-0.5 text-xs rounded-full tab-count">2</span>
+            <span class="ml-2 px-2 py-0.5 text-xs rounded-full tab-count"><i class="uil uil-ellipsis-h"></i></span>
           </button>
         </div>
       </div>

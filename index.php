@@ -46,7 +46,7 @@ $sharedAuthenticatedRoutes = [
     'home',
     'profile',
     'settings',
-    // Add any other pages that all authenticated users should access
+    'test_incident_generator'
 ];
 
 // ===== NEW: Define public routes accessible to everyone (including guests) =====

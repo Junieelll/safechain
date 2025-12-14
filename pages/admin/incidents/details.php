@@ -36,14 +36,14 @@
         <div class="mb-8">
           <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-neutral-400 mb-4">
             <a
-              href="/incident.html"
+               href="admin/incidents"
               class="text-blue-500 hover:text-blue-700 transition-colors font-medium"
               >Incidents</a
             >
             <span>
               <i class="uil uil-angle-right"></i>
             </span>
-            <span class="font-semibold">EMG-2024-1047</span>
+            <span class="font-semibold" id="breadcrumbIncidentId">Loading...</span>
           </div>
           <div class="flex justify-between items-center">
             <h1 class="text-xl font-semibold text-neutral-700 dark:text-neutral-300">
