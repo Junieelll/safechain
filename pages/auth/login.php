@@ -6,7 +6,7 @@ require_once __DIR__ . '/../../includes/user_functions.php';
 
 // Redirect if already authenticated
 if (AuthChecker::isLoggedIn()) {
-  header('Location: ../home');
+  header('Location: home');
   exit;
 }
 

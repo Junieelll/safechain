@@ -216,7 +216,7 @@ if (!AuthChecker::isLoggedIn()) {
 
         <div class="flex-shrink-0 pt-4">
             <button
-                onclick="window.location='admin/incidents/details';"
+                onclick="goToIncidentDetails()"
                 class="w-full bg-white border border-gray-300 text-[#64748B] rounded-xl py-3 px-4 font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm dark:bg-neutral-700 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800">
                 <i class="uil uil-eye dark:text-gray-300"></i>
                 View More Details

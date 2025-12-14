@@ -1,3 +1,397 @@
+// Get incident ID from URL parameters
+const urlParams = new URLSearchParams(window.location.search);
+const incidentId = urlParams.get('id');
+
+let currentIncident = null;
+
+if (!incidentId) {
+  showToast('error', 'No incident ID provided');
+  setTimeout(() => {
+    window.location.href = 'admin/incidents';
+  }, 2000);
+}
+
+// Fetch and populate incident details
+async function fetchIncidentDetails() {
+  try {
+    const response = await fetch(`api/fetch_incident_details.php?id=${incidentId}`);
+    const result = await response.json();
+    
+    if (result.success) {
+      populateIncidentDetails(result.data);
+    } else {
+      showToast('error', 'Failed to load incident: ' + result.error);
+      setTimeout(() => {
+        window.location.href = 'admin/incidents';
+      }, 2000);
+    }
+  } catch (error) {
+    console.error('Fetch error:', error);
+    showToast('error', 'Failed to connect to server');
+  }
+}
+
+async function fetchIncidentDetails() {
+  try {
+    const response = await fetch(`api/fetch_incident_details.php?id=${incidentId}`);
+    const result = await response.json();
+    
+    if (result.success) {
+      currentIncident = result.data;
+      populateIncidentDetails(result.data);
+      fetchIncidentNotes();
+      fetchIncidentTimeline();
+      updateActionButtons(result.data.status, result.data.dispatched_to);
+    } else {
+      showToast('error', 'Failed to load incident: ' + result.error);
+      setTimeout(() => {
+        window.location.href = 'admin/incidents';
+      }, 2000);
+    }
+  } catch (error) {
+    console.error('Fetch error:', error);
+    showToast('error', 'Failed to connect to server');
+  }
+}
+
+// Fetch incident notes
+async function fetchIncidentNotes() {
+  try {
+    const response = await fetch(`api/fetch_incident_notes.php?incident_id=${incidentId}`);
+    const result = await response.json();
+    
+    if (result.success) {
+      renderNotes(result.data);
+    }
+  } catch (error) {
+    console.error('Fetch notes error:', error);
+  }
+}
+
+// Render notes
+function renderNotes(notes) {
+  const remarksList = document.getElementById("remarksList");
+  
+  if (notes.length === 0) {
+    remarksList.innerHTML = '<p class="text-center text-sm text-gray-500 dark:text-gray-400 py-4">No admin notes yet</p>';
+    return;
+  }
+  
+  remarksList.innerHTML = notes.map(note => `
+    <div class="bg-gray-50 dark:bg-neutral-700 rounded-lg p-3">
+      <div class="flex justify-between items-center mb-1.5">
+        <span class="font-semibold text-sm text-gray-900 dark:text-neutral-300">${note.admin_name}</span>
+        <span class="text-xs text-gray-500 dark:text-neutral-300">${note.time}</span>
+      </div>
+      <div class="text-xs text-gray-600 dark:text-neutral-400 leading-relaxed">${note.note}</div>
+    </div>
+  `).join('');
+}
+
+// Fetch incident timeline
+async function fetchIncidentTimeline() {
+  try {
+    const response = await fetch(`api/fetch_incident_timeline.php?incident_id=${incidentId}`);
+    const result = await response.json();
+    
+    if (result.success) {
+      renderTimeline(result.data);
+    }
+  } catch (error) {
+    console.error('Fetch timeline error:', error);
+  }
+}
+
+// Render timeline
+function renderTimeline(timelineItems) {
+  const timeline = document.getElementById("timeline");
+  
+  if (timelineItems.length === 0) {
+    timeline.innerHTML = '<p class="text-center text-sm text-gray-500 dark:text-gray-400 py-4">No activity yet</p>';
+    return;
+  }
+  
+  timeline.innerHTML = timelineItems.map((item, index) => {
+    const isLast = index === timelineItems.length - 1;
+    return `
+      <div class="relative pl-8 ${!isLast ? 'pb-6' : ''}">
+        <div class="absolute left-0 top-1.5 w-4 h-4 rounded-full bg-blue-500 border-4 border-blue-100 dark:bg-blue-700 dark:border-blue-900 ${isLast ? 'animate-pulse' : ''}"></div>
+        ${!isLast ? '<div class="absolute left-[7px] top-5 w-0.5 h-full bg-gray-200 dark:bg-neutral-600"></div>' : ''}
+        <div class="flex justify-between items-center mb-1">
+          <span class="font-semibold text-gray-900 dark:text-neutral-300 text-sm">${item.title}</span>
+          <span class="text-xs text-gray-500">${item.time}</span>
+        </div>
+        <div class="text-sm text-gray-500 leading-relaxed">${item.description}</div>
+        <div class="text-xs text-gray-500 mt-1">By: ${item.actor}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Update action buttons based on status
+function updateActionButtons(status, dispatchedTo) {
+  const actionsCard = document.querySelector('.bg-white.dark\\:bg-neutral-800.rounded-3xl.p-7 .space-y-2\\.5');
+  
+  let buttons = '';
+  
+  // Show dispatch button only if not yet dispatched
+  if (!dispatchedTo) {
+    buttons += `
+      <button
+        onclick="showDispatchModal()"
+        class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-purple-500 dark:bg-purple-600 dark:hover:bg-purple-700 text-white rounded-xl text-xs font-medium hover:bg-purple-600 hover:-translate-y-0.5 hover:shadow-lg transition-all">
+        <i class="uil uil-telegram-alt text-lg"></i>
+        Dispatch Emergency Responders
+      </button>
+    `;
+  }
+  
+  // Always show update status
+  buttons += `
+    <button
+      onclick="updateStatus()"
+      class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-xs font-medium hover:bg-blue-600 hover:-translate-y-0.5 hover:shadow-lg transition-all">
+      <i class="uil uil-pen text-lg"></i>
+      Update Status
+    </button>
+  `;
+  
+  // Show mark as resolved only if not resolved
+  if (status !== 'resolved') {
+    buttons += `
+      <button
+        onclick="markAsResolved()"
+        class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white rounded-xl text-xs font-medium hover:bg-emerald-600 hover:-translate-y-0.5 hover:shadow-lg transition-all">
+        <i class="uil uil-check-circle text-lg"></i>
+        Mark as Resolved
+      </button>
+    `;
+  }
+  
+  buttons += `
+    <button
+      onclick="generateReport()"
+      class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-white dark:bg-neutral-600 dark:hover:bg-neutral-700 dark:border-neutral-700 dark:text-neutral-300 text-gray-500 border-2 border-gray-200 rounded-xl text-xs font-medium hover:bg-gray-50 hover:-translate-y-0.5 hover:border-gray-300 transition-all">
+      <i class="uil uil-file-download text-lg"></i>
+      Generate Report
+    </button>
+  `;
+  
+  actionsCard.innerHTML = buttons;
+}
+
+// Show dispatch modal
+async function showDispatchModal() {
+  try {
+    const response = await fetch('api/fetch_emergency_responders.php');
+    const result = await response.json();
+    
+    if (!result.success) {
+      showToast('error', 'Failed to load emergency responders');
+      return;
+    }
+    
+    const responders = result.data;
+    
+    modalManager.create({
+      id: 'dispatchModal',
+      icon: 'uil-telegram-alt',
+      iconColor: 'text-purple-600 dark:text-purple-400',
+      iconBg: 'bg-purple-100 dark:bg-purple-900/60',
+      title: 'Dispatch Emergency Responders',
+      subtitle: 'Select team to dispatch',
+      body: `
+        <div class="space-y-3">
+          <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Select Emergency Responder</label>
+          <select id="responderSelect" class="w-full p-3 border-2 border-gray-200 dark:border-neutral-600 dark:bg-neutral-700 dark:text-white rounded-lg text-sm focus:outline-none focus:border-purple-500">
+            <option value="">Choose responder...</option>
+            ${responders.map(r => `
+              <option value="${r.id}" data-name="${r.name}">
+                ${r.name} - ${r.type.toUpperCase()} (${r.contact})
+              </option>
+            `).join('')}
+          </select>
+          
+          <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mt-3">
+            <div class="flex gap-2">
+              <i class="uil uil-info-circle text-yellow-600 dark:text-yellow-400 text-lg flex-shrink-0"></i>
+              <p class="text-xs text-yellow-800 dark:text-yellow-300">
+                The selected team will be notified and dispatched to the incident location immediately.
+              </p>
+            </div>
+          </div>
+        </div>
+      `,
+      primaryButton: {
+        text: 'Dispatch Now',
+        icon: 'uil-telegram-alt',
+        class: 'bg-purple-500 hover:bg-purple-600'
+      },
+      secondaryButton: {
+        text: 'Cancel'
+      },
+      onPrimary: async () => {
+        const select = document.getElementById('responderSelect');
+        
+        if (!select.value) {
+          showToast('error', 'Please select an emergency responder');
+          return;
+        }
+        
+        try {
+          const response = await fetch('api/dispatch_responders.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              incident_id: incidentId,
+              responder_id: select.value,
+              admin_name: 'Admin' // You can get this from session
+            })
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            showToast('success', `${result.responder} dispatched successfully!`);
+            modalManager.close('dispatchModal');
+            // Refresh page data
+            fetchIncidentDetails();
+          } else {
+            showToast('error', 'Failed to dispatch: ' + result.error);
+          }
+        } catch (error) {
+          console.error('Dispatch error:', error);
+          showToast('error', 'Failed to dispatch responders');
+        }
+      }
+    });
+    
+    modalManager.show('dispatchModal');
+  } catch (error) {
+    console.error('Error loading responders:', error);
+    showToast('error', 'Failed to load emergency responders');
+  }
+}
+
+// Populate the page with incident data
+function populateIncidentDetails(incident) {
+  // Update breadcrumb and title
+  document.getElementById('breadcrumbIncidentId').textContent = incident.id;
+  
+  // Update incident overview
+  document.querySelector('.inline-flex.items-center.gap-2.px-4').innerHTML = `
+    <i class="uil uil-${getIncidentIcon(incident.type)} text-xl"></i>
+    ${getIncidentTypeLabel(incident.type)}
+  `;
+  
+  document.querySelector('.inline-flex.items-center.gap-2.px-4').className = 
+    `inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm mb-5 ${getIncidentTypeColor(incident.type)}`;
+  
+  // Update status badge
+  updateStatusBadge(incident.status);
+  
+  // Update incident details
+  document.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-2.gap-5')[0].innerHTML = `
+    <div class="flex flex-col gap-1.5">
+      <span class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">Incident ID</span>
+      <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300">#${incident.id}</span>
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <span class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">Date Reported</span>
+      <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300">${incident.date_reported}</span>
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <span class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">Time Reported</span>
+      <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300">${incident.time_reported}</span>
+    </div>
+  `;
+  
+  // Update location details (keep static for now, but you can make this dynamic too)
+  const locationGrid = document.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-2.gap-5')[1];
+  locationGrid.querySelector('span.text-sm.font-semibold').textContent = incident.location;
+  
+  // Update reporter details
+  if (incident.reporter_name) {
+    document.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-2.gap-5')[2].innerHTML = `
+      <div class="flex flex-col gap-1.5">
+        <span class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">Name</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300">${incident.reporter_name}</span>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <span class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">User ID</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300">${incident.reporter_user_id || 'N/A'}</span>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <span class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">Contact Number</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300">${incident.reporter_contact || 'N/A'}</span>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <span class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">Address</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300">${incident.reporter_address || 'N/A'}</span>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <span class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">Resident Since</span>
+        <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300">${incident.resident_since}</span>
+      </div>
+    `;
+  }
+}
+
+// Helper functions
+function getIncidentIcon(type) {
+  const icons = {
+    'fire': 'fire',
+    'flood': 'water',
+    'crime': 'shield-exclamation'
+  };
+  return icons[type] || 'exclamation-triangle';
+}
+
+function getIncidentTypeLabel(type) {
+  const labels = {
+    'fire': 'Fire Emergency',
+    'flood': 'Flood Alert',
+    'crime': 'Crime Incident'
+  };
+  return labels[type] || 'Emergency';
+}
+
+function getIncidentTypeColor(type) {
+  const colors = {
+    'fire': 'bg-red-100 text-red-600 dark:bg-red-800/20 dark:text-red-400',
+    'flood': 'bg-blue-100 text-blue-600 dark:bg-blue-800/20 dark:text-blue-400',
+    'crime': 'bg-yellow-100 text-yellow-600 dark:bg-yellow-800/20 dark:text-yellow-400'
+  };
+  return colors[type] || 'bg-gray-100 text-gray-600';
+}
+
+function updateStatusBadge(status) {
+  const statusBadge = document.getElementById("statusBadge");
+  let bgColor = "", textColor = "", dotColor = "", statusDisplay = "";
+  
+  if (status === "pending") {
+    bgColor = "bg-yellow-100 dark:bg-yellow-900/60";
+    textColor = "text-yellow-600 dark:text-yellow-400";
+    dotColor = "bg-yellow-600 dark:bg-yellow-400";
+    statusDisplay = "Pending Response";
+  } else if (status === "responding") {
+    bgColor = "bg-blue-100 dark:bg-blue-900/60";
+    textColor = "text-blue-600 dark:text-blue-400";
+    dotColor = "bg-blue-600 dark:bg-blue-400";
+    statusDisplay = "Active Response";
+  } else if (status === "resolved") {
+    bgColor = "bg-green-100 dark:bg-green-900/60";
+    textColor = "text-green-600 dark:text-green-400";
+    dotColor = "bg-green-600 dark:bg-green-400";
+    statusDisplay = "Resolved";
+  }
+
+  statusBadge.className = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${bgColor} ${textColor}`;
+  statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full ${dotColor} status-dot"></span> ${statusDisplay}`;
+}
+
 // Initialize Map
 const incidentLocation = [14.716412, 121.040834];
 const barangayHall = [14.712429, 121.038435];
@@ -5,18 +399,18 @@ let routingControl = null;
 let directionsActive = false;
 let selectedFiles = [];
 
-const map = L.map("incidentMap").setView(incidentLocation, 15);
+const map = L.map("incidentMap").setView(incidentLocation, 16);
 
 // Create both light and dark tile layers
 const lightLayer = L.tileLayer(
-  "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  "assets/tiles/streets-v2/{z}/{x}/{y}.png",
   {
     attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
   }
 );
 
 const darkLayer = L.tileLayer(
-  "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  "assets/tiles/streets-v2-dark/{z}/{x}/{y}.png",
   {
     attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
   }
@@ -181,8 +575,7 @@ function toggleDirections() {
   }
 }
 
-// Mark as Resolved
-function markAsResolved() {
+async function markAsResolved() {
   modalManager.create({
     id: 'resolveModal',
     icon: 'uil-check-circle',
@@ -201,13 +594,33 @@ function markAsResolved() {
     secondaryButton: {
       text: 'Cancel'
     },
-    onPrimary: () => {
-      const statusBadge = document.getElementById("statusBadge");
-      statusBadge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-600";
-      statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-600 status-dot"></span> Resolved';
-
-      addTimelineItem("Incident Marked as Resolved", "Incident successfully resolved by admin");
-      showToast('success', 'Incident marked as RESOLVED');
+    onPrimary: async () => {
+      try {
+        const response = await fetch('api/update_incident_status.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: incidentId,
+            status: 'resolved'
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          updateStatusBadge('resolved');
+          addTimelineItem("Incident Marked as Resolved", "Incident successfully resolved by admin");
+          showToast('success', 'Incident marked as RESOLVED');
+        } else {
+          showToast('error', 'Failed to update status: ' + result.error);
+        }
+      } catch (error) {
+        console.error('Update error:', error);
+        showToast('error', 'Failed to update status');
+      }
+      
       modalManager.close('resolveModal');
     }
   });
@@ -216,7 +629,7 @@ function markAsResolved() {
 }
 
 // Update Status
-function updateStatus() {
+async function updateStatus() {
   modalManager.create({
     id: 'updateStatusModal',
     icon: 'uil-pen',
@@ -249,7 +662,7 @@ function updateStatus() {
     secondaryButton: {
       text: 'Cancel'
     },
-    onPrimary: () => {
+    onPrimary: async () => {
       const status = document.getElementById("statusSelectModal");
       const notes = document.getElementById("instructionsModal");
 
@@ -258,39 +671,38 @@ function updateStatus() {
         return;
       }
 
-      const statusText = status.options[status.selectedIndex].text;
-      const statusValue = status.value;
+      try {
+        const response = await fetch('api/update_incident_status.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: incidentId,
+            status: status.value
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          const statusText = status.options[status.selectedIndex].text;
+          updateStatusBadge(status.value);
+          addTimelineItem("Status Updated", `Status: ${statusText}`);
 
-      const statusBadge = document.getElementById("statusBadge");
+          if (notes.value) {
+            addTimelineItem("Admin Note Added", notes.value);
+          }
 
-      let bgColor = "", textColor = "", dotColor = "", statusDisplay = "";
-      if (statusValue === "pending") {
-        bgColor = "bg-yellow-100 dark:bg-yellow-900/60";
-        textColor = "text-yellow-600 dark:text-yellow-400";
-        dotColor = "bg-yellow-600 dark:bg-yellow-400";
-        statusDisplay = "Pending Response";
-      } else if (statusValue === "responding") {
-        bgColor = "bg-blue-100 dark:bg-blue-900/60";
-        textColor = "text-blue-600 dark:text-blue-400";
-        dotColor = "bg-blue-600 dark:bg-blue-400";
-        statusDisplay = "Active Response";
-      } else if (statusValue === "resolved") {
-        bgColor = "bg-green-100 dark:bg-green-900/60";
-        textColor = "text-green-600 dark:text-green-400";
-        dotColor = "bg-green-600 dark:bg-green-400";
-        statusDisplay = "Resolved";
+          showToast('success', `Status updated to: ${statusText}`);
+        } else {
+          showToast('error', 'Failed to update status: ' + result.error);
+        }
+      } catch (error) {
+        console.error('Update error:', error);
+        showToast('error', 'Failed to update status');
       }
 
-      statusBadge.className = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${bgColor} ${textColor}`;
-      statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full ${dotColor} status-dot"></span> ${statusDisplay}`;
-
-      addTimelineItem("Status Updated", `Status: ${statusText}`);
-
-      if (notes.value) {
-        addTimelineItem("Admin Note Added", notes.value);
-      }
-
-      showToast('success', `Status updated to: ${statusText}`);
       modalManager.close('updateStatusModal');
     }
   });
@@ -537,7 +949,7 @@ function openImageModal(imageId) {
 }
 
 // Add Remark
-function addRemark() {
+async function addRemark() {
   const remarkText = document.getElementById("newRemark").value.trim();
 
   if (!remarkText) {
@@ -545,37 +957,35 @@ function addRemark() {
     return;
   }
 
-  const now = new Date();
-  const timeString = now.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-
-  const remarksList = document.getElementById("remarksList");
-  const newRemark = document.createElement("div");
-  newRemark.className = "bg-gray-50 dark:bg-neutral-700 rounded-lg p-3 opacity-0 transition-opacity duration-300";
-  newRemark.innerHTML = `
-    <div class="flex justify-between items-center mb-1.5">
-      <span class="font-semibold text-sm text-gray-900 dark:text-white">Admin - Current User</span>
-      <span class="text-xs text-gray-500 dark:text-gray-400">${timeString}</span>
-    </div>
-    <div class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">${remarkText}</div>
-  `;
-
-  remarksList.insertBefore(newRemark, remarksList.firstChild);
-  
-  setTimeout(() => {
-    newRemark.classList.remove('opacity-0');
-  }, 10);
-
-  addTimelineItem("Admin Note Added", remarkText);
-
-  document.getElementById("newRemark").value = "";
-
-  showToast('success', 'Admin note added successfully');
+  try {
+    const response = await fetch('api/add_incident_note.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        incident_id: incidentId,
+        note: remarkText,
+        admin_name: 'Admin' // You can get this from session
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      document.getElementById("newRemark").value = "";
+      showToast('success', 'Admin note added successfully');
+      // Refresh notes and timeline
+      fetchIncidentNotes();
+      fetchIncidentTimeline();
+    } else {
+      showToast('error', 'Failed to add note: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Add note error:', error);
+    showToast('error', 'Failed to add note');
+  }
 }
-
 // Add Timeline Item
 function addTimelineItem(title, content) {
   const timeline = document.getElementById("timeline");
@@ -639,3 +1049,7 @@ setInterval(() => {
     durationElement.textContent = currentMinutes + 1 + " minutes";
   }
 }, 60000);
+
+document.addEventListener('DOMContentLoaded', () => {
+  fetchIncidentDetails();
+});
