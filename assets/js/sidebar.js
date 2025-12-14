@@ -162,3 +162,19 @@ userProfileBtn.addEventListener("click", (e) => {
 
 document.addEventListener("click", () => userDropdown.classList.add("hidden"));
 userDropdown.addEventListener("click", (e) => e.stopPropagation());
+
+// Logout handler
+const logoutLink = userDropdown.querySelector('a:last-child');
+if (logoutLink) {
+  logoutLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    // Clear auth session
+    localStorage.removeItem("sc_authUser");
+    // Optional toast feedback if available
+    if (window.showToast) {
+      window.showToast('You have been logged out.');
+    }
+    // Redirect to login page with smooth transition
+    window.redirectWithTransition('login.html');
+  });
+}

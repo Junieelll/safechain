@@ -281,7 +281,7 @@ if (registerForm) {
     }
 
     // Success — do NOT auto-login; redirect user to the login page
-    window.showToast('Account created successfully! Redirecting to login...');
+    window.showToast('Account created. Please log in to continue.');
     setTimeout(() => {
       window.redirectWithTransition('login.html');
     }, 600);
