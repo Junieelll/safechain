@@ -34,6 +34,8 @@ if (!AuthChecker::isLoggedIn()) {
             darkMode: ["class", '[data-theme="dark"]'],
         };
     </script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
 </head>
 
 <body class="min-h-screen flex transition-all duration-300 dark:bg-neutral-900">
@@ -234,6 +236,17 @@ if (!AuthChecker::isLoggedIn()) {
     <script src="assets/js/sidebar.js"></script>
     <script src="assets/js/toast.js"></script>
     <script src="assets/js/dashboard.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then((registration) => {
+                    console.log('Service Worker registered:', registration);
+                })
+                .catch((error) => {
+                    console.log('Service Worker registration failed:', error);
+                });
+        }
+    </script>
 </body>
 
 </html>
