@@ -662,3 +662,12 @@ body {
     font-size: 0.75rem;
   }
 }
+
+.form-input.border-red-500 {
+  border-color: #ef4444 !important;
+}
+
+.form-input.border-red-500:focus {
+  border-color: #ef4444 !important;
+  ring-color: #fecaca !important;
+}

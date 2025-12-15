@@ -33,7 +33,7 @@ $sql = "SELECT
 FROM incidents i
 LEFT JOIN residents r ON i.reporter_id = r.resident_id
 WHERE i.is_archived = 0
-AND i.status != 'resolved'";
+AND i.status = 'pending'";
 
 // Filter by type
 if ($type !== 'all' && in_array($type, ['fire', 'crime', 'flood'])) {

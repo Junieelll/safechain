@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SafeChain Responder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://unicons.iconscout.com/release/v4.0.8/css/line.css"
+    />
+    <style>
+      .active-screen {
+        display: block;
+      }
+      .hidden-screen {
+        display: none !important;
+      }
+      @keyframes slide-up {
+        from {
+          transform: translateY(100%);
+        }
+        to {
+          transform: translateY(0);
+        }
+      }
+      .animate-slide-up {
+        animation: slide-up 0.3s ease-out;
+      }
+      .mobile-container {
+        max-width: 428px;
+        margin: 0 auto;
+        background: #f8f9fa;
+        min-height: 100vh;
+        height: 100vh; /* Add fixed height */
+        overflow: hidden; /* Prevent overflow */
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
+        position: relative;
+      }
+
+      /* Make screens scrollable */
+      .active-screen,
+      .hidden-screen {
+        height: calc(100vh - 44px); /* Subtract status bar height */
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+
+      /* Better bottom nav */
+      .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 428px;
+        z-index: 40;
+      }
+      /* Status bar */
+      .status-bar {
+        height: 44px;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        color: white;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100">
+    <!-- Mobile Container -->
+    <div class="mobile-container">
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex gap-1 items-center">
+          <i class="uil uil-signal text-xs"></i>
+          <i class="uil uil-wifi text-xs"></i>
+          <i class="uil uil-battery-bolt text-xs"></i>
+        </div>
+      </div>
+
+      <!-- SCREEN 0: Home Page -->
+      <div id="homeScreen" class="active-screen bg-gray-50 min-h-screen pb-20">
+        <!-- Header -->
+        <div class="bg-white px-5 py-4 border-b border-gray-100">
+          <div class="flex justify-between items-center mb-3">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center"
+              >
+                <i class="uil uil-shield-check text-white text-2xl"></i>
+              </div>
+              <div>
+                <h1 class="text-base font-semibold text-gray-900">SafeChain</h1>
+                <p class="text-xs text-gray-500">Responder</p>
+              </div>
+            </div>
+            <div class="relative">
+              <div
+                class="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center"
+              >
+                <i class="uil uil-bell text-gray-700 text-xl"></i>
+              </div>
+              <span
+                class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-medium"
+                >2</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Welcome Section -->
+        <div class="px-4 pt-5">
+          <div
+            class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 text-white shadow-lg mb-5"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <p class="text-sm opacity-90 mb-1">Welcome back,</p>
+                <h2 class="text-2xl font-bold">Officer Santos</h2>
+              </div>
+              <div
+                class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center"
+              >
+                <i class="uil uil-user-circle text-4xl"></i>
+              </div>
+            </div>
+            <div
+              class="flex items-center gap-2 bg-white bg-opacity-20 rounded-lg px-3 py-2 inline-block"
+            >
+              <div
+                class="w-2 h-2 bg-green-300 rounded-full animate-pulse"
+              ></div>
+              <span class="text-sm font-medium">On Duty</span>
+            </div>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="grid grid-cols-2 gap-3 mb-5">
+            <div class="bg-white rounded-xl p-4 shadow-sm">
+              <div class="flex items-center justify-between mb-2">
+                <div
+                  class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center"
+                >
+                  <i class="uil uil-clipboard-notes text-blue-500 text-xl"></i>
+                </div>
+                <span class="text-2xl font-bold text-gray-900">12</span>
+              </div>
+              <p class="text-xs text-gray-500">Total Responses</p>
+              <p class="text-xs text-emerald-600 font-medium mt-1">
+                This month
+              </p>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm">
+              <div class="flex items-center justify-between mb-2">
+                <div
+                  class="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center"
+                >
+                  <i class="uil uil-clock text-orange-500 text-xl"></i>
+                </div>
+                <span class="text-2xl font-bold text-gray-900">24</span>
+              </div>
+              <p class="text-xs text-gray-500">Avg Response Time</p>
+              <p class="text-xs text-orange-600 font-medium mt-1">Minutes</p>
+            </div>
+          </div>
+
+          <!-- Active Incidents Alert -->
+          <div class="bg-red-50 border-l-4 border-red-500 rounded-xl p-4 mb-5">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center"
+              >
+                <i
+                  class="uil uil-exclamation-triangle text-red-600 text-xl"
+                ></i>
+              </div>
+              <div class="flex-1">
+                <p class="text-sm font-semibold text-red-900">
+                  2 New Incidents
+                </p>
+                <p class="text-xs text-red-700">Immediate attention required</p>
+              </div>
+              <button
+                onclick="navigateTo('incidents')"
+                class="bg-red-500 text-white px-4 py-2 rounded-lg text-xs font-medium"
+              >
+                View
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <!-- Quick Actions -->
+          <div class="mb-5">
+            <h3 class="text-sm font-semibold text-gray-900 mb-3">
+              Quick Actions
+            </h3>
+            <div class="grid grid-cols-3 gap-3">
+              <button
+                class="bg-white p-4 rounded-xl shadow-sm active:scale-95 transition"
+              >
+                <div
+                  class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-map-marker text-blue-500 text-2xl"></i>
+                </div>
+                <p class="text-xs font-medium text-gray-700 text-center">
+                  Check In
+                </p>
+              </button>
+              <button
+                class="bg-white p-4 rounded-xl shadow-sm active:scale-95 transition"
+              >
+                <div
+                  class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-file-alt text-purple-500 text-2xl"></i>
+                </div>
+                <p class="text-xs font-medium text-gray-700 text-center">
+                  Reports
+                </p>
+              </button>
+              <button
+                class="bg-white p-4 rounded-xl shadow-sm active:scale-95 transition"
+              >
+                <div
+                  class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-phone text-green-500 text-2xl"></i>
+                </div>
+                <p class="text-xs font-medium text-gray-700 text-center">
+                  Emergency
+                </p>
+              </button>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm mb-5">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-semibold text-gray-900">
+                Recent Activity
+              </h3>
+              <button class="text-xs text-emerald-600 font-medium">
+                View All
+              </button>
+            </div>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3 pb-3 border-b border-gray-50">
+                <div
+                  class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center"
+                >
+                  <i class="uil uil-check-circle text-green-500 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900">
+                    Incident Resolved
+                  </p>
+                  <p class="text-xs text-gray-500">
+                    Medical emergency • 2h ago
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 pb-3 border-b border-gray-50">
+                <div
+                  class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center"
+                >
+                  <i class="uil uil-file-check text-blue-500 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900">
+                    Report Submitted
+                  </p>
+                  <p class="text-xs text-gray-500">Traffic incident • 4h ago</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center"
+                >
+                  <i class="uil uil-award text-purple-500 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900">
+                    Achievement Unlocked
+                  </p>
+                  <p class="text-xs text-gray-500">
+                    10 successful responses • Yesterday
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 1: Incidents List Page -->
+      <div
+        id="incidentsScreen"
+        class="hidden-screen bg-gray-50 min-h-screen pb-20"
+      >
+        <!-- Header -->
+        <div class="bg-white px-5 py-4 border-b border-gray-100">
+          <div class="flex justify-between items-center mb-3">
+            <div>
+              <h1 class="text-xl font-bold text-gray-900">Incidents</h1>
+              <p class="text-xs text-gray-500">
+                Active emergencies requiring response
+              </p>
+            </div>
+            <div class="relative">
+              <div
+                class="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center"
+              >
+                <i class="uil uil-filter text-gray-700 text-xl"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Incident Cards -->
+        <div class="px-4 py-4 space-y-4">
+          <!-- Incident 1 -->
+          <div
+            onclick="viewIncident(1)"
+            class="bg-white rounded-2xl p-4 shadow-sm active:scale-[0.98] transition cursor-pointer"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center"
+                >
+                  <i class="uil uil-fire text-red-500 text-2xl"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-gray-900">
+                    Fire Emergency
+                  </p>
+                  <p class="text-xs text-gray-500">#EMG-2025-1001</p>
+                </div>
+              </div>
+              <span
+                class="bg-red-50 text-red-600 text-xs px-3 py-1 rounded-full font-medium"
+                >Urgent</span
+              >
+            </div>
+            <div class="space-y-2 border-t border-gray-50 pt-3">
+              <div class="flex items-center gap-2 text-xs text-gray-600">
+                <i class="uil uil-map-marker"></i>
+                <span>321 Luna Street, Gulod, Quezon City</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-gray-600">
+                <i class="uil uil-clock"></i>
+                <span>Reported 11:56 AM • 9 mins ago</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-gray-600">
+                <i class="uil uil-user"></i>
+                <span>Pedro Garcia • +63 940 456 7890</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Incident 2 -->
+          <div
+            onclick="viewIncident(2)"
+            class="bg-white rounded-2xl p-4 shadow-sm active:scale-[0.98] transition cursor-pointer"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center"
+                >
+                  <i class="uil uil-car text-orange-500 text-2xl"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-gray-900">
+                    Traffic Accident
+                  </p>
+                  <p class="text-xs text-gray-500">#EMG-2025-1002</p>
+                </div>
+              </div>
+              <span
+                class="bg-orange-50 text-orange-600 text-xs px-3 py-1 rounded-full font-medium"
+                >High</span
+              >
+            </div>
+            <div class="space-y-2 border-t border-gray-50 pt-3">
+              <div class="flex items-center gap-2 text-xs text-gray-600">
+                <i class="uil uil-map-marker"></i>
+                <span>Commonwealth Ave cor. Tandang Sora</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-gray-600">
+                <i class="uil uil-clock"></i>
+                <span>Reported 11:42 AM • 23 mins ago</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-gray-600">
+                <i class="uil uil-user"></i>
+                <span>Maria Santos • +63 917 123 4567</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Incident 3 -->
+          <div class="bg-white rounded-2xl p-4 shadow-sm opacity-60">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center"
+                >
+                  <i class="uil uil-medkit text-blue-500 text-2xl"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-gray-900">
+                    Medical Emergency
+                  </p>
+                  <p class="text-xs text-gray-500">#EMG-2025-1000</p>
+                </div>
+              </div>
+              <span
+                class="bg-green-50 text-green-600 text-xs px-3 py-1 rounded-full font-medium"
+                >Resolved</span
+              >
+            </div>
+            <div class="space-y-2 border-t border-gray-50 pt-3">
+              <div class="flex items-center gap-2 text-xs text-gray-600">
+                <i class="uil uil-map-marker"></i>
+                <span>456 Quirino Highway, Novaliches</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-gray-600">
+                <i class="uil uil-clock"></i>
+                <span>Resolved 10:30 AM • 1h 35m ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORTS SCREEN -->
+      <div
+        id="reportsScreen"
+        class="hidden-screen bg-gray-50 min-h-screen pb-20"
+      >
+        <!-- Header -->
+        <div class="bg-white px-5 py-4 border-b border-gray-100">
+          <div class="flex justify-between items-center mb-3">
+            <div>
+              <h1 class="text-xl font-bold text-gray-900">Reports</h1>
+              <p class="text-xs text-gray-500">
+                View and manage incident reports
+              </p>
+            </div>
+            <button
+              onclick="showFilterModal()"
+              class="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center"
+            >
+              <i class="uil uil-filter text-gray-700 text-xl"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="px-4 py-4">
+          <!-- Stats Summary -->
+          <div class="grid grid-cols-3 gap-3 mb-5">
+            <div class="bg-white rounded-xl p-4 shadow-sm text-center">
+              <div
+                class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-2"
+              >
+                <i class="uil uil-file-check text-blue-500 text-xl"></i>
+              </div>
+              <p class="text-2xl font-bold text-gray-900">24</p>
+              <p class="text-xs text-gray-500 mt-1">Total Reports</p>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm text-center">
+              <div
+                class="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-2"
+              >
+                <i class="uil uil-check-circle text-green-500 text-xl"></i>
+              </div>
+              <p class="text-2xl font-bold text-gray-900">18</p>
+              <p class="text-xs text-gray-500 mt-1">Completed</p>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm text-center">
+              <div
+                class="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-2"
+              >
+                <i class="uil uil-clock text-orange-500 text-xl"></i>
+              </div>
+              <p class="text-2xl font-bold text-gray-900">6</p>
+              <p class="text-xs text-gray-500 mt-1">Pending</p>
+            </div>
+          </div>
+
+          <!-- Time Period Selector -->
+          <div class="bg-white rounded-xl p-3 shadow-sm mb-4">
+            <div class="flex gap-2 overflow-x-auto">
+              <button
+                class="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium whitespace-nowrap"
+              >
+                This Month
+              </button>
+              <button
+                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium whitespace-nowrap"
+              >
+                Last Month
+              </button>
+              <button
+                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium whitespace-nowrap"
+              >
+                This Year
+              </button>
+              <button
+                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium whitespace-nowrap"
+              >
+                Custom
+              </button>
+            </div>
+          </div>
+
+          <!-- Report Type Filter -->
+          <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
+            <button
+              class="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full text-sm font-medium whitespace-nowrap border-2 border-emerald-500"
+            >
+              All
+            </button>
+            <button
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium whitespace-nowrap"
+            >
+              Fire
+            </button>
+            <button
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium whitespace-nowrap"
+            >
+              Medical
+            </button>
+            <button
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium whitespace-nowrap"
+            >
+              Traffic
+            </button>
+            <button
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium whitespace-nowrap"
+            >
+              Crime
+            </button>
+          </div>
+
+          <!-- Reports List -->
+          <div class="space-y-3 mb-5">
+            <!-- Report 1 -->
+            <div class="bg-white rounded-xl p-4 shadow-sm">
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-start gap-3 flex-1">
+                  <div
+                    class="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                  >
+                    <i class="uil uil-fire text-red-500 text-xl"></i>
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-sm font-semibold text-gray-900">
+                      Fire Emergency Report
+                    </p>
+                    <p class="text-xs text-gray-500 mb-2">#RPT-2025-1001</p>
+                    <div class="flex items-center gap-2 text-xs text-gray-600">
+                      <i class="uil uil-calendar-alt"></i>
+                      <span>Dec 14, 2025 • 11:56 AM</span>
+                    </div>
+                  </div>
+                </div>
+                <span
+                  class="bg-green-50 text-green-600 text-xs px-2 py-1 rounded-full font-medium"
+                  >Completed</span
+                >
+              </div>
+              <div
+                class="border-t border-gray-50 pt-3 flex items-center justify-between"
+              >
+                <div class="flex items-center gap-2 text-xs text-gray-600">
+                  <i class="uil uil-map-marker"></i>
+                  <span>321 Luna St, Gulod</span>
+                </div>
+                <button
+                  onclick="viewReport(1)"
+                  class="text-emerald-600 text-xs font-medium"
+                >
+                  View Details
+                </button>
+              </div>
+            </div>
+
+            <!-- Report 2 -->
+            <div class="bg-white rounded-xl p-4 shadow-sm">
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-start gap-3 flex-1">
+                  <div
+                    class="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                  >
+                    <i class="uil uil-car text-orange-500 text-xl"></i>
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-sm font-semibold text-gray-900">
+                      Traffic Accident Report
+                    </p>
+                    <p class="text-xs text-gray-500 mb-2">#RPT-2025-1002</p>
+                    <div class="flex items-center gap-2 text-xs text-gray-600">
+                      <i class="uil uil-calendar-alt"></i>
+                      <span>Dec 14, 2025 • 11:42 AM</span>
+                    </div>
+                  </div>
+                </div>
+                <span
+                  class="bg-yellow-50 text-yellow-600 text-xs px-2 py-1 rounded-full font-medium"
+                  >Pending</span
+                >
+              </div>
+              <div
+                class="border-t border-gray-50 pt-3 flex items-center justify-between"
+              >
+                <div class="flex items-center gap-2 text-xs text-gray-600">
+                  <i class="uil uil-map-marker"></i>
+                  <span>Commonwealth Ave</span>
+                </div>
+                <button
+                  onclick="viewReport(2)"
+                  class="text-emerald-600 text-xs font-medium"
+                >
+                  View Details
+                </button>
+              </div>
+            </div>
+
+            <!-- Report 3 -->
+            <div class="bg-white rounded-xl p-4 shadow-sm">
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-start gap-3 flex-1">
+                  <div
+                    class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                  >
+                    <i class="uil uil-medkit text-blue-500 text-xl"></i>
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-sm font-semibold text-gray-900">
+                      Medical Emergency Report
+                    </p>
+                    <p class="text-xs text-gray-500 mb-2">#RPT-2025-1000</p>
+                    <div class="flex items-center gap-2 text-xs text-gray-600">
+                      <i class="uil uil-calendar-alt"></i>
+                      <span>Dec 13, 2025 • 10:30 AM</span>
+                    </div>
+                  </div>
+                </div>
+                <span
+                  class="bg-green-50 text-green-600 text-xs px-2 py-1 rounded-full font-medium"
+                  >Completed</span
+                >
+              </div>
+              <div
+                class="border-t border-gray-50 pt-3 flex items-center justify-between"
+              >
+                <div class="flex items-center gap-2 text-xs text-gray-600">
+                  <i class="uil uil-map-marker"></i>
+                  <span>456 Quirino Highway</span>
+                </div>
+                <button
+                  onclick="viewReport(3)"
+                  class="text-emerald-600 text-xs font-medium"
+                >
+                  View Details
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Export Button -->
+          <button
+            class="w-full bg-white border-2 border-emerald-500 text-emerald-600 py-4 rounded-xl font-semibold shadow-sm flex items-center justify-center gap-2 mb-6"
+          >
+            <i class="uil uil-download-alt text-xl"></i>
+            <span>EXPORT REPORTS</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- PROFILE SCREEN -->
+      <div
+        id="profileScreen"
+        class="hidden-screen bg-gray-50 min-h-screen pb-20"
+      >
+        <!-- Header -->
+        <div
+          class="bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-6"
+        >
+          <div class="flex items-center gap-4 mb-4">
+            <div
+              class="w-20 h-20 bg-white rounded-full flex items-center justify-center"
+            >
+              <i class="uil uil-user text-emerald-500 text-4xl"></i>
+            </div>
+            <div class="flex-1">
+              <h1 class="text-xl font-bold text-white">Officer Santos</h1>
+              <p class="text-emerald-100 text-sm">Responder ID: RSP-2025-042</p>
+              <div class="flex items-center gap-2 mt-2">
+                <div
+                  class="w-2 h-2 bg-green-300 rounded-full animate-pulse"
+                ></div>
+                <span class="text-white text-xs font-medium">On Duty</span>
+              </div>
+            </div>
+          </div>
+          <button
+            class="w-full bg-white bg-opacity-20 text-white py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2"
+          >
+            <i class="uil uil-edit text-lg"></i>
+            <span>Edit Profile</span>
+          </button>
+        </div>
+
+        <div class="px-4 py-4">
+          <!-- Performance Stats -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+            <h3 class="font-semibold text-gray-900 mb-4 text-sm">
+              Performance Overview
+            </h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="text-center">
+                <div
+                  class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-clipboard-notes text-blue-500 text-2xl"></i>
+                </div>
+                <p class="text-2xl font-bold text-gray-900">127</p>
+                <p class="text-xs text-gray-500">Total Responses</p>
+              </div>
+              <div class="text-center">
+                <div
+                  class="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-check-circle text-green-500 text-2xl"></i>
+                </div>
+                <p class="text-2xl font-bold text-gray-900">98%</p>
+                <p class="text-xs text-gray-500">Success Rate</p>
+              </div>
+              <div class="text-center">
+                <div
+                  class="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-clock text-orange-500 text-2xl"></i>
+                </div>
+                <p class="text-2xl font-bold text-gray-900">18m</p>
+                <p class="text-xs text-gray-500">Avg Response</p>
+              </div>
+              <div class="text-center">
+                <div
+                  class="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-award text-purple-500 text-2xl"></i>
+                </div>
+                <p class="text-2xl font-bold text-gray-900">4.8</p>
+                <p class="text-xs text-gray-500">Rating</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Personal Information -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+            <h3 class="font-semibold text-gray-900 mb-4 text-sm">
+              Personal Information
+            </h3>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="uil uil-user text-gray-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs text-gray-500">Full Name</p>
+                  <p class="text-sm text-gray-900 font-medium">
+                    Juan Miguel Santos
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="uil uil-phone text-gray-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs text-gray-500">Contact Number</p>
+                  <p class="text-sm text-gray-900 font-medium">
+                    +63 917 555 1234
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="uil uil-envelope text-gray-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs text-gray-500">Email Address</p>
+                  <p class="text-sm text-gray-900 font-medium">
+                    j.santos@safechain.ph
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="uil uil-briefcase text-gray-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs text-gray-500">Department</p>
+                  <p class="text-sm text-gray-900 font-medium">
+                    Emergency Response Unit
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="uil uil-calendar-alt text-gray-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs text-gray-500">Joined Date</p>
+                  <p class="text-sm text-gray-900 font-medium">
+                    January 15, 2023
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Certifications & Badges -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+            <h3 class="font-semibold text-gray-900 mb-4 text-sm">
+              Certifications & Badges
+            </h3>
+            <div class="grid grid-cols-3 gap-3">
+              <div class="text-center">
+                <div
+                  class="w-16 h-16 bg-yellow-50 rounded-xl flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-award text-yellow-500 text-2xl"></i>
+                </div>
+                <p class="text-xs font-medium text-gray-700">First Responder</p>
+              </div>
+              <div class="text-center">
+                <div
+                  class="w-16 h-16 bg-red-50 rounded-xl flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-fire text-red-500 text-2xl"></i>
+                </div>
+                <p class="text-xs font-medium text-gray-700">Fire Safety</p>
+              </div>
+              <div class="text-center">
+                <div
+                  class="w-16 h-16 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-medkit text-blue-500 text-2xl"></i>
+                </div>
+                <p class="text-xs font-medium text-gray-700">EMT Certified</p>
+              </div>
+              <div class="text-center">
+                <div
+                  class="w-16 h-16 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-star text-green-500 text-2xl"></i>
+                </div>
+                <p class="text-xs font-medium text-gray-700">100 Responses</p>
+              </div>
+              <div class="text-center">
+                <div
+                  class="w-16 h-16 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-trophy text-purple-500 text-2xl"></i>
+                </div>
+                <p class="text-xs font-medium text-gray-700">Top Performer</p>
+              </div>
+              <div class="text-center">
+                <div
+                  class="w-16 h-16 bg-indigo-50 rounded-xl flex items-center justify-center mx-auto mb-2"
+                >
+                  <i class="uil uil-shield-check text-indigo-500 text-2xl"></i>
+                </div>
+                <p class="text-xs font-medium text-gray-700">Safety Expert</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Settings Section -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+            <h3 class="font-semibold text-gray-900 mb-4 text-sm">Settings</h3>
+            <div class="space-y-3">
+              <button
+                class="w-full flex items-center justify-between py-3 border-b border-gray-50"
+              >
+                <div class="flex items-center gap-3">
+                  <i class="uil uil-bell text-gray-600 text-xl"></i>
+                  <span class="text-sm text-gray-900">Notifications</span>
+                </div>
+                <i class="uil uil-angle-right text-gray-400"></i>
+              </button>
+              <button
+                class="w-full flex items-center justify-between py-3 border-b border-gray-50"
+              >
+                <div class="flex items-center gap-3">
+                  <i class="uil uil-lock text-gray-600 text-xl"></i>
+                  <span class="text-sm text-gray-900">Privacy & Security</span>
+                </div>
+                <i class="uil uil-angle-right text-gray-400"></i>
+              </button>
+              <button
+                class="w-full flex items-center justify-between py-3 border-b border-gray-50"
+              >
+                <div class="flex items-center gap-3">
+                  <i class="uil uil-cog text-gray-600 text-xl"></i>
+                  <span class="text-sm text-gray-900">Preferences</span>
+                </div>
+                <i class="uil uil-angle-right text-gray-400"></i>
+              </button>
+              <button
+                class="w-full flex items-center justify-between py-3 border-b border-gray-50"
+              >
+                <div class="flex items-center gap-3">
+                  <i class="uil uil-question-circle text-gray-600 text-xl"></i>
+                  <span class="text-sm text-gray-900">Help & Support</span>
+                </div>
+                <i class="uil uil-angle-right text-gray-400"></i>
+              </button>
+              <button class="w-full flex items-center justify-between py-3">
+                <div class="flex items-center gap-3">
+                  <i class="uil uil-info-circle text-gray-600 text-xl"></i>
+                  <span class="text-sm text-gray-900">About</span>
+                </div>
+                <i class="uil uil-angle-right text-gray-400"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Logout Button -->
+          <button
+            class="w-full bg-red-50 text-red-600 py-4 rounded-xl font-semibold shadow-sm flex items-center justify-center gap-2 mb-6"
+          >
+            <i class="uil uil-sign-out-alt text-xl"></i>
+            <span>LOGOUT</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: Incident Detail (Alert) -->
+      <div id="alertScreen" class="hidden-screen bg-gray-50 min-h-screen pb-20">
+        <!-- Header -->
+        <div class="bg-white px-5 py-4 border-b border-gray-100">
+          <button
+            onclick="navigateTo('incidents')"
+            class="flex items-center gap-2 text-emerald-600 mb-3 text-sm font-medium"
+          >
+            <i class="uil uil-arrow-left"></i>
+            <span>Back to Incidents</span>
+          </button>
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center"
+              >
+                <i class="uil uil-shield-check text-white text-2xl"></i>
+              </div>
+              <div>
+                <h1 class="text-base font-semibold text-gray-900">SafeChain</h1>
+                <p class="text-xs text-gray-500">Responder</p>
+              </div>
+            </div>
+            <div class="bg-gray-50 rounded-lg px-3 py-2">
+              <p class="text-xs text-gray-600">ID: RSP-2025-042</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alert Banner -->
+        <div class="bg-red-500 mx-4 mt-4 p-4 rounded-2xl shadow-lg">
+          <div class="flex items-center gap-3 mb-2">
+            <div
+              class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center"
+            >
+              <i class="uil uil-exclamation-triangle text-white text-2xl"></i>
+            </div>
+            <div class="flex-1">
+              <p class="text-white text-xs font-medium opacity-90">
+                NEW EMERGENCY
+              </p>
+              <h2 class="text-white text-lg font-bold">Fire Emergency</h2>
+            </div>
+          </div>
+          <div class="bg-white bg-opacity-10 rounded-lg px-3 py-2 mt-3">
+            <p class="text-white text-xs">Immediate response required</p>
+          </div>
+        </div>
+
+        <!-- Incident Details Card -->
+        <div class="px-4 py-4">
+          <div class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center"
+                >
+                  <i class="uil uil-fire text-red-500 text-xl"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-gray-900">
+                    Fire Emergency
+                  </p>
+                  <p class="text-xs text-gray-500">#EMG-2025-1001</p>
+                </div>
+              </div>
+              <span
+                class="bg-red-50 text-red-600 text-xs px-3 py-1 rounded-full font-medium"
+                >Urgent</span
+              >
+            </div>
+
+            <div class="space-y-3 border-t border-gray-50 pt-4">
+              <div class="flex items-start gap-3">
+                <div
+                  class="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="uil uil-clock text-gray-600 text-base"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs text-gray-500 mb-0.5">Time Reported</p>
+                  <p class="text-sm text-gray-900 font-medium">
+                    11:56 AM, Today
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div
+                  class="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="uil uil-user text-gray-600 text-base"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs text-gray-500 mb-0.5">Reporter</p>
+                  <p class="text-sm text-gray-900 font-medium">Pedro Garcia</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div
+                  class="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="uil uil-phone text-gray-600 text-base"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs text-gray-500 mb-0.5">Contact</p>
+                  <p class="text-sm text-gray-900 font-medium">
+                    +63 940 456 7890
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Location Card -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+            <div class="flex items-center gap-2 mb-4">
+              <i class="uil uil-map-marker text-emerald-500 text-lg"></i>
+              <h3 class="font-semibold text-gray-900 text-sm">
+                Location Details
+              </h3>
+            </div>
+            <div class="space-y-2 mb-4">
+              <div>
+                <p class="text-xs text-gray-500">Address</p>
+                <p class="text-sm text-gray-900">321 Luna Street, Gulod</p>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <p class="text-xs text-gray-500">Barangay</p>
+                  <p class="text-sm text-gray-900">Gulod</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">City</p>
+                  <p class="text-sm text-gray-900">Quezon City</p>
+                </div>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500">Coordinates</p>
+                <p class="text-xs text-gray-600">14.7140°N, 121.0418°E</p>
+              </div>
+            </div>
+            <button
+              class="w-full bg-emerald-50 text-emerald-600 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2"
+            >
+              <i class="uil uil-map text-base"></i>
+              <span>View on Map</span>
+            </button>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="space-y-3 pb-6">
+            <button
+              onclick="respondIncident()"
+              class="w-full bg-emerald-500 text-white py-4 rounded-xl font-semibold shadow-sm active:scale-[0.98] transition flex items-center justify-center gap-2"
+            >
+              <i class="uil uil-check-circle text-xl"></i>
+              <span>RESPOND TO INCIDENT</span>
+            </button>
+            <button
+              class="w-full bg-white text-gray-700 py-4 rounded-xl font-medium border border-gray-200"
+            >
+              Decline
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: Active Incident Management -->
+      <div
+        id="activeScreen"
+        class="hidden-screen bg-gray-50 min-h-screen pb-20"
+      >
+        <!-- Header -->
+        <div class="bg-white px-5 py-4 border-b border-gray-100">
+          <button
+            onclick="navigateTo('incidents')"
+            class="flex items-center gap-2 text-emerald-600 mb-3 text-sm font-medium"
+          >
+            <i class="uil uil-arrow-left"></i>
+            <span>Back to Incidents</span>
+          </button>
+          <div class="flex justify-between items-start">
+            <div>
+              <h1 class="text-lg font-bold text-gray-900">Active Incident</h1>
+              <p class="text-sm text-gray-500">#EMG-2025-1001</p>
+            </div>
+            <div class="text-right">
+              <div
+                class="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-lg text-xs font-medium mb-1"
+              >
+                RESPONDING
+              </div>
+              <p class="text-xs text-gray-500">12:05 PM</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="px-4 py-4">
+          <div class="grid grid-cols-3 gap-3 mb-4">
+            <button
+              onclick="showStatusUpdate()"
+              class="bg-white p-4 rounded-xl shadow-sm active:scale-95 transition"
+            >
+              <div
+                class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-2"
+              >
+                <i class="uil uil-file-edit-alt text-blue-500 text-xl"></i>
+              </div>
+              <p class="text-xs font-medium text-gray-700 text-center">
+                Update Status
+              </p>
+            </button>
+            <button
+              onclick="showEvidence()"
+              class="bg-white p-4 rounded-xl shadow-sm active:scale-95 transition"
+            >
+              <div
+                class="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-2"
+              >
+                <i class="uil uil-camera text-purple-500 text-xl"></i>
+              </div>
+              <p class="text-xs font-medium text-gray-700 text-center">
+                Add Evidence
+              </p>
+            </button>
+            <button
+              class="bg-white p-4 rounded-xl shadow-sm active:scale-95 transition"
+            >
+              <div
+                class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-2"
+              >
+                <i class="uil uil-phone text-green-500 text-xl"></i>
+              </div>
+              <p class="text-xs font-medium text-gray-700 text-center">
+                Call Reporter
+              </p>
+            </button>
+          </div>
+
+          <!-- Timeline Card -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+            <div class="flex items-center gap-2 mb-4">
+              <i class="uil uil-history text-emerald-500 text-lg"></i>
+              <h3 class="font-semibold text-gray-900 text-sm">
+                Incident Timeline
+              </h3>
+            </div>
+            <div class="space-y-4" id="timeline">
+              <div class="flex gap-3">
+                <div class="flex flex-col items-center">
+                  <div
+                    class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center"
+                  >
+                    <i class="uil uil-check text-white text-sm"></i>
+                  </div>
+                  <div class="w-0.5 h-full bg-gray-100 mt-1"></div>
+                </div>
+                <div class="flex-1 pb-3">
+                  <p class="text-sm font-medium text-gray-900">
+                    Incident Reported
+                  </p>
+                  <p class="text-xs text-gray-500 mt-0.5">
+                    11:56 AM • By Pedro Garcia
+                  </p>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <div class="flex flex-col items-center">
+                  <div
+                    class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center"
+                  >
+                    <i class="uil uil-check text-white text-sm"></i>
+                  </div>
+                  <div class="w-0.5 h-full bg-gray-100 mt-1"></div>
+                </div>
+                <div class="flex-1 pb-3">
+                  <p class="text-sm font-medium text-gray-900">
+                    Response Accepted
+                  </p>
+                  <p class="text-xs text-gray-500 mt-0.5">
+                    12:05 PM • Responder dispatched
+                  </p>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <div class="flex flex-col items-center">
+                  <div
+                    class="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center"
+                  >
+                    <i class="uil uil-spinner-alt text-white text-sm"></i>
+                  </div>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900">
+                    En Route to Location
+                  </p>
+                  <p class="text-xs text-gray-500 mt-0.5">
+                    12:10 PM • In progress
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Incident Info Card -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+            <h3 class="font-semibold text-gray-900 text-sm mb-4">
+              Incident Details
+            </h3>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="uil uil-fire text-red-500 text-base"></i>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Type</p>
+                  <p class="text-sm text-gray-900 font-medium">
+                    Fire Emergency
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="uil uil-map-marker text-emerald-500 text-base"></i>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Location</p>
+                  <p class="text-sm text-gray-900">
+                    321 Luna St, Gulod, Novaliches
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0"
+                >
+                  <i class="uil uil-user text-blue-500 text-base"></i>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Reporter</p>
+                  <p class="text-sm text-gray-900">
+                    Pedro Garcia • +63 940 456 7890
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resolution Button -->
+          <button
+            onclick="showResolution()"
+            class="w-full bg-emerald-500 text-white py-4 rounded-xl font-semibold shadow-sm mb-6 flex items-center justify-center gap-2"
+          >
+            <i class="uil uil-check-circle text-xl"></i>
+            <span>MARK AS RESOLVED</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SCREEN 4: Status Update Modal -->
+      <div
+        id="statusModal"
+        class="hidden-screen fixed inset-0 bg-black bg-opacity-40 flex items-end z-50"
+      >
+        <div
+          class="bg-white w-full rounded-t-3xl p-6 animate-slide-up"
+          style="max-width: 428px; margin: 0 auto"
+        >
+          <div class="flex justify-between items-center mb-5">
+            <h2 class="text-lg font-bold text-gray-900">Update Status</h2>
+            <button
+              onclick="hideStatusUpdate()"
+              class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"
+            >
+              <i class="uil uil-times text-gray-600"></i>
+            </button>
+          </div>
+
+          <div class="space-y-3 mb-5">
+            <button
+              onclick="updateStatus('En Route')"
+              class="w-full bg-blue-50 text-blue-600 py-4 rounded-xl font-medium text-sm flex items-center gap-3 px-4"
+            >
+              <div
+                class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center"
+              >
+                <i class="uil uil-car text-blue-600 text-xl"></i>
+              </div>
+              <span class="flex-1 text-left">En Route to Location</span>
+            </button>
+            <button
+              onclick="updateStatus('On Scene')"
+              class="w-full bg-orange-50 text-orange-600 py-4 rounded-xl font-medium text-sm flex items-center gap-3 px-4"
+            >
+              <div
+                class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center"
+              >
+                <i class="uil uil-map-marker text-orange-600 text-xl"></i>
+              </div>
+              <span class="flex-1 text-left">Arrived On Scene</span>
+            </button>
+            <button
+              onclick="updateStatus('Assessing')"
+              class="w-full bg-purple-50 text-purple-600 py-4 rounded-xl font-medium text-sm flex items-center gap-3 px-4"
+            >
+              <div
+                class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center"
+              >
+                <i class="uil uil-search text-purple-600 text-xl"></i>
+              </div>
+              <span class="flex-1 text-left">Assessing Situation</span>
+            </button>
+            <button
+              onclick="updateStatus('Responding')"
+              class="w-full bg-red-50 text-red-600 py-4 rounded-xl font-medium text-sm flex items-center gap-3 px-4"
+            >
+              <div
+                class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center"
+              >
+                <i
+                  class="uil uil-exclamation-triangle text-red-600 text-xl"
+                ></i>
+              </div>
+              <span class="flex-1 text-left">Active Response</span>
+            </button>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Additional Notes</label
+            >
+            <textarea
+              id="statusNotes"
+              class="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
+              rows="3"
+              placeholder="Enter any additional information..."
+            ></textarea>
+          </div>
+
+          <button
+            onclick="confirmStatusUpdate()"
+            class="w-full bg-emerald-500 text-white py-4 rounded-xl font-semibold"
+          >
+            Confirm Update
+          </button>
+        </div>
+      </div>
+
+      <!-- SCREEN 5: Evidence Collection -->
+      <div
+        id="evidenceModal"
+        class="hidden-screen fixed inset-0 bg-black bg-opacity-40 flex items-end z-50"
+      >
+        <div
+          class="bg-white w-full rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto animate-slide-up"
+          style="max-width: 428px; margin: 0 auto"
+        >
+          <div class="flex justify-between items-center mb-5">
+            <h2 class="text-lg font-bold text-gray-900">Add Evidence</h2>
+            <button
+              onclick="hideEvidence()"
+              class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"
+            >
+              <i class="uil uil-times text-gray-600"></i>
+            </button>
+          </div>
+
+          <!-- Evidence Type -->
+          <div class="grid grid-cols-2 gap-3 mb-5">
+            <button
+              onclick="capturePhoto()"
+              class="bg-blue-50 p-4 rounded-xl active:scale-95 transition"
+            >
+              <div
+                class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-2"
+              >
+                <i class="uil uil-camera text-blue-600 text-2xl"></i>
+              </div>
+              <p class="text-sm font-medium text-blue-600 text-center">
+                Take Photo
+              </p>
+            </button>
+            <button
+              onclick="captureVideo()"
+              class="bg-purple-50 p-4 rounded-xl active:scale-95 transition"
+            >
+              <div
+                class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-2"
+              >
+                <i class="uil uil-video text-purple-600 text-2xl"></i>
+              </div>
+              <p class="text-sm font-medium text-purple-600 text-center">
+                Record Video
+              </p>
+            </button>
+            <button
+              class="bg-green-50 p-4 rounded-xl active:scale-95 transition"
+            >
+              <div
+                class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-2"
+              >
+                <i class="uil uil-microphone text-green-600 text-2xl"></i>
+              </div>
+              <p class="text-sm font-medium text-green-600 text-center">
+                Voice Note
+              </p>
+            </button>
+            <button
+              class="bg-orange-50 p-4 rounded-xl active:scale-95 transition"
+            >
+              <div
+                class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mx-auto mb-2"
+              >
+                <i class="uil uil-file-alt text-orange-600 text-2xl"></i>
+              </div>
+              <p class="text-sm font-medium text-orange-600 text-center">
+                Document
+              </p>
+            </button>
+          </div>
+
+          <!-- Collected Evidence -->
+          <div class="mb-5">
+            <h3 class="font-semibold text-gray-700 mb-3 text-sm">
+              Collected Evidence (<span id="evidenceCounter">0</span>)
+            </h3>
+            <div id="evidenceList" class="space-y-2">
+              <div class="text-center py-8 bg-gray-50 rounded-xl">
+                <i class="uil uil-folder-open text-gray-300 text-4xl mb-2"></i>
+                <p class="text-gray-400 text-sm">No evidence collected yet</p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onclick="saveEvidence()"
+            class="w-full bg-emerald-500 text-white py-4 rounded-xl font-semibold"
+          >
+            Save Evidence
+          </button>
+        </div>
+      </div>
+
+      <!-- SCREEN 6: Resolution Modal -->
+      <div
+        id="resolutionModal"
+        class="hidden-screen fixed inset-0 bg-black bg-opacity-40 flex items-end z-50"
+      >
+        <div
+          class="bg-white w-full rounded-t-3xl p-6 animate-slide-up"
+          style="max-width: 428px; margin: 0 auto"
+        >
+          <div class="flex justify-between items-center mb-5">
+            <h2 class="text-lg font-bold text-gray-900">Resolve Incident</h2>
+            <button
+              onclick="hideResolution()"
+              class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"
+            >
+              <i class="uil uil-times text-gray-600"></i>
+            </button>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Resolution Summary</label
+            >
+            <textarea
+              id="resolutionNotes"
+              class="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
+              rows="4"
+              placeholder="Describe how the incident was resolved..."
+            ></textarea>
+          </div>
+
+          <div class="mb-5">
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Outcome</label
+            >
+            <select
+              class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
+            >
+              <option>Successfully Resolved</option>
+              <option>Partially Resolved</option>
+              <option>Requires Follow-up</option>
+              <option>Transferred to Another Unit</option>
+            </select>
+          </div>
+
+          <div class="space-y-3">
+            <button
+              onclick="confirmResolution()"
+              class="w-full bg-emerald-500 text-white py-4 rounded-xl font-semibold flex items-center justify-center gap-2"
+            >
+              <i class="uil uil-check-circle text-xl"></i>
+              <span>CONFIRM RESOLUTION</span>
+            </button>
+            <button
+              onclick="hideResolution()"
+              class="w-full bg-white text-gray-700 py-3 rounded-xl font-medium border border-gray-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Navigation -->
+      <div
+        class="fixed bottom-0 left-1/2 transform -translate-x-1/2 bg-white border-t border-gray-200 w-full"
+        style="max-width: 428px; z-index: 40"
+      >
+        <div class="flex items-center justify-around py-2">
+          <button
+            onclick="navigateTo('home')"
+            id="nav-home"
+            class="flex flex-col items-center py-2 px-4 nav-item active-nav"
+          >
+            <i class="uil uil-estate text-2xl mb-1"></i>
+            <span class="text-xs font-medium">Home</span>
+          </button>
+          <button
+            onclick="navigateTo('incidents')"
+            id="nav-incidents"
+            class="flex flex-col items-center py-2 px-4 nav-item"
+          >
+            <i class="uil uil-exclamation-triangle text-2xl mb-1"></i>
+            <span class="text-xs font-medium">Incidents</span>
+          </button>
+          <button
+            onclick="navigateTo('reports')"
+            id="nav-reports"
+            class="flex flex-col items-center py-2 px-4 nav-item"
+          >
+            <i class="uil uil-file-alt text-2xl mb-1"></i>
+            <span class="text-xs font-medium">Reports</span>
+          </button>
+          <button
+            onclick="navigateTo('profile')"
+            id="nav-profile"
+            class="flex flex-col items-center py-2 px-4 nav-item"
+          >
+            <i class="uil uil-user text-2xl mb-1"></i>
+            <span class="text-xs font-medium">Profile</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Success Toast -->
+      <div
+        id="successToast"
+        class="hidden fixed top-24 left-1/2 transform -translate-x-1/2 bg-emerald-500 text-white px-5 py-3 rounded-xl shadow-lg z-50"
+        style="max-width: 380px"
+      >
+        <div class="flex items-center gap-2">
+          <i class="uil uil-check-circle text-xl"></i>
+          <span class="font-medium text-sm">Update successful!</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let evidenceCount = 0;
+      let currentScreen = "home";
+
+      // Navigation function
+      function navigateTo(screen) {
+        // Hide all screens
+        document.getElementById("homeScreen").classList.add("hidden-screen");
+        document.getElementById("homeScreen").classList.remove("active-screen");
+        document
+          .getElementById("incidentsScreen")
+          .classList.add("hidden-screen");
+        document
+          .getElementById("incidentsScreen")
+          .classList.remove("active-screen");
+        document.getElementById("alertScreen").classList.add("hidden-screen");
+        document
+          .getElementById("alertScreen")
+          .classList.remove("active-screen");
+        document.getElementById("activeScreen").classList.add("hidden-screen");
+        document
+          .getElementById("activeScreen")
+          .classList.remove("active-screen");
+
+        // Remove active state from all nav items
+        document.querySelectorAll(".nav-item").forEach((item) => {
+          item.classList.remove("active-nav");
+          item.classList.add("text-gray-500");
+          item.classList.remove("text-emerald-600");
+        });
+
+        // Show selected screen and update nav
+        if (screen === "home") {
+          document
+            .getElementById("homeScreen")
+            .classList.remove("hidden-screen");
+          document.getElementById("homeScreen").classList.add("active-screen");
+          document.getElementById("nav-home").classList.add("active-nav");
+          document.getElementById("nav-home").classList.remove("text-gray-500");
+          document.getElementById("nav-home").classList.add("text-emerald-600");
+        } else if (screen === "incidents") {
+          document
+            .getElementById("incidentsScreen")
+            .classList.remove("hidden-screen");
+          document
+            .getElementById("incidentsScreen")
+            .classList.add("active-screen");
+          document.getElementById("nav-incidents").classList.add("active-nav");
+          document
+            .getElementById("nav-incidents")
+            .classList.remove("text-gray-500");
+          document
+            .getElementById("nav-incidents")
+            .classList.add("text-emerald-600");
+        } else if (screen === "reports") {
+          document
+            .getElementById("reportsScreen")
+            .classList.remove("hidden-screen");
+          document
+            .getElementById("reportsScreen")
+            .classList.add("active-screen");
+          document.getElementById("nav-reports").classList.add("active-nav");
+          document
+            .getElementById("nav-reports")
+            .classList.remove("text-gray-500");
+          document
+            .getElementById("nav-reports")
+            .classList.add("text-emerald-600");
+        } else if (screen === "profile") {
+          document
+            .getElementById("profileScreen")
+            .classList.remove("hidden-screen");
+          document
+            .getElementById("profileScreen")
+            .classList.add("active-screen");
+          document.getElementById("nav-profile").classList.add("active-nav");
+          document
+            .getElementById("nav-profile")
+            .classList.remove("text-gray-500");
+          document
+            .getElementById("nav-profile")
+            .classList.add("text-emerald-600");
+        }
+
+        currentScreen = screen;
+      }
+
+      function viewIncident(id) {
+        document
+          .getElementById("incidentsScreen")
+          .classList.add("hidden-screen");
+        document
+          .getElementById("alertScreen")
+          .classList.remove("hidden-screen");
+        document.getElementById("alertScreen").classList.add("active-screen");
+      }
+
+      function respondIncident() {
+        document.getElementById("alertScreen").classList.add("hidden-screen");
+        document
+          .getElementById("activeScreen")
+          .classList.remove("hidden-screen");
+        document.getElementById("activeScreen").classList.add("active-screen");
+        showToast("Response accepted! You are now assigned to this incident.");
+      }
+
+      function showStatusUpdate() {
+        document
+          .getElementById("statusModal")
+          .classList.remove("hidden-screen");
+        document.getElementById("statusModal").classList.add("active-screen");
+      }
+
+      function hideStatusUpdate() {
+        document.getElementById("statusModal").classList.add("hidden-screen");
+      }
+
+      function updateStatus(status) {
+        const notes = document.getElementById("statusNotes").value;
+      }
+
+      function confirmStatusUpdate() {
+        const notes = document.getElementById("statusNotes").value;
+        const status = "On Scene";
+
+        const timeline = document.getElementById("timeline");
+        const newEntry = `
+                <div class="flex gap-3">
+                    <div class="flex flex-col items-center">
+                        <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                            <i class="uil uil-check text-white text-sm"></i>
+                        </div>
+                        <div class="w-0.5 h-full bg-gray-100 mt-1"></div>
+                    </div>
+                    <div class="flex-1 pb-3">
+                        <p class="text-sm font-medium text-gray-900">Status Updated</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${new Date().toLocaleTimeString(
+                          "en-US",
+                          { hour: "numeric", minute: "2-digit" }
+                        )} • ${notes || "Status updated"}</p>
+                    </div>
+                </div>
+            `;
+        timeline.insertAdjacentHTML("beforeend", newEntry);
+
+        hideStatusUpdate();
+        showToast("Status updated successfully!");
+        document.getElementById("statusNotes").value = "";
+      }
+
+      function showEvidence() {
+        document
+          .getElementById("evidenceModal")
+          .classList.remove("hidden-screen");
+        document.getElementById("evidenceModal").classList.add("active-screen");
+      }
+
+      function hideEvidence() {
+        document.getElementById("evidenceModal").classList.add("hidden-screen");
+      }
+
+      function capturePhoto() {
+        evidenceCount++;
+        addEvidence(
+          "Photo",
+          "photo_" + Date.now() + ".jpg",
+          "uil-image",
+          "blue"
+        );
+        showToast("Photo captured!");
+      }
+
+      function captureVideo() {
+        evidenceCount++;
+        addEvidence(
+          "Video Recording",
+          "video_" + Date.now() + ".mp4",
+          "uil-video",
+          "purple"
+        );
+        showToast("Video recorded!");
+      }
+
+      function addEvidence(type, filename, icon, color) {
+        const evidenceList = document.getElementById("evidenceList");
+        if (evidenceCount === 1) {
+          evidenceList.innerHTML = "";
+        }
+
+        const evidenceItem = `
+                <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl">
+                    <div class="w-10 h-10 bg-${color}-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="uil ${icon} text-${color}-600 text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">${type}</p>
+                        <p class="text-xs text-gray-500">${filename}</p>
+                    </div>
+                    <button onclick="removeEvidence(this)" class="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
+                        <i class="uil uil-trash-alt text-red-500 text-sm"></i>
+                    </button>
+                </div>
+            `;
+        evidenceList.insertAdjacentHTML("beforeend", evidenceItem);
+        document.getElementById("evidenceCounter").textContent = evidenceCount;
+      }
+
+      function removeEvidence(button) {
+        button.closest(".flex.items-center").remove();
+        evidenceCount--;
+        document.getElementById("evidenceCounter").textContent = evidenceCount;
+
+        if (evidenceCount === 0) {
+          document.getElementById("evidenceList").innerHTML = `
+                    <div class="text-center py-8 bg-gray-50 rounded-xl">
+                        <i class="uil uil-folder-open text-gray-300 text-4xl mb-2"></i>
+                        <p class="text-gray-400 text-sm">No evidence collected yet</p>
+                    </div>
+                `;
+        }
+      }
+
+      function saveEvidence() {
+        hideEvidence();
+        showToast("Evidence saved successfully!");
+      }
+
+      function showResolution() {
+        document
+          .getElementById("resolutionModal")
+          .classList.remove("hidden-screen");
+        document
+          .getElementById("resolutionModal")
+          .classList.add("active-screen");
+      }
+
+      function hideResolution() {
+        document
+          .getElementById("resolutionModal")
+          .classList.add("hidden-screen");
+      }
+
+      function confirmResolution() {
+        const notes = document.getElementById("resolutionNotes").value;
+        if (!notes.trim()) {
+          alert("Please provide a resolution summary");
+          return;
+        }
+
+        hideResolution();
+        showToast("Incident marked as resolved!");
+
+        setTimeout(() => {
+          navigateTo("incidents");
+          document.getElementById("resolutionNotes").value = "";
+        }, 1500);
+      }
+
+      function showToast(message) {
+        const toast = document.getElementById("successToast");
+        toast.querySelector("span").textContent = message;
+        toast.classList.remove("hidden");
+
+        setTimeout(() => {
+          toast.classList.add("hidden");
+        }, 3000);
+      }
+
+      // Initialize with home screen
+      window.onload = function () {
+        navigateTo("home");
+      };
+    </script>
+  </body>
+</html>

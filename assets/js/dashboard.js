@@ -6,7 +6,6 @@ const API_BASE = "api/";
 const POLL_INTERVAL = 3000; // Poll every 3 seconds
 let lastUpdateTime = null;
 let pollingActive = true;
-let activeIncidentId = null;
 
 // Store incident data
 let incidentData = {
@@ -92,11 +91,8 @@ const heatmapConfigs = {
 
 async function fetchLiveIncidents() {
   try {
-    const url = lastUpdateTime
-      ? `${API_BASE}get_incidents.php?since=${encodeURIComponent(
-          lastUpdateTime
-        )}`
-      : `${API_BASE}get_incidents.php`;
+    // Always fetch all incidents (no time filter)
+    const url = `${API_BASE}get_incidents.php`;
 
     const response = await fetch(url);
     const result = await response.json();
@@ -115,6 +111,7 @@ async function fetchLiveIncidents() {
       // Update UI
       updateMapMarkers();
       updateAllHeatmaps();
+      incidentContent.innerHTML = renderEmergencyList();
 
       // Check for new incidents
       checkForNewIncidents(result.data);
@@ -497,19 +494,29 @@ function renderSkeletonLoading() {
   `;
 }
 
-function renderIncidentDetails(incident) {
-  // Safety check - return empty state if no incident
-  if (!incident || !incident.id) {
+function renderEmergencyList() {
+  // Collect all incidents into a single array
+  const allIncidents = [];
+
+  ["fire", "crime", "flood"].forEach((type) => {
+    if (incidentData[type] && incidentData[type].length > 0) {
+      allIncidents.push(...incidentData[type]);
+    }
+  });
+
+  // Sort by time (newest first)
+  allIncidents.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+  // If no incidents
+  if (allIncidents.length === 0) {
     return `
       <div class="flex flex-col items-center justify-center h-full text-center p-6">
         <i class="uil uil-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Incident Selected</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Select an incident from the map to view details.</p>
+        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Active Emergencies</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400">There are currently no active incidents to display.</p>
       </div>
     `;
   }
-
-  activeIncidentId = incident.id;
 
   const colorClasses = {
     red: "bg-red-50 text-red-600 dark:bg-red-900/40 dark:text-red-300",
@@ -518,128 +525,89 @@ function renderIncidentDetails(incident) {
     blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300",
   };
 
+  const statusColors = {
+    pending:
+      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+    responding:
+      "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+    resolved:
+      "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+  };
+
   return `
-          <div class="mb-6">
-            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm dark:bg-neutral-700">
-              <div class="inline-flex items-center gap-2 ${
-                colorClasses[incident.color]
-              } px-3 py-2 rounded-lg">
-                <i class="uil ${incident.icon} text-lg"></i>
-                <span class="text-sm font-medium">${incident.type}</span>
-              </div>
-              <div class="flex justify-between">
-                <p class="text-gray-500 dark:text-gray-300 mb-1">Incident ID</p>
-                <p class="font-medium text-gray-800 dark:text-white/90">#${
-                  incident.id
-                }</p>
-              </div>
-              <div class="flex justify-between">
-                <p class="text-gray-500 mb-1 dark:text-gray-300">Time Reported</p>
-                <p class="font-medium text-gray-800 dark:text-white/90">${
-                  incident.time
-                }</p>
-              </div>
-            </div>
+    <div class="space-y-4">
+      ${allIncidents
+        .map(
+          (incident) => `
+        <div class="bg-[#FFFFFF] border border-neutral-300 rounded-2xl p-4 space-y-3 text-sm dark:bg-neutral-700">
+          <!-- Emergency Type Badge -->
+          <div class="inline-flex items-center gap-2 ${
+            colorClasses[incident.color]
+          } px-3 py-2 rounded-lg">
+            <i class="uil ${incident.icon} text-lg"></i>
+            <span class="text-sm font-medium">${incident.type}</span>
           </div>
 
-          <div class="mb-6">
-            <h3 class="text-sm font-semibold text-[#27C291] dark:text-emerald-600 uppercase tracking-wide mb-3">User Information</h3>
-            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm dark:bg-neutral-700">
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-300">Name</span>
-                <span class="font-medium text-gray-700 dark:text-white/90">${
-                  incident.user.name
-                }</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-300">Contact</span>
-                <span class="font-medium text-gray-700 dark:text-white/90">${
-                  incident.user.contact
-                }</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-300">User ID</span>
-                <span class="font-medium text-gray-700 dark:text-white/90">${
-                  incident.user.id
-                }</span>
-              </div>
-            </div>
+          <!-- Status -->
+          <div class="flex justify-between items-center">
+            <p class="text-gray-500 dark:text-gray-300 text-xs">Emergency Status</p>
+            <span class="text-xs px-2 py-1 rounded-full font-medium ${
+              statusColors[incident.status] || statusColors.pending
+            }">
+              ${
+                incident.status
+                  ? incident.status.charAt(0).toUpperCase() +
+                    incident.status.slice(1)
+                  : "Pending"
+              }
+            </span>
           </div>
 
-          <div class="mb-6">
-            <h3 class="text-sm font-semibold text-[#27C291] dark:text-emerald-600 uppercase tracking-wide mb-3">Location Details</h3>
-            <div class="bg-[#F6F7F7] rounded-lg p-4 space-y-3 text-sm dark:bg-neutral-700">
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-300">Address</span>
-                <span class="font-medium text-gray-700 text-right dark:text-white/90">${
-                  incident.location.address
-                }</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-300">Barangay</span>
-                <span class="font-medium text-gray-800 dark:text-white/90">${
-                  incident.location.barangay
-                }</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-300">City</span>
-                <span class="font-medium text-gray-800 dark:text-white/90">${
-                  incident.location.city
-                }</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-300">Coordinates</span>
-                <span class="font-medium text-gray-800 text-right dark:text-white/90">${
-                  incident.location.coords
-                }</span>
-              </div>
-            </div>
+          <!-- Time Reported -->
+          <div class="flex justify-between">
+            <p class="text-gray-500 dark:text-gray-300 text-xs">Time Reported</p>
+            <p class="font-medium text-gray-800 dark:text-white/90 text-xs">${
+              incident.time
+            }</p>
           </div>
 
-          <div class="mb-6">
-            <h3 class="text-sm font-semibold text-gray-700 dark:text-white/80 uppercase tracking-wide mb-3">Activity Timeline</h3>
-            <div class="space-y-4">
-              ${incident.timeline
-                .map(
-                  (item, index) => `
-                <div class="flex gap-3">
-                  <div class="flex flex-col items-center">
-                    <div class="w-3 h-3 rounded-full ${
-                      item.pending ? "bg-gray-300" : "bg-[#27C291]"
-                    } p-1 mb-1"></div>
-                    ${
-                      index < incident.timeline.length - 1
-                        ? '<div class="w-0.5 h-full bg-neutral-200"></div>'
-                        : ""
-                    }
-                  </div>
-                  <div class="flex-1 ${
-                    index < incident.timeline.length - 1 ? "pb-4" : ""
-                  }">
-                    <p class="text-xs font-semibold text-gray-800 mb-1 dark:text-white/90">${
-                      item.time
-                    }</p>
-                    <p class="text-xs text-gray-600 dark:text-gray-300">${
-                      item.event
-                    }</p>
-                  </div>
-                </div>`
-                )
-                .join("")}
-            </div>
+          <!-- Reporter Name -->
+          <div class="flex justify-between">
+            <p class="text-gray-500 dark:text-gray-300 text-xs">Reporter</p>
+            <p class="font-medium text-gray-800 dark:text-white/90 text-xs">${
+              incident.user.name
+            }</p>
           </div>
-        `;
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <button 
+              onclick="viewIncidentDetails('${incident.id}')" 
+              class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium py-2.5 px-3 rounded-xl transition">
+              <i class="uil uil-eye"></i> View Details
+            </button>
+            <button 
+              onclick="notifyResponders('${incident.id}')" 
+              class="flex-1 bg-transparent hover:bg-emerald-200/50 border border-emerald-400 dark:border-emerald-600 text-emerald-500 text-xs font-medium py-2.5 px-3 rounded-xl transition">
+              <i class="uil uil-bell"></i> Notify Responders
+            </button>
+          </div>
+        </div>
+      `
+        )
+        .join("")}
+    </div>
+  `;
 }
 
-function goToIncidentDetails() {
-  if (!activeIncidentId) {
-    alert("No incident selected");
-    return;
-  }
+function viewIncidentDetails(incidentId) {
+  window.location.href = `admin/incidents/details?id=${encodeURIComponent(incidentId)}`;
+}
 
-  window.location.href = `admin/incidents/details?id=${encodeURIComponent(
-    activeIncidentId
-  )}`;
+function notifyResponders(incidentId) {
+  // TODO: Implement notification logic
+  showToast("info", "Notify Responders feature coming soon...");
+  console.log("Notify responders for incident:", incidentId);
 }
 
 const rightPanel = document.getElementById("rightPanel");
@@ -701,10 +669,11 @@ setTimeout(() => {
         }, 50);
 
         marker.on("click", () => {
-          incidentContent.innerHTML = renderIncidentDetails(incident);
-          if (isRightPanelCollapsed) {
-            rightPanelToggle.click();
-          }
+          // Zoom to marker location
+          map.setView([incident.lat, incident.lng], 17);
+
+          // Open marker popup
+          marker.openPopup();
         });
 
         markers[type].push(marker);
@@ -735,43 +704,16 @@ heatmapToggleButtons.forEach((btn) => {
   });
 });
 
-// Load default incident -
+// Load emergency list
 incidentContent.innerHTML = renderSkeletonLoading();
 setTimeout(() => {
-  // Find any available incident from any type
-  let defaultIncident = null;
-
-  // Check all incident types for the first available incident
-  for (const type of ["fire", "crime", "flood"]) {
-    if (incidentData[type] && incidentData[type].length > 0) {
-      defaultIncident = incidentData[type][0];
-      break;
-    }
+  incidentContent.innerHTML = renderEmergencyList();
+  
+  // Make sure panel is always visible
+  if (isRightPanelCollapsed) {
+    rightPanelToggle.click();
   }
-
-  // If there's an incident, show it. Otherwise hide the panel and show a message
-  if (defaultIncident) {
-    incidentContent.innerHTML = renderIncidentDetails(defaultIncident);
-    // Make sure panel is visible
-    if (isRightPanelCollapsed) {
-      rightPanelToggle.click();
-    }
-  } else {
-    // No incidents available - show empty state and hide panel
-    incidentContent.innerHTML = `
-      <div class="flex flex-col items-center justify-center h-full text-center p-6">
-        <i class="uil uil-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Incidents</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400">There are currently no active incidents to display.</p>
-      </div>
-    `;
-
-    // Hide the right panel
-    if (!isRightPanelCollapsed) {
-      rightPanelToggle.click();
-    }
-  }
-}, 1500); // Show skeleton for 1.5 seconds
+}, 1500);
 
 document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
 document
@@ -942,25 +884,25 @@ heatmapControlsContainer.addEventListener("click", (e) => {
   e.stopPropagation();
 });
 
-rightPanelToggle.addEventListener("click", () => {
-  isRightPanelCollapsed = !isRightPanelCollapsed;
+// rightPanelToggle.addEventListener("click", () => {
+//   isRightPanelCollapsed = !isRightPanelCollapsed;
 
-  if (isRightPanelCollapsed) {
-    rightPanel.style.transform = "translateX(100%)";
-    mainContent.classList.remove("mr-[360px]");
-    mainContent.classList.add("mr-0");
-  } else {
-    rightPanel.style.transform = "translateX(0)";
-    mainContent.classList.remove("mr-0");
-    mainContent.classList.add("mr-[360px]");
-  }
+//   if (isRightPanelCollapsed) {
+//     rightPanel.style.transform = "translateX(100%)";
+//     mainContent.classList.remove("mr-[360px]");
+//     mainContent.classList.add("mr-0");
+//   } else {
+//     rightPanel.style.transform = "translateX(0)";
+//     mainContent.classList.remove("mr-0");
+//     mainContent.classList.add("mr-[360px]");
+//   }
 
-  const icon = rightPanelToggle.querySelector("i");
-  icon.classList.toggle("uil-angle-right", !isRightPanelCollapsed);
-  icon.classList.toggle("uil-angle-left", isRightPanelCollapsed);
+//   const icon = rightPanelToggle.querySelector("i");
+//   icon.classList.toggle("uil-angle-right", !isRightPanelCollapsed);
+//   icon.classList.toggle("uil-angle-left", isRightPanelCollapsed);
 
-  setTimeout(() => map.invalidateSize(), 300);
-});
+//   setTimeout(() => map.invalidateSize(), 300);
+// });
 
 // Chart.js Configuration
 let emergencyChart;
