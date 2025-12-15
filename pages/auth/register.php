@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../includes/auth_helper.php';
 
 // Redirect if already authenticated
 if (AuthChecker::isLoggedIn()) {
-  header('Location: /home');
+  header('Location: home');
   exit;
 }
 ?>
@@ -97,6 +97,7 @@ if (AuthChecker::isLoggedIn()) {
             <div class="form-input-wrapper">
               <i class="uil uil-lock form-input-icon"></i>
               <input type="password" id="registerPassword" class="form-input" required />
+              <i id="togglePassword" class="uil uil-eye absolute text-lg text-neutral-500 cursor-pointer top-1/2 -translate-y-1/2 right-3"></i>
             </div>
             <div class="form-error"></div>
           </div>
@@ -106,6 +107,7 @@ if (AuthChecker::isLoggedIn()) {
             <div class="form-input-wrapper">
               <i class="uil uil-lock form-input-icon"></i>
               <input type="password" id="confirmPassword" class="form-input" required />
+              <i id="toggleConfirmPassword" class="uil uil-eye absolute text-lg text-neutral-500 cursor-pointer top-1/2 -translate-y-1/2 right-3"></i>
             </div>
             <div class="form-error"></div>
           </div>

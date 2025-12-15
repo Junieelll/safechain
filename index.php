@@ -9,7 +9,16 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['user_id'])) {
     $_SESSION['user_role'] = $_COOKIE['user_role'];
 }
 
-$route = isset($_GET['route']) ? trim($_GET['route'], '/') : 'auth/login';
+$route = isset($_GET['route']) ? trim($_GET['route'], '/') : '';
+
+// Handle root/empty route based on authentication
+if ($route === '') {
+    if (isset($_SESSION['user_id'])) {
+        $route = 'home'; // Logged-in users go to home
+    } else {
+        $route = 'auth/login'; // Guests go to login
+    }
+}
 
 $pagesDir = __DIR__ . '/pages/';
 

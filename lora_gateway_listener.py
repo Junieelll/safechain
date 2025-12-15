@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
 SafeChain LoRa Gateway Listener
-Reads LoRa packets from serial and sends to PHP API
+Compatible with gateway that outputs decoded text format
+Format: FOB01 FIRE 14.7158 121.0403
 """
 
 import serial
 import json
 import requests
 import time
+import re
 from datetime import datetime
 
 # ============================================
@@ -16,6 +18,31 @@ from datetime import datetime
 SERIAL_PORT = 'COM3'  # Windows: COM3, COM4, etc. | Linux: /dev/ttyUSB0, /dev/ttyACM0
 BAUD_RATE = 115200
 API_ENDPOINT = 'http://localhost/safechain/api/receive_incident.php'
+
+# Device ID mapping (FOB01 -> SC-KC-001)
+DEVICE_MAP = {
+    'FOB01': 'SC-KC-001',
+    'FOB02': 'SC-KC-002',
+    'FOB03': 'SC-KC-003',
+    'FOB04': 'SC-KC-004',
+    'FOB05': 'SC-KC-005',
+    'FOB06': 'SC-KC-006',
+    'FOB07': 'SC-KC-007',
+    'FOB08': 'SC-KC-008',
+    'FOB09': 'SC-KC-009',
+    'FOB10': 'SC-KC-010',
+}
+
+# Type mapping
+TYPE_MAP = {
+    'FIRE': 'fire',
+    'CRIME': 'crime',
+    'MEDICAL': 'flood',  # Map medical to flood for now
+    'FALL': 'crime',     # Map fall to crime for now
+    'SOS': 'crime',
+    'PANIC': 'crime',
+    'FLOOD': 'flood'
+}
 
 # ============================================
 # FUNCTIONS
@@ -26,40 +53,54 @@ def init_serial():
     try:
         ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
         print(f"✓ Connected to LoRa Gateway on {SERIAL_PORT}")
-        time.sleep(2)  # Wait for connection to stabilize
+        time.sleep(2)
         return ser
     except Exception as e:
         print(f"✗ Error connecting to serial port: {e}")
         print(f"\nTroubleshooting:")
         print(f"  - Check if {SERIAL_PORT} is correct (Device Manager on Windows)")
-        print(f"  - Make sure no other program is using this port")
-        print(f"  - Try unplugging and replugging the LoRa gateway")
+        print(f"  - Make sure no other program is using this port (Arduino IDE, etc.)")
+        print(f"  - Try unplugging and replugging the gateway")
         return None
 
-def parse_lora_packet(data):
-    """Parse incoming LoRa data - supports JSON or CSV format"""
+def parse_gateway_output(line):
+    """
+    Parse gateway output format: FOB01 FIRE 14.7158 121.0403
+    Returns dict with device_id, button, lat, lng
+    """
     try:
-        data = data.strip()
+        # Look for lines that match the packet format
+        # Format: FOBXX TYPE LAT LNG
+        match = re.match(r'(FOB\d+)\s+(\w+)\s+([\d\.-]+)\s+([\d\.-]+)', line)
         
-        # Try JSON format first
-        if data.startswith('{'):
-            packet = json.loads(data)
-            return packet
-        
-        # Fallback to CSV format: device_id,button,lat,lng
-        elif ',' in data:
-            parts = data.split(',')
-            if len(parts) >= 4:
-                return {
-                    'device_id': parts[0].strip(),
-                    'button': parts[1].strip(),
-                    'lat': float(parts[2]),
-                    'lng': float(parts[3]),
-                    'type': 'INCIDENT',
-                    'timestamp': int(time.time())
-                }
+        if match:
+            fob_id = match.group(1)
+            alert_type = match.group(2)
+            lat = float(match.group(3))
+            lng = float(match.group(4))
+            
+            # Get device ID from mapping
+            device_id = DEVICE_MAP.get(fob_id)
+            if not device_id:
+                print(f"⚠ Unknown FOB ID: {fob_id} - Add to DEVICE_MAP")
+                return None
+            
+            # Get incident type from mapping
+            incident_type = TYPE_MAP.get(alert_type, 'crime')
+            
+            return {
+                'device_id': device_id,
+                'type': 'INCIDENT',
+                'button': incident_type,
+                'lat': lat,
+                'lng': lng,
+                'fob_id': fob_id,
+                'alert_type': alert_type,
+                'timestamp': int(time.time())
+            }
     except Exception as e:
         print(f"✗ Parse error: {e}")
+    
     return None
 
 def send_to_api(packet):
@@ -88,9 +129,10 @@ def send_to_api(packet):
 
 def main():
     """Main loop"""
-    print("=" * 60)
-    print("         SafeChain LoRa Gateway Listener v1.0")
-    print("=" * 60)
+    print("=" * 70)
+    print("         SafeChain LoRa Gateway Listener v2.0")
+    print("         Compatible with Multi-Alert Gateway Format")
+    print("=" * 70)
     print()
     
     # Initialize serial connection
@@ -100,56 +142,57 @@ def main():
         input("Press Enter to exit...")
         return
     
-    print(f"📡 Listening for LoRa packets...\n")
-    print("Waiting for emergency button press...\n")
+    print(f"📡 Listening for gateway packets...\n")
+    print("Waiting for alerts from FOB devices...\n")
+    print("Device Mapping:")
+    for fob, device in DEVICE_MAP.items():
+        print(f"  {fob} → {device}")
+    print()
     
-    buffer = ""
     packet_count = 0
     
     try:
         while True:
-            # Read incoming data
             if ser.in_waiting > 0:
-                chunk = ser.read(ser.in_waiting).decode('utf-8', errors='ignore')
-                buffer += chunk
+                # Read line from gateway
+                line = ser.readline().decode('utf-8', errors='ignore').strip()
                 
-                # Process complete lines
-                while '\n' in buffer:
-                    line, buffer = buffer.split('\n', 1)
-                    line = line.strip()
-                    
-                    # Skip empty lines
-                    if not line:
-                        continue
-                    
-                    # Skip debug messages from ESP32
-                    if line.startswith('===') or 'GPS' in line or 'Sent:' in line:
-                        print(f"[DEBUG] {line}")
-                        continue
-                    
+                # Skip empty lines
+                if not line:
+                    continue
+                
+                # Show all output for debugging
+                print(f"[Gateway] {line}")
+                
+                # Try to parse as incident packet
+                packet = parse_gateway_output(line)
+                
+                if packet:
                     packet_count += 1
                     timestamp = datetime.now().strftime('%H:%M:%S')
-                    print(f"\n[{timestamp}] 📦 Packet #{packet_count}")
-                    print(f"Raw: {line}")
                     
-                    # Parse packet
-                    packet = parse_lora_packet(line)
-                    if packet:
-                        print(f"→ Device: {packet['device_id']}")
-                        print(f"→ Type: {packet['button'].upper()}")
-                        print(f"→ Location: ({packet['lat']:.6f}, {packet['lng']:.6f})")
-                        
-                        # Send to API
-                        send_to_api(packet)
-                    else:
-                        print("⚠ Could not parse packet")
+                    print(f"\n{'='*70}")
+                    print(f"[{timestamp}] 📦 ALERT #{packet_count} DETECTED")
+                    print(f"{'='*70}")
+                    print(f"→ FOB ID: {packet['fob_id']}")
+                    print(f"→ Device: {packet['device_id']}")
+                    print(f"→ Alert Type: {packet['alert_type']} → {packet['button'].upper()}")
+                    print(f"→ Location: ({packet['lat']:.6f}, {packet['lng']:.6f})")
+                    print(f"{'='*70}")
+                    
+                    # Send to API
+                    if send_to_api(packet):
+                        print(f"✓ Incident saved to database!")
+                    print()
             
-            time.sleep(0.1)  # Prevent CPU overuse
+            time.sleep(0.05)  # Small delay to prevent CPU overuse
             
     except KeyboardInterrupt:
         print("\n\n⏹ Stopping listener...")
     except Exception as e:
         print(f"\n✗ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         if ser and ser.is_open:
             ser.close()

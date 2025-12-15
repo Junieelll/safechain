@@ -315,29 +315,9 @@ $currentUserRole = AuthChecker::getUserRole();
 
             <div class="space-y-2.5">
 
-              <!-- Update Status Skeleton -->
-              <div
-                class="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl
-             bg-gray-200 dark:bg-neutral-700  animate-pulse">
-                <div class="h-3 w-28 rounded bg-gray-300 dark:bg-neutral-600"></div>
-              </div>
-
-              <!-- Mark as Resolved Skeleton -->
-              <div
-                class="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl
-           bg-gray-200 dark:bg-neutral-700  animate-pulse">
-                <div class="w-4 h-4 rounded-full bg-gray-300 dark:bg-neutral-600"></div>
-                <div class="h-3 w-32 rounded bg-gray-300 dark:bg-neutral-600"></div>
-              </div>
-
-              <!-- Generate Report Skeleton -->
-              <div
-                class="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl
-           bg-gray-200 dark:bg-neutral-700  animate-pulse">
-                <div class="w-4 h-4 rounded-full bg-gray-300 dark:bg-neutral-600"></div>
-                <div class="h-3 w-36 rounded bg-gray-300 dark:bg-neutral-600"></div>
-              </div>
-
+              <button onclick="updateStatus()" class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-xs font-medium hover:bg-blue-600 hover:-translate-y-0.5 hover:shadow-lg transition-all"> <i class="uil uil-pen text-lg"></i> Update Status</button> 
+              <button onclick="markAsResolved()" class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white rounded-xl text-xs font-medium hover:bg-emerald-600 hover:-translate-y-0.5 hover:shadow-lg transition-all"> <i class="uil uil-check-circle text-lg"></i> Mark as Resolved </button>
+               <button onclick="generateReport()" class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-white dark:bg-neutral-600 dark:hover:bg-neutral-700 dark:border-neutral-700 dark:text-neutral-300 text-gray-500 border-2 border-gray-200 rounded-xl text-xs font-medium hover:bg-gray-50 hover:-translate-y-0.5 hover:border-gray-300 transition-all"> <i class="uil uil-file-download text-lg"></i> Generate Report </button>
             </div>
 
           </div>

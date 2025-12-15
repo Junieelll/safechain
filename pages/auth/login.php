@@ -23,14 +23,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
       // First, check if username exists
       $userExists = getUserByUsername($conn, $username);
-      
+
       if (!$userExists) {
         // Username doesn't exist
         $error = "Hmm, we couldn't find an account with that username. Double-check your spelling or create a new account.";
       } else {
         // Try to verify credentials
         $user = verifyCredentials($conn, $username, $password);
-        
+
         if (!$user) {
           // Username exists but password is wrong
           $error = "That password doesn't seem right. Please try again.";
@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="login-footer">
         <h2 class="text-neutral-200 mb-3 font-semibold text-4xl">Alert Instantly. Connect Reliably. Save Lives.</h2>
         <p class="text-neutral-300 text-base">From fire emergencies to floods and crime alerts, our smart community system lets you call for help instantly.</p>
-        
+
         <div class="page-indicator">
           <div class="indicator-dot active"></div>
           <div class="indicator-dot"></div>
@@ -168,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 name="password"
                 class="form-input"
                 required />
-                <i class="uil uil-eye absolute text-lg text-neutral-500 cursor-pointer top-1/2 -translate-y-1/2 right-3"></i>
+              <i id="togglePassword" class="uil uil-eye absolute text-lg text-neutral-500 cursor-pointer top-1/2 -translate-y-1/2 right-3"></i>
             </div>
             <div class="form-error"></div>
           </div>

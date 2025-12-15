@@ -203,26 +203,12 @@ if (!AuthChecker::isLoggedIn()) {
         class="fixed right-0 top-0 w-[360px] h-screen bg-white dark:bg-neutral-800 backdrop-blur-lg p-6 transition-all duration-500 ease-in-out flex flex-col z-40">
         <div class="flex items-center justify-between mb-6 flex-shrink-0">
             <h2 class="text-base font-semibold text-[#27C291] dark:text-emerald-600">
-                Emergency Details
+                Emergency List
             </h2>
-            <button
-                id="rightPanelToggle"
-                class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors dark:bg-neutral-700 dark:border-gray-700 dark:text-gray-300">
-                <i class="uil uil-angle-right text-xl text-gray-600 dark:text-gray-300"></i>
-            </button>
         </div>
 
         <div class="flex-1 overflow-y-auto pr-2 -mr-2">
             <div id="incidentContent"></div>
-        </div>
-
-        <div class="flex-shrink-0 pt-4">
-            <button
-                onclick="goToIncidentDetails()"
-                class="w-full bg-white border border-gray-300 text-[#64748B] rounded-xl py-3 px-4 font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm dark:bg-neutral-700 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800">
-                <i class="uil uil-eye dark:text-gray-300"></i>
-                View More Details
-            </button>
         </div>
     </aside>
 
