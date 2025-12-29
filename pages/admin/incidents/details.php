@@ -5,7 +5,6 @@ require_once __DIR__ . '/../../../includes/auth_helper.php';
 
 // Require authentication - only admin and operator can view incident details
 AuthChecker::requireAuth('/auth/login.php');
-AuthChecker::requireAnyRole([Roles::ADMIN, Roles::OPERATOR], '/errors/403.php');
 
 // Get current user info
 $currentUserName = AuthChecker::getName();

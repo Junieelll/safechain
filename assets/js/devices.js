@@ -2,68 +2,129 @@
 const devices = [
   {
     id: "SC-KC-001",
+    type: "node",
     owner: "Juan Dela Cruz",
     status: "Active",
     lastSeen: "2 mins ago",
   },
   {
-    id: "SC-KC-002",
-    owner: "Maria Santos",
-    status: "Active",
+    id: "SC-GW-001",
+    type: "lora",
+    location: "Maligaya Extension, Gulod, Quezon City",
+    signal: "Excellent",
     lastSeen: "5 mins ago",
   },
   {
     id: "SC-KC-003",
+    type: "node",
     owner: "Pedro Reyes",
     status: "Active",
     lastSeen: "1 min ago",
   },
   {
-    id: "SC-KC-004",
-    owner: "Ana Garcia",
-    status: "Active",
+    id: "SC-GW-002",
+    type: "lora",
+    location: "Building A",
+    signal: "Good",
     lastSeen: "3 mins ago",
   },
   {
     id: "SC-KC-005",
+    type: "node",
     owner: "Carlos Mendoza",
     status: "Active",
     lastSeen: "10 mins ago",
   },
   {
-    id: "SC-KC-006",
-    owner: "Lisa Rodriguez",
-    status: "Active",
+    id: "SC-GW-003",
+    type: "lora",
+    location: "Barangay Hall",
+    signal: "Weak",
     lastSeen: "7 mins ago",
   },
 ];
 
 let currentView = localStorage.getItem("deviceViewMode") || "grid";
 let searchQuery = "";
+let selectedDeviceType = "AllTypes";
 let isLoading = true;
 
-function getSignalColor(signal) {
-  if (signal === "Strong") return "bg-teal-500";
-  if (signal === "Medium") return "bg-yellow-500";
-  return "bg-red-500";
-}
-
-function getSignalBars(signal) {
-  if (signal === "Strong") return 3;
-  if (signal === "Medium") return 2;
-  return 1;
-}
-
+// Update the getFilteredDevices function to include type filtering
 function getFilteredDevices() {
-  if (!searchQuery) return devices;
-  
-  const query = searchQuery.toLowerCase();
-  return devices.filter(device => 
-    device.id.toLowerCase().includes(query) ||
-    device.owner.toLowerCase().includes(query) ||
-    device.status.toLowerCase().includes(query)
-  );
+  let filtered = devices;
+
+  // Filter by device type
+  if (selectedDeviceType !== "AllTypes") {
+    if (selectedDeviceType === "NodeDevice") {
+      filtered = filtered.filter((device) => device.type === "node");
+    } else if (selectedDeviceType === "LoRaGateway") {
+      filtered = filtered.filter((device) => device.type === "lora");
+    }
+  }
+
+  // Filter by search query
+  if (searchQuery) {
+    const query = searchQuery.toLowerCase();
+    filtered = filtered.filter(
+      (device) =>
+        device.id.toLowerCase().includes(query) ||
+        (device.owner && device.owner.toLowerCase().includes(query)) ||
+        (device.status && device.status.toLowerCase().includes(query)) ||
+        (device.location && device.location.toLowerCase().includes(query))
+    );
+  }
+
+  return filtered;
 }
+
+// Add event listeners for dropdown items
+document.addEventListener("DOMContentLoaded", () => {
+  const dropdownItems = document.querySelectorAll(".dropdown-item");
+  const sortSelectedText = document.getElementById("sortSelectedText");
+  const sortDropdownMenu = document.getElementById("sortDropdownMenu");
+  const sortDropdownButton = document.getElementById("sortDropdownButton");
+  const sortDropdownIcon = document.getElementById("sortDropdownIcon");
+
+  dropdownItems.forEach((item) => {
+    item.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      // Get the selected value
+      const value = item.getAttribute("data-value");
+      const text = item.textContent.trim();
+
+      // Update the selected type
+      selectedDeviceType = value;
+      sortSelectedText.textContent = text;
+
+      // Update active state
+      dropdownItems.forEach((i) => {
+        i.classList.remove(...activeDropdownClasses);
+      });
+      item.classList.add(...activeDropdownClasses);
+
+      // Close dropdown
+      sortDropdownMenu.classList.add("hidden");
+      sortDropdownIcon.style.transform = "rotate(0deg)";
+
+      // Show skeleton loading
+      renderSkeletonLoading();
+
+      // Re-render devices with new filter after a short delay
+      setTimeout(() => {
+        renderDevices();
+      }, 500);
+    });
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!sortDropdownButton.contains(e.target)) {
+      sortDropdownMenu.classList.add("hidden");
+      sortDropdownIcon.style.transform = "rotate(0deg)";
+    }
+  });
+});
 
 function handleSearch(event) {
   searchQuery = event.target.value;
@@ -72,10 +133,14 @@ function handleSearch(event) {
 
 function renderSkeletonLoading() {
   const container = document.getElementById("devicesContainer");
-  
+
   if (currentView === "grid") {
-    container.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
-    container.innerHTML = Array(6).fill(0).map(() => `
+    container.className =
+      "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+    container.innerHTML = Array(6)
+      .fill(0)
+      .map(
+        () => `
       <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 border-2 border-transparent shadow-[0_0_24px_rgba(0,0,0,0.10)] animate-pulse">
         <div class="flex items-start gap-4 mb-6">
           <div class="w-11 h-11 bg-gray-300 dark:bg-neutral-700 rounded-xl"></div>
@@ -105,10 +170,15 @@ function renderSkeletonLoading() {
           <div class="flex-1 h-9 bg-gray-200 dark:bg-neutral-700 rounded-lg"></div>
         </div>
       </div>
-    `).join("");
+    `
+      )
+      .join("");
   } else {
     container.className = "flex flex-col gap-4";
-    container.innerHTML = Array(6).fill(0).map(() => `
+    container.innerHTML = Array(6)
+      .fill(0)
+      .map(
+        () => `
       <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 border-2 border-transparent shadow-[0_0_24px_rgba(0,0,0,0.10)] animate-pulse">
         <div class="flex items-center gap-6">
           <div class="w-11 h-11 bg-gray-300 dark:bg-neutral-700 rounded-xl"></div>
@@ -132,7 +202,9 @@ function renderSkeletonLoading() {
           </div>
         </div>
       </div>
-    `).join("");
+    `
+      )
+      .join("");
   }
 }
 
@@ -143,7 +215,7 @@ function renderDevices() {
   if (currentView === "grid") {
     container.className =
       "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
-    
+
     if (filteredDevices.length === 0) {
       container.innerHTML = `
         <div class="col-span-full flex flex-col items-center justify-center py-12 text-gray-500 dark:text-neutral-400">
@@ -154,22 +226,27 @@ function renderDevices() {
       `;
       return;
     }
-    
+
     container.innerHTML = filteredDevices
       .map(
         (device) => `
           <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 border-2 border-transparent hover:border-emerald-400 shadow-[0_0_24px_rgba(0,0,0,0.10)] hover:shadow-[0_0_26px_rgba(39,194,145,0.36)] transition-all">
             <div class="flex items-start gap-4 mb-6">
-              <div class="w-11 h-11 bg-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                <i class="uil uil-mobile-android text-2xl text-white"></i>
+              <div class="w-11 h-11 bg-[linear-gradient(141.34deg,#27C291_4.44%,#20A577_95.56%)] rounded-xl flex items-center justify-center flex-shrink-0">
+                <i class="uil ${
+                  device.type === "node"
+                    ? "uil-mobile-android"
+                    : "uil-wifi-router"
+                } text-2xl text-white"></i>
               </div>
               <div class="flex-1 min-w-0">
                 <h3 class="text-sm font-semibold text-gray-800 dark:text-neutral-300">${
                   device.id
                 }</h3>
                 <div class="flex items-center gap-1 text-xs text-gray-400 dark:text-neutral-300 mt-1">
-                  <i class="uil uil-user"></i>
-                  <span>${device.owner}</span>
+                  <span>${
+                    device.type === "node" ? "Node Device" : "LoRa Gateway"
+                  }</span>
                 </div>
               </div>
             </div>
@@ -177,31 +254,48 @@ function renderDevices() {
             <div class="grid grid-cols-2 gap-4 mb-6">
                 <div class="flex gap-3 items-center">
                   <div class="flex items-center gap-2 text-2xl text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-700 h-fit px-2 py-1 rounded-lg ">
-                    <i class="uil uil-info-circle"></i>
+                    <i class="uil ${
+                      device.type === "node" ? "uil-user" : "uil-map-marker"
+                    }"></i>
                   </div>
-                  <div class="font-medium flex flex-col text-sm text-neutral-800 dark:text-neutral-200">
-                  <span class="text-[#64748B]">Status</span>
-                  ${device.status}
+                  <div class="font-medium flex flex-col text-sm text-neutral-800 dark:text-neutral-200 min-w-0">
+                  <span class="text-[#64748B]">${
+                    device.type === "node" ? "OWNER" : "LOCATION"
+                  }</span>
+                  <span class="truncate">
+                    ${device.type === "node" ? device.owner : device.location}
+                  </span>
+                  
                   </div>
                 </div>
 
               <div class="flex gap-3 items-center">
                 <div class="flex items-center gap-2 text-2xl text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-700 h-fit px-2 py-1 rounded-lg ">
-                  <i class="uil uil-clock"></i>
+                  <i class="uil ${
+                    device.type === "node"
+                      ? "uil-info-circle"
+                      : "uil-signal-alt-3"
+                  }"></i>
                 </div>
                 <div class="font-medium flex flex-col text-sm text-neutral-800 dark:text-neutral-200">
-                <span class="text-[#64748B]">LAST SEEN</span>
-                ${device.lastSeen}
+                <span class="text-[#64748B]">${
+                  device.type === "node" ? "STATUS" : "SIGNAL"
+                }</span>
+                  ${device.type === "node" ? device.status : device.signal}
                 </div>
               </div>
             </div>
 
             <div class="flex gap-3">
-              <button onclick="viewDevice('${device.id}')" class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 h-fit bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 dark:hover:text-emerald-600 hover:text-emerald-600 hover:border-emerald-400 transition-colors">
+              <button onclick="viewDevice('${
+                device.id
+              }')" class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 h-fit bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 dark:hover:text-emerald-600 hover:text-emerald-600 hover:border-emerald-400 transition-colors">
                 <i class="uil uil-eye"></i>
                 <span class="text-sm font-medium">View</span>
               </button>
-              <button onclick="deactivateDevice('${device.id}')" class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 h-fit bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 dark:hover:text-red-600 dark:hover:border-red-600 hover:text-red-600 hover:border-red-400 transition-colors">
+              <button onclick="deactivateDevice('${
+                device.id
+              }')" class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 h-fit bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 dark:hover:text-red-600 dark:hover:border-red-600 hover:text-red-600 hover:border-red-400 transition-colors">
                 <i class="uil uil-ban"></i>
                 <span class="text-sm font-medium">Deactivate</span>
               </button>
@@ -212,7 +306,7 @@ function renderDevices() {
       .join("");
   } else {
     container.className = "flex flex-col gap-4";
-    
+
     if (filteredDevices.length === 0) {
       container.innerHTML = `
         <div class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-neutral-400">
@@ -223,14 +317,18 @@ function renderDevices() {
       `;
       return;
     }
-    
+
     container.innerHTML = filteredDevices
       .map(
         (device) => `
           <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 border-2 border-transparent hover:border-emerald-400 shadow-[0_0_24px_rgba(0,0,0,0.10)] hover:shadow-[0_0_26px_rgba(39,194,145,0.36)] transition-shadow">
             <div class="flex items-center gap-6">
-              <div class="w-11 h-11 bg-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                <i class="uil uil-mobile-android text-2xl text-white"></i>
+              <div class="w-11 h-11 bg-[linear-gradient(141.34deg,#27C291_4.44%,#20A577_95.56%)] rounded-xl flex items-center justify-center flex-shrink-0">
+                <i class="uil ${
+                  device.type === "node"
+                    ? "uil-mobile-android"
+                    : "uil-wifi-router"
+                } text-2xl text-white"></i>
               </div>
               
               <div class="flex-1 min-w-0">
@@ -238,39 +336,56 @@ function renderDevices() {
                   device.id
                 }</h3>
                 <div class="flex items-center gap-1 text-xs text-gray-400 dark:text-neutral-400 mt-1">
-                  <i class="uil uil-user"></i>
-                  <span>${device.owner}</span>
+                  <span>${
+                    device.type === "node" ? "Node Device" : "LoRa Gateway"
+                  }</span>
                 </div>
               </div>
 
               <div class="flex items-center gap-8">
                 <div>
-                    <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400 mb-2">
-                      <i class="uil uil-info-circle"></i>
-                      <span>STATUS</span>
+                    <div class="flex items-center justify-end gap-2 text-xs text-gray-500 dark:text-neutral-400 mb-2">
+                      <i class="uil ${
+                        device.type === "node"
+                          ? "uil-user"
+                          : "uil-map-marker"
+                      }"></i>
+                      <span>${
+                        device.type === "node" ? "OWNER" : "LOCATION"
+                      }</span>
                     </div>
                     <div class="font-medium text-gray-800 text-sm dark:text-neutral-300">${
-                      device.status
+                      device.type === "node" ? device.owner : device.location
                     }</div>
                 </div>
 
                 <div>
-                  <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400 mb-2">
-                    <i class="uil uil-clock"></i>
-                    <span>LAST SEEN</span>
-                  </div>
-                  <div class="font-medium text-gray-800 text-sm dark:text-neutral-300">${
-                    device.lastSeen
-                  }</div>
+                    <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400 mb-2">
+                      <i class="uil ${
+                        device.type === "node"
+                          ? "uil-info-circle"
+                          : "uil-signal-alt-3"
+                      }"></i>
+                      <span>${
+                        device.type === "node" ? "STATUS" : "SIGNAL"
+                      }</span>
+                    </div>
+                    <div class="font-medium text-gray-800 text-sm dark:text-neutral-300">${
+                      device.type === "node" ? device.status : device.signal
+                    }</div>
                 </div>
               </div>
 
               <div class="flex gap-3 flex-shrink-0">
-                <button onclick="viewDevice('${device.id}')" class="flex items-center justify-center gap-2 py-2.5 px-6 bg-transparent border border-neutral-400 rounded-lg text-gray-700 dark:text-neutral-400 dark:hover:text-emerald-600 hover:text-emerald-600 hover:border-emerald-400 transition-colors">
+                <button onclick="viewDevice('${
+                  device.id
+                }')" class="flex items-center justify-center gap-2 py-2.5 px-6 bg-transparent border border-neutral-400 rounded-lg text-gray-700 dark:text-neutral-400 dark:hover:text-emerald-600 hover:text-emerald-600 hover:border-emerald-400 transition-colors">
                   <i class="uil uil-eye"></i>
                   <span class="text-sm font-medium">View</span>
                 </button>
-                <button onclick="deactivateDevice('${device.id}')" class="flex items-center justify-center gap-2 py-2.5 px-6 bg-transparent border border-neutral-400 rounded-lg text-gray-700 dark:text-neutral-400 dark:hover:text-red-600 dark:hover:border-red-600 hover:text-red-600 hover:border-red-400 transition-colors">
+                <button onclick="deactivateDevice('${
+                  device.id
+                }')" class="flex items-center justify-center gap-2 py-2.5 px-6 bg-transparent border border-neutral-400 rounded-lg text-gray-700 dark:text-neutral-400 dark:hover:text-red-600 dark:hover:border-red-600 hover:text-red-600 hover:border-red-400 transition-colors">
                   <i class="uil uil-ban"></i>
                   <span class="text-sm font-medium">Deactivate</span>
                 </button>
@@ -292,29 +407,52 @@ function setViewMode(mode) {
 
   if (mode === "grid") {
     gridBtn.className =
-      "p-3 w-[50px] h-[50px] flex items-center justify-center bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors";
+      "p-3 w-[50px] h-[50px] flex items-center justify-center bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors";
     listBtn.className =
-      "p-3 w-[50px] h-[50px] flex items-center justify-center bg-white dark:bg-neutral-600 dark:text-neutral-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors";
+      "p-3 w-[50px] h-[50px] flex items-center justify-center bg-[#f4f5f9] dark:bg-neutral-700 text-emerald-500 dark:text-neutral-300 rounded-xl hover:bg-gray-50 transition-colors";
   } else {
     listBtn.className =
-      "p-3 w-[50px] h-[50px] flex items-center justify-center bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors";
+      "p-3 w-[50px] h-[50px] flex items-center justify-center bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors";
     gridBtn.className =
-      "p-3 w-[50px] h-[50px] flex items-center justify-center bg-white dark:bg-neutral-600 dark:text-neutral-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors";
+      "p-3 w-[50px] h-[50px] flex items-center justify-center bg-[#f4f5f9] dark:bg-neutral-700 text-emerald-500 dark:text-neutral-300 rounded-xl hover:bg-gray-50 transition-colors";
   }
 
   // Show skeleton loading when switching views
   renderSkeletonLoading();
-  
+
   // Render actual devices after a short delay
   setTimeout(() => {
     renderDevices();
   }, 300);
 }
 
+const activeDropdownClasses = [
+  "bg-emerald-50",
+  "border-emerald-500",
+  "text-emerald-600",
+  "dark:bg-emerald-700/20",
+  "dark:border-emerald-700/20",
+  "dark:text-emerald-300",
+];
+
+// Sort Dropdown Toggle
+sortDropdownButton.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const isHidden = sortDropdownMenu.classList.contains("hidden");
+
+  if (isHidden) {
+    sortDropdownMenu.classList.remove("hidden");
+    sortDropdownIcon.style.transform = "rotate(180deg)";
+  } else {
+    sortDropdownMenu.classList.add("hidden");
+    sortDropdownIcon.style.transform = "rotate(0deg)";
+  }
+});
+
 function viewDevice(deviceId) {
   const device = devices.find((d) => d.id === deviceId);
   if (!device) return;
-  
+
   modalManager.create({
     id: "viewDeviceModal",
     icon: "uil-mobile-android",
@@ -393,7 +531,8 @@ function viewDevice(deviceId) {
     primaryButton: {
       text: "Deactivate",
       icon: "uil-ban",
-      class: "bg-transparent border-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30",
+      class:
+        "bg-transparent border-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30",
     },
     secondaryButton: {
       text: "Close",
@@ -407,7 +546,7 @@ function viewDevice(deviceId) {
       modalManager.close("viewDeviceModal");
     },
   });
-  
+
   modalManager.show("viewDeviceModal");
 }
 
@@ -428,7 +567,7 @@ function deactivateDevice(deviceId) {
     body: `
       <div class="text-sm text-center">
         <p class="mb-3">Are you sure you want to deactivate <strong>${device.id}</strong>?</p>
-        <p class="text-xs text-gray-500">Owner: ${device.owner}</p>
+        <p class="text-xs text-gray-500">${device.type === "node" ? "Owner: " + device.owner : "Location: " + device.location }</p>
       </div>
     `,
     primaryButton: {
@@ -456,13 +595,15 @@ function deactivateDevice(deviceId) {
 function initialize() {
   // Show skeleton loading
   renderSkeletonLoading();
-  
+
   // Set up search input listener
-  const searchInput = document.querySelector('input[placeholder="Search devices..."]');
+  const searchInput = document.querySelector(
+    'input[placeholder="Search devices..."]'
+  );
   if (searchInput) {
-    searchInput.addEventListener('input', handleSearch);
+    searchInput.addEventListener("input", handleSearch);
   }
-  
+
   // Simulate loading delay
   setTimeout(() => {
     isLoading = false;

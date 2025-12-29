@@ -15,7 +15,7 @@ from datetime import datetime
 # ============================================
 # CONFIGURATION - CHANGE THESE FOR YOUR SETUP
 # ============================================
-SERIAL_PORT = 'COM3'  # Windows: COM3, COM4, etc. | Linux: /dev/ttyUSB0, /dev/ttyACM0
+SERIAL_PORT = 'COM7'  # Windows: COM3, COM4, etc. | Linux: /dev/ttyUSB0, /dev/ttyACM0
 BAUD_RATE = 115200
 API_ENDPOINT = 'http://localhost/safechain/api/receive_incident.php'
 
