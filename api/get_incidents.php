@@ -33,7 +33,7 @@ $sql = "SELECT
 FROM incidents i
 LEFT JOIN residents r ON i.reporter_id = r.resident_id
 WHERE i.is_archived = 0
-AND i.status = 'pending'";
+AND i.status != 'resolved'";
 
 // Filter by type
 if ($type !== 'all' && in_array($type, ['fire', 'crime', 'flood'])) {
@@ -54,17 +54,19 @@ if (!$result) {
     exit;
 }
 
-// Format incidents for JavaScript
+// Format incidents - keep both formats for compatibility
 $formatted = [
     'fire' => [],
     'crime' => [],
     'flood' => []
 ];
 
+$allIncidents = []; // New flat array for proper sorting
+
 while ($incident = mysqli_fetch_assoc($result)) {
     $incidentType = $incident['type'];
     
-    $formatted[$incidentType][] = [
+    $formattedIncident = [
         'id' => $incident['id'],
         'type' => ucfirst($incidentType) . ' Emergency',
         'icon' => $incidentType === 'fire' ? 'uil-fire' : 
@@ -72,6 +74,7 @@ while ($incident = mysqli_fetch_assoc($result)) {
         'color' => $incidentType === 'fire' ? 'red' : 
                    ($incidentType === 'crime' ? 'yellow' : 'blue'),
         'time' => date('g:i A', strtotime($incident['date_time'])),
+        'datetime' => $incident['date_time'], // Add full datetime for sorting
         'user' => [
             'name' => $incident['reporter'],
             'contact' => $incident['contact'] ?? 'N/A',
@@ -104,6 +107,10 @@ while ($incident = mysqli_fetch_assoc($result)) {
             ]
         ]
     ];
+    
+    // Add to both formats
+    $formatted[$incidentType][] = $formattedIncident;
+    $allIncidents[] = $formattedIncident;
 }
 
 // Get historical incidents for dynamic heatmap (last 30 days)
@@ -149,17 +156,18 @@ if ($heatResult) {
     }
 }
 
-// Response
+// Response with both formats
 echo json_encode([
     'success' => true,
-    'data' => $formatted,
+    'data' => $formatted, // Keep for backward compatibility
+    'all_incidents' => $allIncidents, // New flat array already sorted by date
     'heatmap' => $heatmapData,
     'timestamp' => date('Y-m-d H:i:s'),
     'count' => [
         'fire' => count($formatted['fire']),
         'crime' => count($formatted['crime']),
         'flood' => count($formatted['flood']),
-        'total' => count($formatted['fire']) + count($formatted['crime']) + count($formatted['flood'])
+        'total' => count($allIncidents)
     ]
 ]);
 

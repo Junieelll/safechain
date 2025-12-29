@@ -250,19 +250,24 @@ function generateIncidentDescription(incident) {
   const date = incident.date_reported;
   const time = incident.time_reported;
   const barangay = "Gulod"; // You can make this dynamic too if you have it in the data
-  
+
   // Time-based context
-  const hour = parseInt(time.split(':')[0]);
-  const period = hour >= 6 && hour < 12 ? "morning" : 
-                 hour >= 12 && hour < 18 ? "afternoon" : 
-                 hour >= 18 && hour < 21 ? "evening" : "night";
-  
+  const hour = parseInt(time.split(":")[0]);
+  const period =
+    hour >= 6 && hour < 12
+      ? "morning"
+      : hour >= 12 && hour < 18
+      ? "afternoon"
+      : hour >= 18 && hour < 21
+      ? "evening"
+      : "night";
+
   // Day context
   const reportDate = new Date(date);
   const today = new Date();
   const isToday = reportDate.toDateString() === today.toDateString();
   const dateContext = isToday ? "today" : `on ${date}`;
-  
+
   // Description templates based on incident type
   const descriptions = {
     fire: [
@@ -273,7 +278,7 @@ function generateIncidentDescription(incident) {
       `Residents in the vicinity have been alerted and evacuation procedures initiated. `,
       `Fire department has been notified for immediate deployment. `,
       `Initial assessment indicates potential structural damage. `,
-      `No casualties confirmed at the time of reporting.`
+      `No casualties confirmed at the time of reporting.`,
     ],
     flood: [
       `Flood emergency reported ${dateContext} at ${time} in ${location}, Barangay ${barangay}. `,
@@ -283,7 +288,7 @@ function generateIncidentDescription(incident) {
       `Residents advised to move to higher ground and secure valuables. `,
       `Local authorities monitoring water levels closely. `,
       `Emergency response teams preparing evacuation support if needed. `,
-      `Weather conditions being assessed for potential worsening.`
+      `Weather conditions being assessed for potential worsening.`,
     ],
     crime: [
       `Crime incident reported ${dateContext} at ${time} in ${location}, Barangay ${barangay}. `,
@@ -293,33 +298,59 @@ function generateIncidentDescription(incident) {
       `Witnesses present and providing initial statements. `,
       `Additional security measures being implemented in the vicinity. `,
       `Investigation unit has been dispatched to the location. `,
-      `Residents in the area advised to remain vigilant and report any suspicious activity.`
-    ]
+      `Residents in the area advised to remain vigilant and report any suspicious activity.`,
+    ],
   };
-  
+
   // Get the appropriate description array
   const descArray = descriptions[type] || descriptions.fire;
-  
+
   // Randomly select 4-6 sentences for variety
   const numSentences = Math.floor(Math.random() * 3) + 4; // 4-6 sentences
   const selectedSentences = [];
-  
+
   // Always include first sentence (main context)
   selectedSentences.push(descArray[0]);
-  
+
   // Randomly select from remaining sentences
   const remainingSentences = descArray.slice(1);
   const shuffled = remainingSentences.sort(() => Math.random() - 0.5);
-  
+
   for (let i = 0; i < Math.min(numSentences - 1, shuffled.length); i++) {
     selectedSentences.push(shuffled[i]);
   }
-  
-  return selectedSentences.join('');
+
+  return selectedSentences.join("");
 }
 
+async function getAddressFromCoordinates(lat, lng) {
+  try {
+    const response = await fetch(
+      `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=c07f8cdbfe9b47559bebb248afe454f0`
+    );
+    const data = await response.json();
+
+    const props = data.features[0].properties;
+
+    const address = [
+      props.housenumber,
+      props.street,
+      props.suburb || props.district,
+      props.city,
+    ].filter(Boolean).join(", ");
+
+    console.log("Accurate address:", address);
+    return address;
+  } catch (err) {
+    console.error(err);
+    return "Address not found";
+  }
+}
+
+
+
 // Populate the page with incident data
-function populateIncidentDetails(incident) {
+async function populateIncidentDetails(incident) {
   // Update breadcrumb and title
   document.getElementById("breadcrumbIncidentId").textContent = incident.id;
 
@@ -356,18 +387,25 @@ function populateIncidentDetails(incident) {
     </div>
   `;
 
-  const descriptionBox = document.querySelector('.bg-gray-50.dark\\:bg-neutral-700.border-l-4.border-blue-500');
+  const descriptionBox = document.querySelector(
+    ".bg-gray-50.dark\\:bg-neutral-700.border-l-4.border-blue-500"
+  );
   if (descriptionBox) {
     const generatedDescription = generateIncidentDescription(incident);
     descriptionBox.textContent = generatedDescription;
   }
+
+   const geocodedAddress =
+      incident.lat && incident.lng
+        ? await getAddressFromCoordinates(incident.lat, incident.lng)
+        : "N/A";
 
   // Update location details (keep static for now, but you can make this dynamic too)
   const locationGrid = document.querySelectorAll(
     ".grid.grid-cols-1.md\\:grid-cols-2.gap-5"
   )[1];
   locationGrid.querySelector("span.text-sm.font-semibold").textContent =
-    incident.location;
+    geocodedAddress;
 
   document.getElementById(
     "coordinates"
@@ -375,6 +413,9 @@ function populateIncidentDetails(incident) {
 
   // Update reporter details
   if (incident.reporter_name) {
+    // Fetch address from coordinates
+   
+
     document.querySelectorAll(
       ".grid.grid-cols-1.md\\:grid-cols-2.gap-5"
     )[2].innerHTML = `
@@ -540,15 +581,21 @@ let selectedFiles = [];
 const map = L.map("incidentMap").setView(incidentLocation, 16);
 
 // Create both light and dark tile layers
-const lightLayer = L.tileLayer("assets/tiles/streets-v2/{z}/{x}/{y}.png", {
-  attribution:
-    '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-});
+const lightLayer = L.tileLayer(
+  "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  {
+    attribution:
+      '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+  }
+);
 
-const darkLayer = L.tileLayer("assets/tiles/streets-v2-dark/{z}/{x}/{y}.png", {
-  attribution:
-    '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-});
+const darkLayer = L.tileLayer(
+  "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  {
+    attribution:
+      '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+  }
+);
 
 // Add the appropriate layer based on current theme
 const currentTheme = document.documentElement.getAttribute("data-theme");
@@ -719,8 +766,6 @@ function toggleDirections() {
       const incidentLocation = incidentMarker.getLatLng();
       map.setView([incidentLocation.lat, incidentLocation.lng], 15);
     }
-
-    showToast("info", "Directions hidden");
   }
 }
 
@@ -1207,7 +1252,7 @@ async function addRemark() {
 //               )
 //               .join("")}
 //           </select>
-          
+
 //           <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mt-3">
 //             <div class="flex gap-2">
 //               <i class="uil uil-info-circle text-yellow-600 dark:text-yellow-400 text-lg flex-shrink-0"></i>

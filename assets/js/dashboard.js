@@ -98,8 +98,13 @@ async function fetchLiveIncidents() {
     const result = await response.json();
 
     if (result.success) {
-      // Update incident data
-      incidentData = result.data;
+      // Update incident data (both formats)
+      incidentData = result.data; // Keep for backward compatibility
+      
+      // Store the flat sorted array if available
+      if (result.all_incidents) {
+        incidentData.all = result.all_incidents;
+      }
 
       // Update historical heatmap data from database
       if (result.heatmap) {
@@ -127,11 +132,10 @@ async function fetchLiveIncidents() {
 // NOTIFICATION SYSTEM
 // ============================================
 
-// Add at the top with other initializations
 let notificationAudio = null;
 let audioInitialized = false;
 
-// Initialize audio on first user interaction with the page
+// Try to initialize audio immediately
 function initializeAudio() {
   if (!audioInitialized) {
     notificationAudio = new Audio("assets/sounds/alert.mp3");
@@ -139,70 +143,93 @@ function initializeAudio() {
     notificationAudio.load();
     audioInitialized = true;
     console.log("✓ Audio initialized");
+    
+    // Try to play silently to unlock audio (will fail in most browsers, but worth trying)
+    notificationAudio.play().then(() => {
+      notificationAudio.pause();
+      notificationAudio.currentTime = 0;
+      console.log("✓ Audio unlocked successfully");
+    }).catch(() => {
+      console.log("⚠ Audio autoplay blocked - waiting for user interaction");
+    });
   }
 }
 
-// Listen for ANY user interaction to enable audio
+// Initialize audio immediately when script loads
+initializeAudio();
+
+// Also listen for first user interaction as fallback
+let userInteracted = false;
 ["click", "keydown", "touchstart"].forEach((event) => {
-  document.addEventListener(event, initializeAudio, { once: true });
+  document.addEventListener(event, () => {
+    if (!userInteracted) {
+      userInteracted = true;
+      initializeAudio();
+      console.log("✓ Audio enabled after user interaction");
+    }
+  }, { once: true });
 });
 
 let knownIncidentIds = new Set(
   JSON.parse(localStorage.getItem("knownIncidentIds") || "[]")
 );
-let isInitialLoad = true; // Flag to track first load
+let isInitialLoad = true;
 
 function checkForNewIncidents(data) {
   ["fire", "crime", "flood"].forEach((type) => {
-    data[type].forEach((incident) => {
-      if (!knownIncidentIds.has(incident.id)) {
-        knownIncidentIds.add(incident.id);
+    if (data[type] && Array.isArray(data[type])) {
+      data[type].forEach((incident) => {
+        if (!knownIncidentIds.has(incident.id)) {
+          knownIncidentIds.add(incident.id);
 
-        // Save to localStorage
-        localStorage.setItem(
-          "knownIncidentIds",
-          JSON.stringify([...knownIncidentIds])
-        );
-
-        // Only show notification if NOT initial load
-        if (!isInitialLoad && typeof showToast === "function") {
-          const typeColors = {
-            fire: "info",
-            crime: "info",
-            flood: "info",
-          };
-          showToast(
-            typeColors[type],
-            `New ${type} incident: ${incident.user.name}`
+          localStorage.setItem(
+            "knownIncidentIds",
+            JSON.stringify([...knownIncidentIds])
           );
-          playNotificationSound();
+
+          // Only show notification if NOT initial load
+          if (!isInitialLoad && typeof showToast === "function") {
+            const typeColors = {
+              fire: "info",
+              crime: "info",
+              flood: "info",
+            };
+            showToast(
+              typeColors[type],
+              `New ${type} incident: ${incident.user.name}`
+            );
+            playNotificationSound();
+          }
         }
-      }
-    });
+      });
+    }
   });
 
-  // After first check, mark as no longer initial load
   if (isInitialLoad) {
     isInitialLoad = false;
   }
 }
 
 function playNotificationSound() {
-  // Initialize audio if not done yet (fallback)
   if (!audioInitialized) {
     initializeAudio();
   }
 
   if (notificationAudio) {
-    notificationAudio.currentTime = 0; // Reset to beginning
+    // Reset and play
+    notificationAudio.currentTime = 0;
     notificationAudio.play().catch((e) => {
-      console.warn("Audio autoplay blocked. User interaction needed first.");
+      console.warn("⚠ Audio play failed:", e.message);
+      // Show a one-time prompt to enable audio
+      if (!userInteracted) {
+        showToast("warning", "Click anywhere to enable alert sounds");
+      }
     });
 
     // Stop after 3 seconds
     setTimeout(() => {
       notificationAudio.pause();
-      notificationAudio.currentTime = 0; // Reset for next play
+      notificationAudio.currentTime = 0;
     }, 3000);
   }
 }
@@ -301,6 +328,12 @@ const iconMap = {
   flood: floodIcon,
 };
 
+const markerFiltersActive = {
+  fire: true,
+  crime: true,
+  flood: true
+};
+
 function updateMapMarkers() {
   // Clear existing markers
   Object.keys(markers).forEach((type) => {
@@ -308,12 +341,46 @@ function updateMapMarkers() {
     markers[type] = [];
   });
 
-  // Add new markers
-  Object.keys(incidentData).forEach((type) => {
-    incidentData[type].forEach((incident) => {
-      const marker = L.marker([incident.lat, incident.lng], {
-        icon: iconMap[type],
-      }).addTo(map).bindPopup(`
+  // Get incidents - handle both old and new data format
+  let incidentsToProcess = {
+    fire: [],
+    crime: [],
+    flood: []
+  };
+
+  // Check if we have the new flat array format
+  if (incidentData.all && Array.isArray(incidentData.all)) {
+    // Convert flat array back to grouped format for marker processing
+    incidentData.all.forEach((incident) => {
+      // Extract the base type from the formatted type string
+      const typeString = incident.type.toLowerCase();
+      if (typeString.includes('fire')) {
+        incidentsToProcess.fire.push(incident);
+      } else if (typeString.includes('crime')) {
+        incidentsToProcess.crime.push(incident);
+      } else if (typeString.includes('flood')) {
+        incidentsToProcess.flood.push(incident);
+      }
+    });
+  } else {
+    // Use the old grouped format
+    incidentsToProcess = incidentData;
+  }
+
+  // Add new markers, respecting filter state
+  Object.keys(incidentsToProcess).forEach((type) => {
+    if (incidentsToProcess[type] && Array.isArray(incidentsToProcess[type])) {
+      incidentsToProcess[type].forEach((incident) => {
+        const marker = L.marker([incident.lat, incident.lng], {
+          icon: iconMap[type],
+        });
+
+        // Only add to map if filter is active
+        if (markerFiltersActive[type]) {
+          marker.addTo(map);
+        }
+
+        marker.bindPopup(`
           <div class="p-2">
             <strong class="text-sm">${incident.type}</strong><br>
             <span class="text-xs">${incident.user.name}</span><br>
@@ -321,20 +388,21 @@ function updateMapMarkers() {
           </div>
         `);
 
-      marker.on("click", () => {
-        if (
-          typeof incidentContent !== "undefined" &&
-          typeof renderIncidentDetails === "function"
-        ) {
-          incidentContent.innerHTML = renderIncidentDetails(incident);
-          if (isRightPanelCollapsed) {
-            rightPanelToggle.click();
+        marker.on("click", () => {
+          if (
+            typeof incidentContent !== "undefined" &&
+            typeof renderIncidentDetails === "function"
+          ) {
+            incidentContent.innerHTML = renderIncidentDetails(incident);
+            if (isRightPanelCollapsed) {
+              rightPanelToggle.click();
+            }
           }
-        }
-      });
+        });
 
-      markers[type].push(marker);
-    });
+        markers[type].push(marker);
+      });
+    }
   });
 }
 
@@ -495,17 +563,25 @@ function renderSkeletonLoading() {
 }
 
 function renderEmergencyList() {
-  // Collect all incidents into a single array
-  const allIncidents = [];
-
-  ["fire", "crime", "flood"].forEach((type) => {
-    if (incidentData[type] && incidentData[type].length > 0) {
-      allIncidents.push(...incidentData[type]);
-    }
-  });
-
-  // Sort by time (newest first)
-  allIncidents.sort((a, b) => new Date(b.time) - new Date(a.time));
+  // Use the pre-sorted flat array from API if available
+  let allIncidents;
+  
+  if (incidentData.all && Array.isArray(incidentData.all)) {
+    // Use the flat array from API (already sorted by date from SQL)
+    allIncidents = incidentData.all;
+  } else {
+    // Fallback: collect from grouped data
+    allIncidents = ["fire", "crime", "flood"].flatMap(
+      (type) => incidentData[type] || []
+    );
+    
+    // Sort by datetime field (more reliable than formatted time)
+    allIncidents.sort((a, b) => {
+      const dateA = new Date(a.datetime || a.time);
+      const dateB = new Date(b.datetime || b.time);
+      return dateB - dateA; // newest first
+    });
+  }
 
   // If no incidents
   if (allIncidents.length === 0) {
@@ -539,7 +615,11 @@ function renderEmergencyList() {
       ${allIncidents
         .map(
           (incident) => `
-        <div class="bg-[#FFFFFF] border border-neutral-300 rounded-2xl p-4 space-y-3 text-sm dark:bg-neutral-700">
+        <div onclick="focusIncidentOnMap('${incident.id}', ${incident.lat}, ${
+            incident.lng
+          }, '${
+            incident.type
+          }')" class="bg-[#FFFFFF] border border-neutral-300 rounded-2xl p-4 space-y-3 text-sm dark:bg-neutral-700 cursor-pointer hover:shadow-lg hover:border-emerald-400 transition-all duration-200">
           <!-- Emergency Type Badge -->
           <div class="inline-flex items-center gap-2 ${
             colorClasses[incident.color]
@@ -582,12 +662,12 @@ function renderEmergencyList() {
           <!-- Action Buttons -->
           <div class="flex flex-col gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
             <button 
-              onclick="viewIncidentDetails('${incident.id}')" 
+              onclick="event.stopPropagation(); viewIncidentDetails('${incident.id}')" 
               class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium py-2.5 px-3 rounded-xl transition">
               <i class="uil uil-eye"></i> View Details
             </button>
             <button 
-              onclick="notifyResponders('${incident.id}')" 
+              onclick="event.stopPropagation(); notifyResponders('${incident.id}')" 
               class="flex-1 bg-transparent hover:bg-emerald-200/50 border border-emerald-400 dark:border-emerald-600 text-emerald-500 text-xs font-medium py-2.5 px-3 rounded-xl transition">
               <i class="uil uil-bell"></i> Notify Responders
             </button>
@@ -600,8 +680,62 @@ function renderEmergencyList() {
   `;
 }
 
+function focusIncidentOnMap(incidentId, lat, lng, type) {
+  let markerType = null;
+  const lowerType = type.toLowerCase();
+  
+  if (lowerType.includes('fire')) {
+    markerType = 'fire';
+  } else if (lowerType.includes('crime')) {
+    markerType = 'crime';
+  } else if (lowerType.includes('flood')) {
+    markerType = 'flood';
+  }
+  
+  console.log('Focusing on:', { incidentId, lat, lng, type, markerType });
+  
+  // Center and zoom to the incident location
+  map.setView([lat, lng], 17, {
+    animate: true,
+    duration: 1.0
+  });
+
+  // Wait a bit to ensure markers are loaded
+  setTimeout(() => {
+    const incidentMarkers = markers[markerType];
+    console.log('Available markers for', markerType, ':', incidentMarkers ? incidentMarkers.length : 0);
+    
+    if (incidentMarkers && incidentMarkers.length > 0) {
+      let found = false;
+      incidentMarkers.forEach((marker) => {
+        const markerLatLng = marker.getLatLng();
+        
+        // Use a more generous comparison for coordinates
+        if (Math.abs(markerLatLng.lat - lat) < 0.00001 && 
+            Math.abs(markerLatLng.lng - lng) < 0.00001) {
+          found = true;
+          // Open the popup
+          marker.openPopup();
+          console.log('Popup opened!');
+        }
+      });
+      
+      if (!found) {
+        console.log('No matching marker found. Looking for:', lat, lng);
+        console.log('Available markers:', incidentMarkers.map(m => m.getLatLng()));
+      }
+    } else {
+      console.log('No markers array found for type:', markerType);
+      console.log('All markers:', markers);
+    }
+  }, 1000); // Wait 1 second for map animation and marker loading
+
+}
+
 function viewIncidentDetails(incidentId) {
-  window.location.href = `admin/incidents/details?id=${encodeURIComponent(incidentId)}`;
+  window.location.href = `admin/incidents/details?id=${encodeURIComponent(
+    incidentId
+  )}`;
 }
 
 function notifyResponders(incidentId) {
@@ -617,14 +751,51 @@ let isRightPanelCollapsed = false;
 
 var map = L.map("map").setView([14.7158532, 121.0403842], 16);
 
-const lightLayer = L.tileLayer("assets/tiles/streets-v2/{z}/{x}/{y}.png", {
-  attribution:
-    '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+const isOnline = navigator.onLine;
+
+// Determine tile URLs based on online status
+const lightTileUrl = isOnline 
+  ? "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7"
+  : "assets/tiles/street-v2/{z}/{x}/{y}.png";
+
+const darkTileUrl = isOnline 
+  ? "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7"
+  : "assets/tiles/street-v2-dark/{z}/{x}/{y}.png";
+
+// Create tile layers
+const lightLayer = L.tileLayer(lightTileUrl, {
+  attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+}).on('tileerror', function(error, tile) {
+  const url = tile.tile.src;
+  const matches = url.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
+  
+  if (matches) {
+    const [, z, x, y] = matches;
+    tile.tile.src = `assets/tiles/street-v2/${z}/${x}/${y}.png`;
+  }
 });
 
-const darkLayer = L.tileLayer("assets/tiles/streets-v2-dark/{z}/{x}/{y}.png", {
-  attribution:
-    '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+const darkLayer = L.tileLayer(darkTileUrl, {
+  attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+}).on('tileerror', function(error, tile) {
+  const url = tile.tile.src;
+  const matches = url.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
+  
+  if (matches) {
+    const [, z, x, y] = matches;
+    tile.tile.src = `assets/tiles/street-v2-dark/${z}/${x}/${y}.png`;
+  }
+});
+
+// Listen for online/offline changes and update both layers
+window.addEventListener('online', () => {
+  lightLayer.setUrl("https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7");
+  darkLayer.setUrl("https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7");
+});
+
+window.addEventListener('offline', () => {
+  lightLayer.setUrl("assets/tiles/street-v2/{z}/{x}/{y}.png");
+  darkLayer.setUrl("assets/tiles/street-v2-dark/{z}/{x}/{y}.png");
 });
 
 // Add the appropriate layer based on current theme
@@ -651,8 +822,10 @@ function switchMapTheme(isDark) {
 
 // Add all markers with staggered animation
 setTimeout(() => {
-  Object.keys(incidentData).forEach((type, typeIndex) => {
-    incidentData[type].forEach((incident, incidentIndex) => {
+  // Only process fire, crime, flood (not 'all')
+  ['fire', 'crime', 'flood'].forEach((type, typeIndex) => {
+    const incidents = incidentData[type] || [];
+    incidents.forEach((incident, incidentIndex) => {
       setTimeout(() => {
         const marker = L.marker([incident.lat, incident.lng], {
           icon: iconMap[type],
@@ -708,7 +881,7 @@ heatmapToggleButtons.forEach((btn) => {
 incidentContent.innerHTML = renderSkeletonLoading();
 setTimeout(() => {
   incidentContent.innerHTML = renderEmergencyList();
-  
+
   // Make sure panel is always visible
   if (isRightPanelCollapsed) {
     rightPanelToggle.click();
@@ -815,13 +988,13 @@ const filterButtons = document.querySelectorAll("[data-filter]");
 filterButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     const filter = btn.dataset.filter;
-    // Skip heatmap toggle - it has its own handler
     if (filter === "heatmap") return;
 
     btn.classList.toggle("active");
+    markerFiltersActive[filter] = btn.classList.contains("active"); // Track state
 
     markers[filter].forEach((marker) => {
-      if (btn.classList.contains("active")) {
+      if (markerFiltersActive[filter]) {
         marker.addTo(map);
       } else {
         map.removeLayer(marker);

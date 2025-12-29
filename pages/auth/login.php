@@ -5,10 +5,7 @@ require_once __DIR__ . '/../../includes/auth_helper.php';
 require_once __DIR__ . '/../../includes/user_functions.php';
 
 // Redirect if already authenticated
-if (AuthChecker::isLoggedIn()) {
-  header('Location: home');
-  exit;
-}
+AuthChecker::redirectIfAuthenticated('../home');
 
 $error = '';
 
@@ -28,42 +25,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Username doesn't exist
         $error = "Hmm, we couldn't find an account with that username. Double-check your spelling or create a new account.";
       } else {
-        // Try to verify credentials
-        $user = verifyCredentials($conn, $username, $password);
+        // Check if user is suspended BEFORE verifying password
+        if ($userExists['status'] === 'suspended') {
+          $error = "Your account has been suspended. Please contact an administrator for assistance.";
+        } 
+        // Check if user is admin (only admins can access web platform)
+        elseif ($userExists['role'] !== Roles::ADMIN) {
+          $error = "Access denied. Only administrators can access the web platform.";
+        } 
+        else {
+          // User is active and is admin, now verify password
+          $user = verifyCredentials($conn, $username, $password);
 
-        if (!$user) {
-          // Username exists but password is wrong
-          $error = "That password doesn't seem right. Please try again.";
-        } else {
-          // Login successful - pass all required parameters
-          AuthChecker::login($user['user_id'], $user['name'], $user['username'], $user['role'], $rememberMe);
+          if (!$user) {
+            // Username exists but password is wrong
+            $error = "That password doesn't seem right. Please try again.";
+          } else {
+            // Login successful
+            AuthChecker::login(
+              $user['user_id'],    // Now accepts string like 'USR-2025-001'
+              $user['name'], 
+              $user['username'], 
+              $user['role'],
+              $user['status'],
+              $rememberMe
+            );
 
-          if (
-            !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest'
-          ) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => true, 'redirect' => '../home']);
+            header('Location: ../home');
             exit;
           }
-
-          header('Location: ../home');
-          exit;
         }
       }
     } catch (Exception $e) {
       $error = "Something went wrong on our end. Please try again in a moment.";
       error_log("Login error: " . $e->getMessage());
     }
-  }
-
-  if (
-    !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-    strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest'
-  ) {
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'error' => $error]);
-    exit;
   }
 }
 ?>
