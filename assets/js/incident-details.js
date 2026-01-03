@@ -748,7 +748,6 @@ function toggleDirections() {
 
     btn.innerHTML = '<i class="uil uil-times text-base"></i> Hide Directions';
     directionsActive = true;
-    showToast("info", "Directions displayed on map");
   } else {
     if (routingControl) {
       map.removeControl(routingControl);
@@ -1100,45 +1099,70 @@ function generateReport() {
     iconColor: "text-blue-600",
     iconBg: "bg-blue-100",
     title: "Generate Incident Report",
-    subtitle: "Export incident details",
+    subtitle: "Export incident details as PDF",
     body: `
       <div class="space-y-3">
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-neutral-700 rounded-lg">
-          <span class="text-xs font-medium">Report ID:</span>
-          <span class="text-xs font-semibold">#EMG-2024-1047</span>
-        </div>
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-neutral-700 rounded-lg">
-          <span class="text-xs font-medium">Format:</span>
-          <span class="text-xs font-semibold">PDF Document</span>
-        </div>
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-neutral-700 rounded-lg">
-          <span class="text-xs font-medium">Status:</span>
-          <span class="text-xs text-emerald-600 font-semibold">Ready to Download</span>
+        <p class="text-sm text-gray-600">This will generate a printable PDF using the Barangay report template.</p>
+        <div class="space-y-2">
+          <label class="block text-xs font-semibold">Action</label>
+          <div class="flex gap-2">
+            <button id="openReportBtn" class="w-1/2 px-4 py-2 bg-blue-500 text-white rounded-lg text-xs">Open & Print</button>
+            <button id="downloadReportBtn" class="w-1/2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs">Download PDF</button>
+          </div>
         </div>
       </div>
     `,
     primaryButton: {
-      text: "Download Report",
-      icon: "uil-download-alt",
+      text: "Close",
     },
     secondaryButton: {
       text: "Cancel",
     },
-    onPrimary: () => {
-      showToast("info", "Generating incident report...");
-
-      setTimeout(() => {
-        showToast("success", "Report downloaded successfully");
-        addTimelineItem(
-          "Report Generated",
-          "PDF report generated: #EMG-2024-1047"
-        );
-        modalManager.close("reportModal");
-      }, 1500);
-    },
+    onPrimary: () => modalManager.close("reportModal"),
   });
 
   modalManager.show("reportModal");
+
+  // attach handlers after modal opens
+  setTimeout(() => {
+    const openBtn = document.getElementById("openReportBtn");
+    const downloadBtn = document.getElementById("downloadReportBtn");
+
+    if (openBtn) {
+      openBtn.addEventListener("click", () => {
+        const url = `api/generate_report.php?id=${encodeURIComponent(incidentId)}&admin_name=${encodeURIComponent(currentAdminName)}`;
+        window.open(url, "_blank");
+        addTimelineItem("Report Generated", `Report opened: #EMG-${incidentId}`);
+        showToast("success", "Report opened in a new tab");
+        modalManager.close("reportModal");
+      });
+    }
+
+    if (downloadBtn) {
+      downloadBtn.addEventListener("click", async () => {
+        try {
+          showToast("info", "Preparing PDF...");
+          const resp = await fetch(`api/generate_report.php?id=${encodeURIComponent(incidentId)}&download=1&admin_name=${encodeURIComponent(currentAdminName)}`);
+          if (!resp.ok) throw new Error("Failed to generate PDF");
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `IncidentReport_${incidentId}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          addTimelineItem("Report Generated", `Report downloaded: #EMG-${incidentId}`);
+          showToast("success", "Report downloaded");
+          modalManager.close("reportModal");
+        } catch (err) {
+          console.error(err);
+          showToast("error", "Failed to generate report");
+        }
+      });
+    }
+  }, 50);
 }
 
 // Open Image Modal

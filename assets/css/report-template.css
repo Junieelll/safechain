@@ -1,0 +1,250 @@
+:root {
+  --bg-neutral: #e4ebed;
+  --bg-light: #ffffff;
+
+  /* Font sizes (Tailwind defaults) */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 1rem; /* 16px */
+  --text-lg: 1.125rem; /* 18px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-2xl: 1.5rem; /* 24px */
+  --text-3xl: 1.875rem; /* 30px */
+  --text-4xl: 2.25rem; /* 36px */
+  --text-5xl: 3rem; /* 48px */
+  --text-6xl: 3.75rem; /* 60px */
+  --text-7xl: 4.5rem; /* 72px */
+  --text-8xl: 6rem; /* 96px */
+  --text-9xl: 8rem; /* 128px */
+
+  /* Border radius (Tailwind defaults) */
+  --radius-none: 0px;
+  --radius-sm: 0.125rem; /* rounded-sm */
+  --radius: 0.25rem; /* rounded */
+  --radius-md: 0.375rem; /* rounded-md */
+  --radius-lg: 0.5rem; /* rounded-lg */
+  --radius-xl: 0.75rem; /* rounded-xl */
+  --radius-2xl: 1rem; /* rounded-2xl */
+  --radius-3xl: 1.5rem; /* rounded-3xl */
+  --radius-full: 9999px; /* rounded-full */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.container {
+  width: 100%;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-neutral);
+  min-height: 100vh;
+}
+
+.long-bond {
+  width: 8.5in;
+  height: 11in;
+  background-color: var(--bg-light);
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  flex-shrink: 0;
+}
+
+.header img {
+  width: 90px;
+}
+
+.header-center {
+  text-align: center;
+}
+
+.header-center .header-title,
+.header-center .header-subtitle {
+  font-weight: 600;
+}
+
+.header-address {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.header-tel {
+  font-size: var(--text-xs);
+  font-style: italic;
+}
+
+.main-content {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  gap: 0;
+}
+
+.barangay-officials {
+  width: 30%;
+  border-right: 3px solid #000;
+  border-top: 3px solid #000;
+  padding: 10px 8px;
+  flex-shrink: 0;
+}
+
+.content{
+    width: 70%;
+    flex: 1;
+    border-top: 3px solid #000;
+    padding: 30px;
+    overflow-y: auto;
+    position: relative;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.content::before{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('../img/qc-logo.jpg');
+    background-repeat: no-repeat;
+    background-position: center 150px;
+    background-size: 400px; /* Adjust size as needed */
+    opacity: 0.1; /* Adjust opacity (0.05 to 0.2 works well) */
+    z-index: 0;
+    pointer-events: none;
+}
+
+.content > *{
+    position: relative;
+    z-index: 1;
+}
+
+.barangay-captain {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+}
+
+.barangay-captain .official-name {
+  text-decoration: underline;
+}
+
+.official-name {
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.line-height-0 {
+  line-height: none;
+}
+
+.barangay-captain .position {
+  font-style: italic;
+}
+
+.position {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.officials-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  margin: 10px 0 8px 0;
+  text-transform: uppercase;
+}
+
+.official-item {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+/* Content Styles */
+.report-title {
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+}
+
+.report-subtitle {
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 25px;
+}
+
+.section-title {
+  font-weight: 700;
+  font-size: 12px;
+  margin: 12px 0 8px 0;
+  text-transform: uppercase;
+}
+
+.section-content {
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: justify;
+}
+
+.section-content p {
+}
+
+.subsection-title {
+  font-size: 12px;
+}
+
+.list-item {
+  font-size: 12px;
+  line-height: 1.5;
+  padding-left: 20px;
+}
+
+.list-item strong {
+  font-weight: 700;
+}
+
+.indent {
+  padding-left: 15px;
+}
+
+.double-indent {
+  padding-left: 30px;
+}
+
+.long-bond {
+    page-break-after: always;
+}
+
+.long-bond:last-child {
+    page-break-after: auto;
+}
+
+.section-title {
+    page-break-after: avoid; /* Prevent titles from being orphaned */
+}

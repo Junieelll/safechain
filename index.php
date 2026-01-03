@@ -55,7 +55,8 @@ $sharedAuthenticatedRoutes = [
     'home',
     'profile',
     'settings',
-    'test_incident_generator'
+    'test_incident_generator',
+    'report-template'
 ];
 
 // ===== NEW: Define public routes accessible to everyone (including guests) =====
