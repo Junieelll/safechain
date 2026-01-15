@@ -250,19 +250,24 @@ function generateIncidentDescription(incident) {
   const date = incident.date_reported;
   const time = incident.time_reported;
   const barangay = "Gulod"; // You can make this dynamic too if you have it in the data
-  
+
   // Time-based context
-  const hour = parseInt(time.split(':')[0]);
-  const period = hour >= 6 && hour < 12 ? "morning" : 
-                 hour >= 12 && hour < 18 ? "afternoon" : 
-                 hour >= 18 && hour < 21 ? "evening" : "night";
-  
+  const hour = parseInt(time.split(":")[0]);
+  const period =
+    hour >= 6 && hour < 12
+      ? "morning"
+      : hour >= 12 && hour < 18
+      ? "afternoon"
+      : hour >= 18 && hour < 21
+      ? "evening"
+      : "night";
+
   // Day context
   const reportDate = new Date(date);
   const today = new Date();
   const isToday = reportDate.toDateString() === today.toDateString();
   const dateContext = isToday ? "today" : `on ${date}`;
-  
+
   // Description templates based on incident type
   const descriptions = {
     fire: [
@@ -273,7 +278,7 @@ function generateIncidentDescription(incident) {
       `Residents in the vicinity have been alerted and evacuation procedures initiated. `,
       `Fire department has been notified for immediate deployment. `,
       `Initial assessment indicates potential structural damage. `,
-      `No casualties confirmed at the time of reporting.`
+      `No casualties confirmed at the time of reporting.`,
     ],
     flood: [
       `Flood emergency reported ${dateContext} at ${time} in ${location}, Barangay ${barangay}. `,
@@ -283,7 +288,7 @@ function generateIncidentDescription(incident) {
       `Residents advised to move to higher ground and secure valuables. `,
       `Local authorities monitoring water levels closely. `,
       `Emergency response teams preparing evacuation support if needed. `,
-      `Weather conditions being assessed for potential worsening.`
+      `Weather conditions being assessed for potential worsening.`,
     ],
     crime: [
       `Crime incident reported ${dateContext} at ${time} in ${location}, Barangay ${barangay}. `,
@@ -293,33 +298,59 @@ function generateIncidentDescription(incident) {
       `Witnesses present and providing initial statements. `,
       `Additional security measures being implemented in the vicinity. `,
       `Investigation unit has been dispatched to the location. `,
-      `Residents in the area advised to remain vigilant and report any suspicious activity.`
-    ]
+      `Residents in the area advised to remain vigilant and report any suspicious activity.`,
+    ],
   };
-  
+
   // Get the appropriate description array
   const descArray = descriptions[type] || descriptions.fire;
-  
+
   // Randomly select 4-6 sentences for variety
   const numSentences = Math.floor(Math.random() * 3) + 4; // 4-6 sentences
   const selectedSentences = [];
-  
+
   // Always include first sentence (main context)
   selectedSentences.push(descArray[0]);
-  
+
   // Randomly select from remaining sentences
   const remainingSentences = descArray.slice(1);
   const shuffled = remainingSentences.sort(() => Math.random() - 0.5);
-  
+
   for (let i = 0; i < Math.min(numSentences - 1, shuffled.length); i++) {
     selectedSentences.push(shuffled[i]);
   }
-  
-  return selectedSentences.join('');
+
+  return selectedSentences.join("");
 }
 
+async function getAddressFromCoordinates(lat, lng) {
+  try {
+    const response = await fetch(
+      `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=c07f8cdbfe9b47559bebb248afe454f0`
+    );
+    const data = await response.json();
+
+    const props = data.features[0].properties;
+
+    const address = [
+      props.housenumber,
+      props.street,
+      props.suburb || props.district,
+      props.city,
+    ].filter(Boolean).join(", ");
+
+    console.log("Accurate address:", address);
+    return address;
+  } catch (err) {
+    console.error(err);
+    return "Address not found";
+  }
+}
+
+
+
 // Populate the page with incident data
-function populateIncidentDetails(incident) {
+async function populateIncidentDetails(incident) {
   // Update breadcrumb and title
   document.getElementById("breadcrumbIncidentId").textContent = incident.id;
 
@@ -356,18 +387,25 @@ function populateIncidentDetails(incident) {
     </div>
   `;
 
-  const descriptionBox = document.querySelector('.bg-gray-50.dark\\:bg-neutral-700.border-l-4.border-blue-500');
+  const descriptionBox = document.querySelector(
+    ".bg-gray-50.dark\\:bg-neutral-700.border-l-4.border-blue-500"
+  );
   if (descriptionBox) {
     const generatedDescription = generateIncidentDescription(incident);
     descriptionBox.textContent = generatedDescription;
   }
+
+   const geocodedAddress =
+      incident.lat && incident.lng
+        ? await getAddressFromCoordinates(incident.lat, incident.lng)
+        : "N/A";
 
   // Update location details (keep static for now, but you can make this dynamic too)
   const locationGrid = document.querySelectorAll(
     ".grid.grid-cols-1.md\\:grid-cols-2.gap-5"
   )[1];
   locationGrid.querySelector("span.text-sm.font-semibold").textContent =
-    incident.location;
+    geocodedAddress;
 
   document.getElementById(
     "coordinates"
@@ -375,6 +413,9 @@ function populateIncidentDetails(incident) {
 
   // Update reporter details
   if (incident.reporter_name) {
+    // Fetch address from coordinates
+   
+
     document.querySelectorAll(
       ".grid.grid-cols-1.md\\:grid-cols-2.gap-5"
     )[2].innerHTML = `
@@ -540,15 +581,21 @@ let selectedFiles = [];
 const map = L.map("incidentMap").setView(incidentLocation, 16);
 
 // Create both light and dark tile layers
-const lightLayer = L.tileLayer("assets/tiles/streets-v2/{z}/{x}/{y}.png", {
-  attribution:
-    '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-});
+const lightLayer = L.tileLayer(
+  "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  {
+    attribution:
+      '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+  }
+);
 
-const darkLayer = L.tileLayer("assets/tiles/streets-v2-dark/{z}/{x}/{y}.png", {
-  attribution:
-    '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-});
+const darkLayer = L.tileLayer(
+  "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  {
+    attribution:
+      '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+  }
+);
 
 // Add the appropriate layer based on current theme
 const currentTheme = document.documentElement.getAttribute("data-theme");
@@ -701,7 +748,6 @@ function toggleDirections() {
 
     btn.innerHTML = '<i class="uil uil-times text-base"></i> Hide Directions';
     directionsActive = true;
-    showToast("info", "Directions displayed on map");
   } else {
     if (routingControl) {
       map.removeControl(routingControl);
@@ -719,8 +765,6 @@ function toggleDirections() {
       const incidentLocation = incidentMarker.getLatLng();
       map.setView([incidentLocation.lat, incidentLocation.lng], 15);
     }
-
-    showToast("info", "Directions hidden");
   }
 }
 
@@ -1055,45 +1099,70 @@ function generateReport() {
     iconColor: "text-blue-600",
     iconBg: "bg-blue-100",
     title: "Generate Incident Report",
-    subtitle: "Export incident details",
+    subtitle: "Export incident details as PDF",
     body: `
       <div class="space-y-3">
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-neutral-700 rounded-lg">
-          <span class="text-xs font-medium">Report ID:</span>
-          <span class="text-xs font-semibold">#EMG-2024-1047</span>
-        </div>
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-neutral-700 rounded-lg">
-          <span class="text-xs font-medium">Format:</span>
-          <span class="text-xs font-semibold">PDF Document</span>
-        </div>
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-neutral-700 rounded-lg">
-          <span class="text-xs font-medium">Status:</span>
-          <span class="text-xs text-emerald-600 font-semibold">Ready to Download</span>
+        <p class="text-sm text-gray-600">This will generate a printable PDF using the Barangay report template.</p>
+        <div class="space-y-2">
+          <label class="block text-xs font-semibold">Action</label>
+          <div class="flex gap-2">
+            <button id="openReportBtn" class="w-1/2 px-4 py-2 bg-blue-500 text-white rounded-lg text-xs">Open & Print</button>
+            <button id="downloadReportBtn" class="w-1/2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs">Download PDF</button>
+          </div>
         </div>
       </div>
     `,
     primaryButton: {
-      text: "Download Report",
-      icon: "uil-download-alt",
+      text: "Close",
     },
     secondaryButton: {
       text: "Cancel",
     },
-    onPrimary: () => {
-      showToast("info", "Generating incident report...");
-
-      setTimeout(() => {
-        showToast("success", "Report downloaded successfully");
-        addTimelineItem(
-          "Report Generated",
-          "PDF report generated: #EMG-2024-1047"
-        );
-        modalManager.close("reportModal");
-      }, 1500);
-    },
+    onPrimary: () => modalManager.close("reportModal"),
   });
 
   modalManager.show("reportModal");
+
+  // attach handlers after modal opens
+  setTimeout(() => {
+    const openBtn = document.getElementById("openReportBtn");
+    const downloadBtn = document.getElementById("downloadReportBtn");
+
+    if (openBtn) {
+      openBtn.addEventListener("click", () => {
+        const url = `api/generate_report.php?id=${encodeURIComponent(incidentId)}&admin_name=${encodeURIComponent(currentAdminName)}`;
+        window.open(url, "_blank");
+        addTimelineItem("Report Generated", `Report opened: #EMG-${incidentId}`);
+        showToast("success", "Report opened in a new tab");
+        modalManager.close("reportModal");
+      });
+    }
+
+    if (downloadBtn) {
+      downloadBtn.addEventListener("click", async () => {
+        try {
+          showToast("info", "Preparing PDF...");
+          const resp = await fetch(`api/generate_report.php?id=${encodeURIComponent(incidentId)}&download=1&admin_name=${encodeURIComponent(currentAdminName)}`);
+          if (!resp.ok) throw new Error("Failed to generate PDF");
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `IncidentReport_${incidentId}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          addTimelineItem("Report Generated", `Report downloaded: #EMG-${incidentId}`);
+          showToast("success", "Report downloaded");
+          modalManager.close("reportModal");
+        } catch (err) {
+          console.error(err);
+          showToast("error", "Failed to generate report");
+        }
+      });
+    }
+  }, 50);
 }
 
 // Open Image Modal
@@ -1207,7 +1276,7 @@ async function addRemark() {
 //               )
 //               .join("")}
 //           </select>
-          
+
 //           <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mt-3">
 //             <div class="flex gap-2">
 //               <i class="uil uil-info-circle text-yellow-600 dark:text-yellow-400 text-lg flex-shrink-0"></i>

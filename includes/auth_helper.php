@@ -1,250 +1,451 @@
 <?php
-// auth_helper.php 
+// includes/auth_helper.php
 
+/**
+ * Authentication and Authorization Helper
+ * Handles user session management, role checks, and access control
+ */
 class AuthChecker {
+    
+    // Session keys constants
+    private const SESSION_USER_ID = 'user_id';
+    private const SESSION_NAME = 'name';
+    private const SESSION_USERNAME = 'username';
+    private const SESSION_ROLE = 'user_role';
+    private const SESSION_STATUS = 'user_status';
+    
+    // Cookie expiry (30 days)
+    private const COOKIE_EXPIRY = 2592000;
     
     /**
      * Check if user is authenticated
-     * @return bool
      */
-    public static function isLoggedIn() {
-        return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+    public static function isLoggedIn(): bool {
+        // Start session if not already started
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        return isset($_SESSION[self::SESSION_USER_ID]) && 
+               !empty($_SESSION[self::SESSION_USER_ID]);
     }
     
     /**
-     * Require authentication - redirect to login if not authenticated
-     * @param string $redirectUrl URL to redirect to if not authenticated
+     * Check if user account is active (not suspended)
      */
-    public static function requireAuth($redirectUrl = '/auth/login') {
+    public static function isActive(): bool {
         if (!self::isLoggedIn()) {
-            header("Location: $redirectUrl");
+            return false;
+        }
+        
+        $status = $_SESSION[self::SESSION_STATUS] ?? 'suspended';
+        return $status === 'active';
+    }
+    
+    /**
+     * Require authentication and active status
+     * Automatically logs out suspended users
+     */
+    public static function requireAuth(string $redirectUrl = '/auth/login'): void {
+        if (!self::isLoggedIn()) {
+            self::redirectTo($redirectUrl);
+        }
+        
+        // Check if user is suspended
+        if (!self::isActive()) {
+            self::logout();
+            self::redirectTo($redirectUrl . '?error=suspended');
+        }
+    }
+    
+    /**
+     * Require authentication for API (returns JSON instead of redirecting)
+     */
+    public static function requireApiAuth(): void {
+        if (!self::isLoggedIn()) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Not authenticated'
+            ]);
+            exit;
+        }
+        
+        if (!self::isActive()) {
+            http_response_code(403);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Account suspended'
+            ]);
             exit;
         }
     }
     
     /**
      * Get current user's role
-     * @return string
      */
-    public static function getUserRole() {
-        return $_SESSION['user_role'] ?? 'guest';
+    public static function getUserRole(): string {
+        return $_SESSION[self::SESSION_ROLE] ?? Roles::GUEST;
     }
     
     /**
-     * Get current user's ID
-     * @return mixed|null
+     * Get current user's ID (returns string like 'USR-2025-001')
      */
-    public static function getUserId() {
-        return $_SESSION['user_id'] ?? null;
+    public static function getUserId(): ?string {
+        return $_SESSION[self::SESSION_USER_ID] ?? null;
     }
     
     /**
      * Get current user's full name
-     * @return string|null
      */
-    public static function getName() {
-        return $_SESSION['name'] ?? null;
+    public static function getName(): ?string {
+        return $_SESSION[self::SESSION_NAME] ?? null;
     }
     
     /**
      * Get current user's username
-     * @return string|null
      */
-    public static function getUsername() {
-        return $_SESSION['username'] ?? null;
+    public static function getUsername(): ?string {
+        return $_SESSION[self::SESSION_USERNAME] ?? null;
+    }
+    
+    /**
+     * Get current user's status
+     */
+    public static function getStatus(): string {
+        return $_SESSION[self::SESSION_STATUS] ?? 'suspended';
     }
     
     /**
      * Check if user has a specific role
-     * @param string $role Role to check
-     * @return bool
      */
-    public static function hasRole($role) {
+    public static function hasRole(string $role): bool {
         return self::getUserRole() === $role;
     }
     
     /**
      * Check if user has any of the specified roles
-     * @param array $roles Array of roles to check
-     * @return bool
      */
-    public static function hasAnyRole(array $roles) {
-        return in_array(self::getUserRole(), $roles);
+    public static function hasAnyRole(array $roles): bool {
+        return in_array(self::getUserRole(), $roles, true);
     }
     
     /**
      * Require specific role - show 403 if user doesn't have the role
-     * @param string $role Required role
-     * @param string $errorPage Path to 403 error page
      */
-    public static function requireRole($role, $errorPage = '/errors/403.php') {
+    public static function requireRole(string $role, string $errorPage = '/errors/403.php'): void {
+        self::requireAuth();
+        
+        if (!self::hasRole($role)) {
+            self::sendForbiddenResponse($errorPage);
+        }
+    }
+    
+    /**
+     * Require specific role for API (returns JSON)
+     */
+    public static function requireApiRole(string $role): void {
+        self::requireApiAuth();
+        
         if (!self::hasRole($role)) {
             http_response_code(403);
-            require __DIR__ . $errorPage;
+            echo json_encode([
+                'success' => false,
+                'error' => 'Insufficient permissions'
+            ]);
             exit;
         }
     }
     
     /**
      * Require any of the specified roles
-     * @param array $roles Array of allowed roles
-     * @param string $errorPage Path to 403 error page
      */
-    public static function requireAnyRole(array $roles, $errorPage = '/errors/403.php') {
+    public static function requireAnyRole(array $roles, string $errorPage = '/errors/403.php'): void {
+        self::requireAuth();
+        
+        if (!self::hasAnyRole($roles)) {
+            self::sendForbiddenResponse($errorPage);
+        }
+    }
+    
+    /**
+     * Require any of the specified roles for API (returns JSON)
+     */
+    public static function requireApiAnyRole(array $roles): void {
+        self::requireApiAuth();
+        
         if (!self::hasAnyRole($roles)) {
             http_response_code(403);
-            require __DIR__ . $errorPage;
+            echo json_encode([
+                'success' => false,
+                'error' => 'Insufficient permissions'
+            ]);
             exit;
         }
+    }
+    
+    /**
+     * Require admin role (web app only)
+     */
+    public static function requireAdmin(): void {
+        self::requireRole(Roles::ADMIN);
+    }
+    
+    /**
+     * Require admin role for API (returns JSON)
+     */
+    public static function requireApiAdmin(): void {
+        self::requireApiRole(Roles::ADMIN);
+    }
+    
+    /**
+     * Require responder role (mobile app users)
+     */
+    public static function requireResponder(): void {
+        self::requireAnyRole(Roles::getResponderRoles());
+    }
+    
+    /**
+     * Require responder role for API (returns JSON)
+     */
+    public static function requireApiResponder(): void {
+        self::requireApiAnyRole(Roles::getResponderRoles());
     }
     
     /**
      * Check if user is guest (not logged in)
-     * @return bool
      */
-    public static function isGuest() {
-        return !self::isLoggedIn() || self::getUserRole() === 'guest';
+    public static function isGuest(): bool {
+        return !self::isLoggedIn() || self::getUserRole() === Roles::GUEST;
     }
     
     /**
-     * Redirect if already authenticated (useful for login/register pages)
-     * @param string $redirectUrl URL to redirect to if authenticated
+     * Redirect if already authenticated
      */
-    public static function redirectIfAuthenticated($redirectUrl = '/home') {
-        if (self::isLoggedIn()) {
-            header("Location: $redirectUrl");
-            exit;
+    public static function redirectIfAuthenticated(string $redirectUrl = '/home'): void {
+        if (self::isLoggedIn() && self::isActive()) {
+            self::redirectTo($redirectUrl);
         }
-    }
-    
-    /**
-     * Check if user can access a specific route based on role
-     * @param string $route Route to check
-     * @param array $allowedRoutes Array of allowed routes by role
-     * @return bool
-     */
-    public static function canAccessRoute($route, array $allowedRoutes) {
-        $userRole = self::getUserRole();
-        return isset($allowedRoutes[$userRole]) && in_array($route, $allowedRoutes[$userRole]);
     }
     
     /**
      * Logout user - clear session and cookies
      */
-    public static function logout() {
+    public static function logout(): void {
         // Clear session variables
-        $_SESSION = array();
+        $_SESSION = [];
         
-        // Clear cookies
-        if (isset($_COOKIE['user_id'])) {
-            setcookie('user_id', '', time() - 3600, '/');
-            setcookie('name', '', time() - 3600, '/');
-            setcookie('username', '', time() - 3600, '/');
-            setcookie('user_role', '', time() - 3600, '/');
+        // Clear cookies if they exist
+        $cookieParams = [
+            self::SESSION_USER_ID,
+            self::SESSION_NAME,
+            self::SESSION_USERNAME,
+            self::SESSION_ROLE,
+            self::SESSION_STATUS
+        ];
+        
+        foreach ($cookieParams as $param) {
+            if (isset($_COOKIE[$param])) {
+                setcookie($param, '', time() - 3600, '/', '', true, true);
+            }
         }
         
         // Destroy session
-        session_destroy();
-    }
-    
-    /**
-     * Set user session data
-     * @param int $userId User ID
-     * @param string $name User's full name
-     * @param string $username User's username
-     * @param string $userRole User role
-     * @param bool $rememberMe Whether to set cookies
-     */
-    public static function login($userId, $name, $username, $userRole, $rememberMe = false) {
-        $_SESSION['user_id'] = $userId;
-        $_SESSION['name'] = $name;
-        $_SESSION['username'] = $username;
-        $_SESSION['user_role'] = $userRole;
-        
-        if ($rememberMe) {
-            $cookieExpiry = time() + (30 * 24 * 60 * 60); // 30 days
-            setcookie('user_id', $userId, $cookieExpiry, '/');
-            setcookie('name', $name, $cookieExpiry, '/');
-            setcookie('username', $username, $cookieExpiry, '/');
-            setcookie('user_role', $userRole, $cookieExpiry, '/');
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
         }
     }
     
     /**
-     * Check if user is an admin
-     * @return bool
+     * Set user session data after successful login
+     * UPDATED: Now accepts string $userId (like 'USR-2025-001')
      */
-    public static function isAdmin() {
+    public static function login(
+        string $userId,
+        string $name,
+        string $username,
+        string $role,
+        string $status = 'active',
+        bool $rememberMe = false
+    ): void {
+        // Start session if not already started
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Regenerate session ID to prevent session fixation
+        session_regenerate_id(true);
+        
+        // Set session data
+        $_SESSION[self::SESSION_USER_ID] = $userId;
+        $_SESSION[self::SESSION_NAME] = $name;
+        $_SESSION[self::SESSION_USERNAME] = $username;
+        $_SESSION[self::SESSION_ROLE] = $role;
+        $_SESSION[self::SESSION_STATUS] = $status;
+        
+        // Set secure cookies if remember me is checked
+        if ($rememberMe) {
+            $expiry = time() + self::COOKIE_EXPIRY;
+            $cookieOptions = [
+                'expires' => $expiry,
+                'path' => '/',
+                'secure' => true,      // HTTPS only
+                'httponly' => true,    // No JavaScript access
+                'samesite' => 'Strict' // CSRF protection
+            ];
+            
+            setcookie(self::SESSION_USER_ID, $userId, $cookieOptions);
+            setcookie(self::SESSION_NAME, $name, $cookieOptions);
+            setcookie(self::SESSION_USERNAME, $username, $cookieOptions);
+            setcookie(self::SESSION_ROLE, $role, $cookieOptions);
+            setcookie(self::SESSION_STATUS, $status, $cookieOptions);
+        }
+    }
+    
+    /**
+     * Check if user is an admin (web app access only)
+     */
+    public static function isAdmin(): bool {
         return self::hasRole(Roles::ADMIN);
     }
     
     /**
-     * Check if user is a responder
-     * @return bool
+     * Check if user is a responder (mobile app users)
      */
-    public static function isResponder() {
-        return self::hasRole(Roles::RESPONDER);
+    public static function isResponder(): bool {
+        return self::hasAnyRole(Roles::getResponderRoles());
     }
     
     /**
-     * Check if user is an operator
-     * @return bool
+     * Check if current platform is allowed for user's role
      */
-    public static function isOperator() {
-        return self::hasRole(Roles::OPERATOR);
+    public static function isPlatformAllowed(string $platform = 'web'): bool {
+        $role = self::getUserRole();
+        
+        if ($platform === 'web') {
+            return $role === Roles::ADMIN;
+        }
+        
+        if ($platform === 'mobile') {
+            return in_array($role, Roles::getResponderRoles(), true);
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Require platform access (web or mobile)
+     */
+    public static function requirePlatform(string $platform = 'web'): void {
+        self::requireAuth();
+        
+        if (!self::isPlatformAllowed($platform)) {
+            $message = $platform === 'web' 
+                ? 'Web access is restricted to administrators only.'
+                : 'Mobile access is restricted to responders only.';
+            
+            http_response_code(403);
+            die($message);
+        }
+    }
+    
+    // Private helper methods
+    
+    private static function redirectTo(string $url): void {
+        header("Location: $url");
+        exit;
+    }
+    
+    private static function sendForbiddenResponse(string $errorPage): void {
+        http_response_code(403);
+        
+        if (file_exists(__DIR__ . $errorPage)) {
+            require __DIR__ . $errorPage;
+        } else {
+            die('403 Forbidden: You do not have permission to access this resource.');
+        }
+        
+        exit;
     }
 }
 
-// Role constants for SafeChain application
+/**
+ * Role definitions and utilities
+ */
 class Roles {
+    // Role constants
     const GUEST = 'guest';
     const ADMIN = 'admin';
-    const RESPONDER = 'responder';
-    const OPERATOR = 'operator';
+    const BPSO = 'bpso';        // Barangay Public Safety Officer
+    const BHERT = 'bhert';      // Barangay Health Emergency Response Team
+    const FIREFIGHTER = 'firefighter';
     
     /**
-     * Get all available roles
-     * @return array
+     * Get all responder roles (mobile app users)
      */
-    public static function all() {
+    public static function getResponderRoles(): array {
         return [
-            self::ADMIN,
-            self::RESPONDER,
-            self::OPERATOR
+            self::BPSO,
+            self::BHERT,
+            self::FIREFIGHTER
         ];
+    }
+    
+    /**
+     * Get all authenticated roles (excludes guest)
+     */
+    public static function getAuthenticatedRoles(): array {
+        return array_merge([self::ADMIN], self::getResponderRoles());
     }
     
     /**
      * Get all roles including guest
-     * @return array
      */
-    public static function allWithGuest() {
-        return [
-            self::GUEST,
-            self::ADMIN,
-            self::RESPONDER,
-            self::OPERATOR
-        ];
+    public static function getAllRoles(): array {
+        return array_merge([self::GUEST], self::getAuthenticatedRoles());
     }
     
     /**
      * Check if role exists
-     * @param string $role
-     * @return bool
      */
-    public static function exists($role) {
-        return in_array($role, self::allWithGuest());
+    public static function exists(string $role): bool {
+        return in_array($role, self::getAllRoles(), true);
     }
     
     /**
-     * Get authenticated roles only (excludes guest)
-     * @return array
+     * Check if role is a responder role
      */
-    public static function authenticated() {
-        return [
-            self::ADMIN,
-            self::RESPONDER,
-            self::OPERATOR
+    public static function isResponderRole(string $role): bool {
+        return in_array($role, self::getResponderRoles(), true);
+    }
+    
+    /**
+     * Get role display name
+     */
+    public static function getDisplayName(string $role): string {
+        $displayNames = [
+            self::GUEST => 'Guest',
+            self::ADMIN => 'Administrator',
+            self::BPSO => 'BPSO',
+            self::BHERT => 'BHERT',
+            self::FIREFIGHTER => 'Firefighter'
         ];
+        
+        return $displayNames[$role] ?? 'Unknown';
+    }
+    
+    /**
+     * Get allowed platform for role
+     */
+    public static function getAllowedPlatform(string $role): string {
+        if ($role === self::ADMIN) {
+            return 'web';
+        }
+        
+        if (self::isResponderRole($role)) {
+            return 'mobile';
+        }
+        
+        return 'none';
     }
 }

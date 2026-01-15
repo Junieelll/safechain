@@ -49,7 +49,7 @@ $navItems = [
     [
         'id' => 'resident',
         'label' => 'Residents',
-        'icon' => 'uil-users-alt',
+        'icon' => 'uil-user-circle',
         'url' => 'admin/resident',
         'pages' => ['resident.php']
     ],
@@ -66,6 +66,13 @@ $navItems = [
         'icon' => 'uil-chart-bar',
         'url' => 'admin/analytics',
         'pages' => ['analytics.php'] 
+    ],
+    [
+        'id' => 'user-management',
+        'label' => 'User Management',
+        'icon' => 'uil-users-alt',
+        'url' => 'admin/user-management',
+        'pages' => ['user-management.php'] 
     ],
     [
         'id' => 'archive',
@@ -148,7 +155,7 @@ function isActiveNav($navItem, $currentRoute) {
                         id="userInfo"
                         class="flex flex-col transition-opacity duration-300 text-left">
                         <span class="font-semibold text-[0.95rem]"><?php echo htmlspecialchars($name); ?></span>
-                        <span class="text-xs bg-white text-emerald-400 w-max py-1 px-3 rounded-full font-medium">@<?php echo htmlspecialchars($username); ?></span>
+                        <span class="text-xs bg-white text-emerald-400 w-max py-1 px-3 rounded-full font-medium"><?php echo htmlspecialchars($username); ?></span>
                     </div>
                 </button>
 

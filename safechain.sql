@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.0
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 14, 2025 at 03:07 AM
--- Server version: 10.4.25-MariaDB
--- PHP Version: 8.1.10
+-- Generation Time: Dec 29, 2025 at 07:43 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -35,7 +35,7 @@ CREATE TABLE `emergency_responders` (
   `station_address` varchar(255) NOT NULL,
   `available` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `emergency_responders`
@@ -71,7 +71,15 @@ CREATE TABLE `incidents` (
   `archived_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `incidents`
+--
+
+INSERT INTO `incidents` (`id`, `type`, `location`, `latitude`, `longitude`, `device_id`, `reporter`, `reporter_id`, `date_time`, `status`, `dispatched_to`, `dispatched_at`, `dispatched_by`, `is_archived`, `archived_at`, `created_at`, `updated_at`) VALUES
+('EMG-2025-1001', 'fire', '321 Luna Street, Gulod, Novaliches, QC', 14.71398522, 121.04178874, 'SC-KC-004', 'Pedro Garcia', 'USR-2025-004', '2025-12-14 11:56:10', 'pending', NULL, NULL, NULL, 0, NULL, '2025-12-14 03:56:10', '2025-12-14 03:56:10'),
+('EMG-2025-1002', 'crime', '789 Mabini Road, Gulod, Novaliches, QC', 14.71740575, 121.04158684, 'SC-KC-003', 'Anna Reyes', 'USR-2025-003', '2025-12-14 11:59:42', 'pending', NULL, NULL, NULL, 0, NULL, '2025-12-14 03:59:42', '2025-12-14 03:59:42');
 
 -- --------------------------------------------------------
 
@@ -87,7 +95,7 @@ CREATE TABLE `incident_evidence` (
   `file_path` varchar(255) NOT NULL,
   `uploaded_by` varchar(100) NOT NULL,
   `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -101,7 +109,7 @@ CREATE TABLE `incident_notes` (
   `admin_name` varchar(100) NOT NULL,
   `note` text NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -116,7 +124,7 @@ CREATE TABLE `incident_timeline` (
   `description` text NOT NULL,
   `actor` varchar(100) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -135,7 +143,7 @@ CREATE TABLE `residents` (
   `archived_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `residents`
@@ -163,19 +171,23 @@ CREATE TABLE `users` (
   `name` varchar(100) NOT NULL,
   `username` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `role` enum('admin','operator') NOT NULL DEFAULT 'operator',
+  `role` enum('admin','bpso','bhert','firefighter') NOT NULL DEFAULT 'bpso',
+  `status` enum('active','suspended') DEFAULT 'active',
+  `suspended_until` datetime DEFAULT NULL,
+  `suspension_reason` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `last_login` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`user_id`, `name`, `username`, `password`, `role`, `created_at`, `updated_at`, `last_login`) VALUES
-('USR-2025-001', 'Juniel Cardenas', 'junieelll', '$2y$12$lt51yuFoBB2N1qtrpvAY9.aojxSE0er3AnICbX2mlqh0QJwNudD7y', 'admin', '2025-12-12 08:02:20', '2025-12-14 00:24:21', '2025-12-14 00:24:21'),
-('USR-2025-002', 'Admin', '@admin', '$2y$12$lt51yuFoBB2N1qtrpvAY9.aojxSE0er3AnICbX2mlqh0QJwNudD7y', 'admin', '2025-12-13 06:12:53', '2025-12-13 06:13:11', '2025-12-13 06:13:11');
+INSERT INTO `users` (`user_id`, `name`, `username`, `password`, `role`, `status`, `suspended_until`, `suspension_reason`, `created_at`, `updated_at`, `last_login`) VALUES
+('USR-2025-001', 'Juniel Cardenas', 'junieelll', '$2y$12$lt51yuFoBB2N1qtrpvAY9.aojxSE0er3AnICbX2mlqh0QJwNudD7y', 'admin', 'active', NULL, NULL, '2025-12-12 08:02:20', '2025-12-29 06:39:58', '2025-12-29 06:39:58'),
+('USR-2025-002', 'Admin', '@admin', '$2y$12$lt51yuFoBB2N1qtrpvAY9.aojxSE0er3AnICbX2mlqh0QJwNudD7y', 'admin', 'active', NULL, NULL, '2025-12-13 06:12:53', '2025-12-13 06:13:11', '2025-12-13 06:13:11'),
+('USR-2025-003', 'Juniel Cardenas', '@juniel.cardenas', '$2y$10$XgvOiHqTM7a/oPi.FnMVZumORaOdC4VWBSoGEWXkGSdk5IlbkMm/S', 'bpso', 'suspended', '2026-01-01 07:42:15', 'hahaha', '2025-12-29 06:40:37', '2025-12-29 06:42:15', NULL);
 
 --
 -- Indexes for dumped tables
@@ -257,13 +269,13 @@ ALTER TABLE `incident_evidence`
 -- AUTO_INCREMENT for table `incident_notes`
 --
 ALTER TABLE `incident_notes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `incident_timeline`
 --
 ALTER TABLE `incident_timeline`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- Constraints for dumped tables

@@ -45,7 +45,7 @@
             class="absolute top-0 right-0 w-32 h-32 bg-emerald-50 dark:bg-emerald-900/60 rounded-full -mr-16 -mt-16"></div>
           <div
             class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 dark:bg-emerald-900/30">
-            <i class="uil uil-mobile-android text-2xl text-emerald-600"></i>
+            <i class="uil uil-processor text-2xl text-emerald-600"></i>
           </div>
           <div class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">124</div>
           <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Total Devices</div>
@@ -71,10 +71,10 @@
             class="absolute top-0 right-0 w-32 h-32 bg-red-50 dark:bg-red-900/60 rounded-full -mr-16 -mt-16"></div>
           <div
             class="w-12 h-12 bg-red-100 dark:bg-red-900/60 rounded-xl flex items-center justify-center mb-4">
-            <i class="uil uil-times-circle text-2xl text-red-600"></i>
+            <i class="uil uil-wifi-router text-2xl text-red-600"></i>
           </div>
           <div class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">18</div>
-          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Deactivated Devices</div>
+          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">LoRa Gateway Devices</div>
         </div>
 
         <!-- Offline Devices -->
@@ -84,38 +84,79 @@
             class="absolute top-0 right-0 w-32 h-32 bg-yellow-50 dark:bg-yellow-900/60 rounded-full -mr-16 -mt-16"></div>
           <div
             class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/60 rounded-xl flex items-center justify-center mb-4">
-            <i class="uil uil-wifi-slash text-2xl text-yellow-600"></i>
+            <i class="uil uil-mobile-android text-2xl text-yellow-600"></i>
           </div>
           <div class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">5</div>
-          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Offline Devices</div>
+          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Node Devices</div>
         </div>
       </div>
 
       <!-- Search and View Toggle -->
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex-1 max-w-md">
-          <div class="text-xs font-medium text-gray-600 mb-2">Search</div>
-          <div class="relative">
-            <i
-              class="uil uil-search text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2 text-xl"></i>
-            <input
-              type="text"
-              placeholder="Search devices..."
-              class="py-3 pl-9 bg-white dark:bg-neutral-700 dark:text-neutral-400 rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border-2 border-transparent focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-600 transition" />
+      <div class="flex items-center justify-between mb-6 bg-white dark:bg-neutral-800 rounded-2xl p-3">
+        <div class="flex gap-4 w-full">
+          <div class="flex-1 max-w-md">
+            <div class="text-xs font-medium text-gray-600 mb-2">Search</div>
+            <div class="relative">
+              <i
+                class="uil uil-search text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2 text-xl"></i>
+              <input
+                type="text"
+                placeholder="Search devices..."
+                class="py-3 pl-9 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-400 rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border-2 border-transparent focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-600 transition" />
+            </div>
+          </div>
+          <!-- Type Dropdown-->
+          <div class="sort flex flex-col gap-1 min-w-[250px]">
+            <label for="sort" class="text-xs text-gray-700 dark:text-gray-200 mb-1">Device Type</label>
+            <div class="relative max-h-[46px]">
+              <!-- Dropdown Button -->
+              <button
+                id="sortDropdownButton"
+                class="w-full h-full bg-[#F1F5F9] dark:bg-neutral-700 rounded-lg px-4 py-[10px] border-2 border-transparent text-left flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-500 transition">
+                <span id="sortSelectedText" class="text-gray-700 dark:text-gray-200 text-xs">All Types</span>
+                <i
+                  id="sortDropdownIcon"
+                  class="uil uil-angle-down text-xl text-gray-400 dark:text-gray-200 transition-transform duration-200"></i>
+              </button>
+
+              <!-- Dropdown Menu -->
+              <div
+                id="sortDropdownMenu"
+                class="hidden absolute z-10 w-full mt-2 bg-white dark:bg-neutral-700 dark:border-gray-800 border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                <div class="py-1">
+                  <button
+                    class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    data-value="AllTypes">
+                    All Types
+                  </button>
+                  <button
+                    class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    data-value="NodeDevice">
+                    Node Devices
+                  </button>
+                  <button
+                    class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                    data-value="LoRaGateway">
+                    LoRa Gateway
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+
 
         <div class="flex gap-2 ml-4">
           <button
             onclick="setViewMode('grid')"
             id="gridBtn"
-            class="p-3 w-[50px] h-[50px] flex items-center justify-center bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+            class="p-3 w-[50px] h-[50px] flex items-center justify-center bg-emerald-500 text-white rounded-xl hover:bg-emerald-700 transition-colors">
             <i class="uil uil-apps text-xl"></i>
           </button>
           <button
             onclick="setViewMode('list')"
             id="listBtn"
-            class="p-3 w-[50px] h-[50px] flex items-center justify-center bg-white text-gray-600 dark:bg-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-gray-50 transition-colors">
+            class="p-3 w-[50px] h-[50px] flex items-center justify-center bg-[#f5f4f9] text-emerald-500 dark:bg-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-gray-50 transition-colors">
             <i class="uil uil-list-ul text-xl"></i>
           </button>
         </div>
