@@ -619,7 +619,7 @@ function renderEmergencyList() {
             incident.lng
           }, '${
             incident.type
-          }')" class="bg-[#FFFFFF] border border-neutral-300 rounded-2xl p-4 space-y-3 text-sm dark:bg-neutral-700 cursor-pointer hover:shadow-lg hover:border-emerald-400 transition-all duration-200">
+          }')" class="bg-[#FFFFFF] border border-neutral-300 dark:border-neutral-600 rounded-2xl p-4 space-y-3 text-sm dark:bg-neutral-700 cursor-pointer hover:shadow-lg hover:border-emerald-400 transition-all duration-200">
           <!-- Emergency Type Badge -->
           <div class="inline-flex items-center gap-2 ${
             colorClasses[incident.color]
