@@ -3,7 +3,7 @@ let incidentsData = [];
 // Fetch incidents from database
 async function fetchIncidents() {
   try {
-    const response = await fetch('api/fetch_incidents.php'); // Update path if needed
+    const response = await fetch('api/incidents/fetch_incidents.php'); // Update path if needed
     const result = await response.json();
     
     if (result.success) {
@@ -793,7 +793,7 @@ async function confirmArchiveIncident() {
   if (!id) return;
 
   try {
-    const response = await fetch('api/archive_incident.php', {
+    const response = await fetch('api/incidents/archive_incident.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

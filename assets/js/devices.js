@@ -453,6 +453,107 @@ function viewDevice(deviceId) {
   const device = devices.find((d) => d.id === deviceId);
   if (!device) return;
 
+  // Check if it's a LoRa Gateway
+  if (device.type === "lora") {
+    modalManager.create({
+      id: "viewGatewayModal",
+      icon: "uil-wifi-router",
+      iconColor: "text-emerald-600",
+      iconBg: "bg-emerald-100 dark:bg-emerald-900/60",
+      title: "Gateway Details",
+      subtitle: "Detailed information for the selected LoRa gateway.",
+      body: `
+        <div class="space-y-4">
+          <!-- Green Gateway ID Banner -->
+          <div class="bg-emerald-500 rounded-2xl p-6 text-white">
+            <div class="flex items-center justify-center gap-3">
+              <div class="bg-white/20 rounded-xl py-2.5 px-3">
+                <i class="uil uil-wifi-router text-2xl"></i>
+              </div>
+              <div class="flex-1">
+                <p class="text-xs font-medium opacity-90">GATEWAY ID</p>
+                <p class="text-lg font-semibold">${device.id}</p>
+                <div class="flex items-center gap-2 text-xs">
+                  <i class="uil uil-map-marker text-base"></i>
+                  <span>Located at ${device.location}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info Grid -->
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Signal Strength -->
+            <div class="bg-[#F1F5F9] dark:bg-neutral-600 rounded-xl p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <i class="uil uil-signal-alt-3 text-emerald-500"></i>
+                <p class="text-xs font-medium text-gray-500 dark:text-neutral-400 uppercase">Signal Strength</p>
+              </div>
+              <p class="text-sm font-semibold text-gray-900 dark:text-neutral-300">${device.signal}</p>
+            </div>
+
+            <!-- Installation Date -->
+            <div class="bg-[#F1F5F9] dark:bg-neutral-600 rounded-xl p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <i class="uil uil-calendar-alt text-emerald-500"></i>
+                <p class="text-xs font-medium text-gray-500 dark:text-neutral-400 uppercase">Installation Date</p>
+              </div>
+              <p class="text-sm font-semibold text-gray-900 dark:text-neutral-300">September 15, 2025</p>
+            </div>
+
+            <!-- Coverage Area -->
+            <div class="bg-[#F1F5F9] dark:bg-neutral-600 rounded-xl p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <i class="uil uil-layer-group text-emerald-500"></i>
+                <p class="text-xs font-medium text-gray-500 dark:text-neutral-400 uppercase">Coverage Area</p>
+              </div>
+              <p class="text-sm font-semibold text-gray-900 dark:text-neutral-300">500m radius</p>
+            </div>
+
+            <!-- Last Seen -->
+            <div class="bg-[#F1F5F9] dark:bg-neutral-600 rounded-xl p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <i class="uil uil-clock text-emerald-500"></i>
+                <p class="text-xs font-medium text-gray-500 dark:text-neutral-400 uppercase">Last Seen</p>
+              </div>
+              <p class="text-sm font-semibold text-gray-900 dark:text-neutral-300">${device.lastSeen}</p>
+            </div>
+          </div>
+
+          <!-- Notes Section -->
+          <div>
+            <p class="text-xs font-medium text-gray-500 dark:text-neutral-400 uppercase mb-2">NOTES</p>
+            <textarea 
+              class="w-full h-24 px-4 py-3 bg-white dark:bg-neutral-600 dark:border-neutral-700 border-2 border-[#D5E7F9] rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+              placeholder="Add notes about this gateway..."
+            ></textarea>
+          </div>
+        </div>
+      `,
+      primaryButton: {
+        text: "Deactivate",
+        icon: "uil-ban",
+        class:
+          "bg-transparent border-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30",
+      },
+      secondaryButton: {
+        text: "Close",
+      },
+      onPrimary: () => {
+        console.log("Deactivating gateway:", deviceId);
+        modalManager.close("viewGatewayModal");
+        deactivateDevice(deviceId);
+      },
+      onSecondary: () => {
+        modalManager.close("viewGatewayModal");
+      },
+    });
+
+    modalManager.show("viewGatewayModal");
+    return;
+  }
+
+  // Original node device modal code stays here
   modalManager.create({
     id: "viewDeviceModal",
     icon: "uil-mobile-android",

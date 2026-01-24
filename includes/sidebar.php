@@ -8,7 +8,7 @@ require_once __DIR__ . '/auth_helper.php';
 
 // Ensure user is authenticated
 if (!AuthChecker::isLoggedIn()) {
-    header('Location: /safechain/auth/login.php');
+    header('Location: /auth/login.php');
     exit;
 }
 
@@ -30,56 +30,93 @@ if (count($nameParts) >= 2) {
 // Format role for display
 $roleDisplay = ucfirst($userRole);
 
-// Define navigation items with their corresponding page identifiers
-$navItems = [
-    [
-        'id' => 'dashboard',
-        'label' => 'Dashboard',
-        'icon' => 'uil-apps',
-        'url' => 'home',
-        'pages' => ['home.php']
+// Define navigation structure with groups
+$navStructure = [
+    // Standalone items (not in any group)
+    'standalone' => [
+        [
+            'id' => 'dashboard',
+            'label' => 'Dashboard',
+            'icon' => 'uil-apps',
+            'url' => '/',
+            'pages' => ['home.php']
+        ]
     ],
-    [
-        'id' => 'incident',
-        'label' => 'Incident Log',
-        'icon' => 'uil-file-alt',
-        'url' => 'admin/incident',
-        'pages' => ['incident.php']
-    ],
-    [
-        'id' => 'resident',
-        'label' => 'Residents',
-        'icon' => 'uil-user-circle',
-        'url' => 'admin/resident',
-        'pages' => ['resident.php']
-    ],
-    [
-        'id' => 'devices',
-        'label' => 'Devices',
-        'icon' => 'uil-mobile-android',
-        'url' => 'admin/devices',
-        'pages' => ['devices.php']
-    ],
-    [
-        'id' => 'analytics',
-        'label' => 'Analytics',
-        'icon' => 'uil-chart-bar',
-        'url' => 'admin/analytics',
-        'pages' => ['analytics.php'] 
-    ],
-    [
-        'id' => 'user-management',
-        'label' => 'User Management',
-        'icon' => 'uil-users-alt',
-        'url' => 'admin/user-management',
-        'pages' => ['user-management.php'] 
-    ],
-    [
-        'id' => 'archive',
-        'label' => 'Archive',
-        'icon' => 'uil-archive-alt',
-        'url' => 'admin/archive',
-        'pages' => ['archive.php']
+    // Grouped items
+    'groups' => [
+        [
+            'id' => 'management',
+            'label' => 'Management',
+            'icon' => 'uil-folder',
+            'defaultOpen' => true,
+            'items' => [
+                [
+                    'id' => 'incident',
+                    'label' => 'Incident Log',
+                    'icon' => 'uil-file-alt',
+                    'url' => 'incident',
+                    'pages' => ['incident.php']
+                ],
+                [
+                    'id' => 'resident',
+                    'label' => 'Residents',
+                    'icon' => 'uil-user-circle',
+                    'url' => 'resident',
+                    'pages' => ['resident.php']
+                ],
+                [
+                    'id' => 'devices',
+                    'label' => 'Devices',
+                    'icon' => 'uil-mobile-android',
+                    'url' => 'devices',
+                    'pages' => ['devices.php']
+                ]
+            ]
+        ],
+        [
+            'id' => 'reports',
+            'label' => 'Reports & Data',
+            'icon' => 'uil-chart',
+            'defaultOpen' => false,
+            'items' => [
+                [
+                    'id' => 'analytics',
+                    'label' => 'Analytics',
+                    'icon' => 'uil-chart-bar',
+                    'url' => 'analytics',
+                    'pages' => ['analytics.php']
+                ],
+                [
+                    'id' => 'archive',
+                    'label' => 'Archive',
+                    'icon' => 'uil-archive-alt',
+                    'url' => 'archive',
+                    'pages' => ['archive.php']
+                ]
+            ]
+        ],
+        [
+            'id' => 'admin',
+            'label' => 'Administration',
+            'icon' => 'uil-cog',
+            'defaultOpen' => false,
+            'items' => [
+                [
+                    'id' => 'user-management',
+                    'label' => 'User Management',
+                    'icon' => 'uil-users-alt',
+                    'url' => '/user-management',
+                    'pages' => ['user-management.php']
+                ],
+                [
+                    'id' => 'announcement',
+                    'label' => 'Announcements',
+                    'icon' => 'uil-megaphone',
+                    'url' => '/announcements',
+                    'pages' => ['announcements.php']
+                ]
+            ]
+        ]
     ]
 ];
 
@@ -90,13 +127,23 @@ $currentRoute = $_GET['route'] ?? 'home';
 function isActiveNav($navItem, $currentRoute) {
     return $navItem['url'] === $currentRoute;
 }
+
+// Function to check if any item in group is active
+function isGroupActive($group, $currentRoute) {
+    foreach ($group['items'] as $item) {
+        if (isActiveNav($item, $currentRoute)) {
+            return true;
+        }
+    }
+    return false;
+}
 ?>
 
 <aside
     id="sidebar"
     class="fixed w-[280px] m-4 rounded-[20px] sidebar-gradient h-[calc(100vh-32px)] transition-all duration-500 ease-in-out shadow-[0_10px_40px_rgba(0,0,0,0.3)] z-50">
     <header class="flex relative p-5 px-[15px] items-center justify-between">
-        <a href="home" class="flex items-center gap-3 no-underline text-white">
+        <a href="/" class="flex items-center gap-3 no-underline text-white">
             <div
                 class="w-[50px] h-[50px] bg-white/70 rounded-2xl flex items-center justify-center backdrop-blur-[10px] border border-white/50">
                 <img src="assets/img/logo.png" alt="Logo" class="p-1.5">
@@ -116,8 +163,10 @@ function isActiveNav($navItem, $currentRoute) {
     <nav class="h-[calc(100%-86px)] flex flex-col justify-between">
         <ul
             id="primaryNav"
-            class="list-none flex gap-1.5 px-[15px] flex-col translate-y-[15px] transition-all duration-500 ease-in-out">
-            <?php foreach ($navItems as $item): ?>
+            class="list-none flex gap-1.5 px-[15px] flex-col translate-y-[15px] transition-all duration-500 ease-in-out overflow-y-auto scrollbar-hide max-h-[calc(100vh-250px)]">
+            
+            <?php /* Standalone Items */ ?>
+            <?php foreach ($navStructure['standalone'] as $item): ?>
                 <li class="relative nav-item text-sm">
                     <a
                         href="<?php echo htmlspecialchars($item['url']); ?>"
@@ -129,10 +178,45 @@ function isActiveNav($navItem, $currentRoute) {
                         class="nav-tooltip py-2 px-3.5 rounded-xl whitespace-nowrap bg-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] font-medium text-sm text-[#01AF78] z-[9999]"><?php echo htmlspecialchars($item['label']); ?></span>
                 </li>
             <?php endforeach; ?>
+
+            <?php /* Grouped Items */ ?>
+            <?php foreach ($navStructure['groups'] as $group): ?>
+                <?php 
+                $groupActive = isGroupActive($group, $currentRoute);
+                $defaultOpen = $group['defaultOpen'] || $groupActive;
+                ?>
+                <li class="relative nav-group text-sm">
+                    <button
+                        class="nav-group-toggle w-full text-white/85 flex gap-3.5 whitespace-nowrap rounded-xl py-3 px-3.5 items-center border border-transparent transition-all duration-200 ease-in-out hover:text-white hover:bg-white/15 cursor-pointer bg-transparent"
+                        data-group="<?php echo htmlspecialchars($group['id']); ?>"
+                        data-default-open="<?php echo $defaultOpen ? 'true' : 'false'; ?>">
+                        <i class="nav-icon uil <?php echo htmlspecialchars($group['icon']); ?> text-xl"></i>
+                        <span class="nav-label flex-1 text-left"><?php echo htmlspecialchars($group['label']); ?></span>
+                        <i class="uil uil-angle-down group-arrow text-lg transition-transform duration-300"></i>
+                    </button>
+                    <span
+                        class="nav-tooltip py-2 px-3.5 rounded-xl whitespace-nowrap bg-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] font-medium text-sm text-[#01AF78] z-[9999]"><?php echo htmlspecialchars($group['label']); ?></span>
+                    
+                    <ul class="nav-group-items list-none ml-0 overflow-hidden transition-all duration-300" style="max-height: 0;">
+                        <?php foreach ($group['items'] as $item): ?>
+                            <li class="relative nav-item text-sm pb-2">
+                                <a
+                                    href="<?php echo htmlspecialchars($item['url']); ?>"
+                                    class="nav-link text-white/75 flex gap-3.5 whitespace-nowrap rounded-xl py-2.5 px-3.5 ml-8 items-center border border-transparent transition-all duration-200 ease-in-out hover:text-white hover:bg-white/15 <?php echo isActiveNav($item, $currentRoute) ? 'active' : ''; ?>">
+                                    <i class="nav-icon uil <?php echo htmlspecialchars($item['icon']); ?> text-lg"></i>
+                                    <span class="nav-label text-sm"><?php echo htmlspecialchars($item['label']); ?></span>
+                                </a>
+                                <span
+                                    class="nav-tooltip py-2 px-3.5 rounded-xl whitespace-nowrap bg-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] font-medium text-sm text-[#01AF78] z-[9999]"><?php echo htmlspecialchars($item['label']); ?></span>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </li>
+            <?php endforeach; ?>
         </ul>
 
         <ul class="list-none flex gap-1.5 px-[15px] flex-col relative pb-5">
-            <li class="relative mb-2.5 nav-item text-sm">
+            <li class="relative nav-item text-sm mt-2">
                 <a
                     href="#"
                     id="darkModeToggle"
@@ -182,7 +266,7 @@ function isActiveNav($navItem, $currentRoute) {
                     </a>
                     <div class="border-t border-gray-200"></div>
                     <a
-                        href="/safechain/pages/auth/logout.php"
+                        href="/pages/auth/logout.php"
                         class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors duration-200 no-underline"
                         >
                         <i class="uil uil-signout text-xl"></i>
