@@ -173,41 +173,43 @@ let userInteracted = false;
 let knownIncidentIds = new Set(
   JSON.parse(localStorage.getItem("knownIncidentIds") || "[]")
 );
+
+// Initialize known incidents from the first fetch
 let isInitialLoad = true;
 
 function checkForNewIncidents(data) {
+  const newIncidents = [];
+  
   ["fire", "crime", "flood"].forEach((type) => {
     if (data[type] && Array.isArray(data[type])) {
       data[type].forEach((incident) => {
         if (!knownIncidentIds.has(incident.id)) {
           knownIncidentIds.add(incident.id);
-
-          localStorage.setItem(
-            "knownIncidentIds",
-            JSON.stringify([...knownIncidentIds])
-          );
-
-          // Only show notification if NOT initial load
-          if (!isInitialLoad && typeof showToast === "function") {
-            const typeColors = {
-              fire: "info",
-              crime: "info",
-              flood: "info",
-            };
-            showToast(
-              typeColors[type],
-              `New ${type} incident: ${incident.user.name}`
-            );
-            playNotificationSound();
+          
+          // Only track as "new" if not initial load
+          if (!isInitialLoad) {
+            newIncidents.push({ type, incident });
           }
         }
       });
     }
   });
 
-  if (isInitialLoad) {
-    isInitialLoad = false;
+  // Save to localStorage
+  localStorage.setItem(
+    "knownIncidentIds",
+    JSON.stringify([...knownIncidentIds])
+  );
+
+  // Show notifications only after initial load
+  if (!isInitialLoad && newIncidents.length > 0) {
+    newIncidents.forEach(({ type, incident }) => {
+      showToast("info", `New ${type} incident: ${incident.user.name}`);
+    });
+    playNotificationSound(); // Play once for all new incidents
   }
+
+  isInitialLoad = false;
 }
 
 function playNotificationSound() {
