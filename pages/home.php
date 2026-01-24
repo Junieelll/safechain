@@ -20,7 +20,6 @@ if (!AuthChecker::isLoggedIn()) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SafeChain | Dashboard</title>
-    <base href="/safechain/">
     <link rel="stylesheet" href="assets/unicons/line.css" />
     <link rel="stylesheet" href="assets/css/leaflet/leaflet.css" />
     <script src="assets/js/tailwind/tailwind.min.js"></script>
@@ -28,6 +27,7 @@ if (!AuthChecker::isLoggedIn()) {
     <link rel="stylesheet" href="assets/css/dashboard.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
     <link rel="stylesheet" href="assets/css/transitions.css" />
+    <link rel="stylesheet" href="assets/css/sidebar.css" />
     <link rel="icon" type="image/x-icon" href="assets/img/logo.png">
     <script>
         tailwind.config = {
@@ -40,7 +40,7 @@ if (!AuthChecker::isLoggedIn()) {
 
 <body class="min-h-screen flex transition-all duration-300 dark:bg-neutral-900">
 
-    <?php include $_SERVER['DOCUMENT_ROOT'] . '/safechain/includes/sidebar.php'; ?>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . '/includes/sidebar.php'; ?>
 
     <main
         id="mainContent"

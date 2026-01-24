@@ -30,7 +30,7 @@ async function getCurrentAdminName() {
     }
 
     // Fallback: Fetch from API if data attributes not available
-    const response = await fetch("api/get_current_admin.php");
+    const response = await fetch("api/incident_details/get_current_admin.php");
     const result = await response.json();
 
     if (result.success) {
@@ -46,32 +46,10 @@ async function getCurrentAdminName() {
   }
 }
 
-// Fetch and populate incident details
 async function fetchIncidentDetails() {
   try {
     const response = await fetch(
-      `api/fetch_incident_details.php?id=${incidentId}`
-    );
-    const result = await response.json();
-
-    if (result.success) {
-      populateIncidentDetails(result.data);
-    } else {
-      showToast("error", "Failed to load incident: " + result.error);
-      setTimeout(() => {
-        window.location.href = "admin/incidents";
-      }, 2000);
-    }
-  } catch (error) {
-    console.error("Fetch error:", error);
-    showToast("error", "Failed to connect to server");
-  }
-}
-
-async function fetchIncidentDetails() {
-  try {
-    const response = await fetch(
-      `api/fetch_incident_details.php?id=${incidentId}`
+      `api/incident_details/fetch_incident_details.php?id=${incidentId}`
     );
     const result = await response.json();
 
@@ -97,7 +75,7 @@ async function fetchIncidentDetails() {
 async function fetchIncidentNotes() {
   try {
     const response = await fetch(
-      `api/fetch_incident_notes.php?incident_id=${incidentId}`
+      `api/incident_details/fetch_incident_notes.php?incident_id=${incidentId}`
     );
     const result = await response.json();
 
@@ -138,7 +116,7 @@ function renderNotes(notes) {
 async function fetchIncidentTimeline() {
   try {
     const response = await fetch(
-      `api/fetch_incident_timeline.php?incident_id=${incidentId}`
+      `api/incident_details/fetch_incident_timeline.php?incident_id=${incidentId}`
     );
     const result = await response.json();
 
@@ -580,22 +558,52 @@ let selectedFiles = [];
 
 const map = L.map("incidentMap").setView(incidentLocation, 16);
 
-// Create both light and dark tile layers
-const lightLayer = L.tileLayer(
-  "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
-  {
-    attribution:
-      '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-  }
-);
+const isOnline = navigator.onLine;
 
-const darkLayer = L.tileLayer(
-  "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
-  {
-    attribution:
-      '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+// Determine tile URLs based on online status
+const lightTileUrl = isOnline 
+  ? "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7"
+  : "assets/tiles/street-v2/{z}/{x}/{y}.png";
+
+const darkTileUrl = isOnline 
+  ? "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7"
+  : "assets/tiles/street-v2-dark/{z}/{x}/{y}.png";
+
+// Create tile layers with error fallback
+const lightLayer = L.tileLayer(lightTileUrl, {
+  attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+}).on('tileerror', function(error, tile) {
+  const url = tile.tile.src;
+  const matches = url.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
+  
+  if (matches) {
+    const [, z, x, y] = matches;
+    tile.tile.src = `assets/tiles/street-v2/${z}/${x}/${y}.png`;
   }
-);
+});
+
+const darkLayer = L.tileLayer(darkTileUrl, {
+  attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+}).on('tileerror', function(error, tile) {
+  const url = tile.tile.src;
+  const matches = url.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
+  
+  if (matches) {
+    const [, z, x, y] = matches;
+    tile.tile.src = `assets/tiles/street-v2-dark/${z}/${x}/${y}.png`;
+  }
+});
+
+// Listen for online/offline changes and update both layers
+window.addEventListener('online', () => {
+  lightLayer.setUrl("https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7");
+  darkLayer.setUrl("https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7");
+});
+
+window.addEventListener('offline', () => {
+  lightLayer.setUrl("assets/tiles/street-v2/{z}/{x}/{y}.png");
+  darkLayer.setUrl("assets/tiles/street-v2-dark/{z}/{x}/{y}.png");
+});
 
 // Add the appropriate layer based on current theme
 const currentTheme = document.documentElement.getAttribute("data-theme");
@@ -817,7 +825,7 @@ async function updateStatus() {
       }
 
       try {
-        const response = await fetch("api/update_incident_status.php", {
+        const response = await fetch("api/incident_details/update_incident_status.php", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -881,7 +889,7 @@ async function markAsResolved() {
     },
     onPrimary: async () => {
       try {
-        const response = await fetch("api/update_incident_status.php", {
+        const response = await fetch("api/incident_details/update_incident_status.php", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1130,7 +1138,7 @@ function generateReport() {
 
     if (openBtn) {
       openBtn.addEventListener("click", () => {
-        const url = `api/generate_report.php?id=${encodeURIComponent(incidentId)}&admin_name=${encodeURIComponent(currentAdminName)}`;
+        const url = `api/incident_details/generate_report.php?id=${encodeURIComponent(incidentId)}&admin_name=${encodeURIComponent(currentAdminName)}`;
         window.open(url, "_blank");
         addTimelineItem("Report Generated", `Report opened: #EMG-${incidentId}`);
         showToast("success", "Report opened in a new tab");
@@ -1142,7 +1150,7 @@ function generateReport() {
       downloadBtn.addEventListener("click", async () => {
         try {
           showToast("info", "Preparing PDF...");
-          const resp = await fetch(`api/generate_report.php?id=${encodeURIComponent(incidentId)}&download=1&admin_name=${encodeURIComponent(currentAdminName)}`);
+          const resp = await fetch(`api/incident_details/generate_report.php?id=${encodeURIComponent(incidentId)}&download=1&admin_name=${encodeURIComponent(currentAdminName)}`);
           if (!resp.ok) throw new Error("Failed to generate PDF");
           const blob = await resp.blob();
           const url = URL.createObjectURL(blob);
@@ -1212,7 +1220,7 @@ async function addRemark() {
   }
 
   try {
-    const response = await fetch("api/add_incident_note.php", {
+    const response = await fetch("api/incident_details/add_incident_note.php", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

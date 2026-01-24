@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SafeChain | Login</title>
-  <base href="/safechain/">
+  <base href="../" />
   <link rel="stylesheet" href="assets/unicons/line.css" />
   <script src="assets/js/tailwind/tailwind.min.js"></script>
   <link href="assets/css/font.css" rel="stylesheet" />
@@ -180,10 +180,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
           <button type="submit" class="form-submit rounded-full mt-5">Login</button>
 
-          <div class="form-link">
-            Don't have an account?
-            <a href="auth/register">Register here</a>
-          </div>
         </form>
       </div>
     </div>

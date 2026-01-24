@@ -95,3 +95,56 @@ body.dark-mode .border-gray-300 {
 .sidebar-collapsed .nav-tooltip {
   display: block;
 }
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Smooth scrolling */
+.scrollbar-hide {
+    scroll-behavior: smooth;
+}
+
+/* Optional: Add subtle fade at top/bottom to indicate scrollable content */
+#primaryNav::before {
+    content: '';
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to bottom, rgba(1, 175, 120, 0.3), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 1;
+}
+
+#primaryNav.scrolled::before {
+    opacity: 1;
+}
+
+#primaryNav::after {
+    content: '';
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to top, rgba(1, 175, 120, 0.3), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 1;
+}
+
+#primaryNav.has-more::after {
+    opacity: 1;
+}

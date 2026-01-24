@@ -8,7 +8,7 @@ let selectedSort = "newest";
 
 async function fetchResidents() {
   try {
-    const response = await fetch("api/fetch_resident.php");
+    const response = await fetch("api/residents/fetch_resident.php");
     const result = await response.json();
 
     if (result.success) {
@@ -430,7 +430,7 @@ function renderPagination() {
           currentPage === totalPages
             ? "bg-emerald-500 text-white"
             : "hover:bg-white text-gray-600"
-        } text-sm font-medium transition">
+        } texf.t-sm font-medium transition">
         ${totalPages}
       </button>
     `;
@@ -782,7 +782,7 @@ async function saveResidentChanges() {
   }
 
   try {
-    const response = await fetch('api/update_resident.php', {
+    const response = await fetch('api/residents/update_resident.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -854,7 +854,7 @@ async function confirmArchiveResident() {
   if (!id) return;
 
   try {
-    const response = await fetch('api/archive_resident.php', {
+    const response = await fetch('api/residents/archive_resident.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

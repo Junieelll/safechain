@@ -2,7 +2,7 @@
 // SAFECHAIN DASHBOARD - CONFIGURATION
 // ============================================
 
-const API_BASE = "api/";
+const API_BASE = "api/dashboard/";
 const POLL_INTERVAL = 3000; // Poll every 3 seconds
 let lastUpdateTime = null;
 let pollingActive = true;

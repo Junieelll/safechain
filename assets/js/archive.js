@@ -18,7 +18,7 @@ const tabOrder = ["all", "incidents", "users", "devices"];
 // Fetch all archived items
 async function fetchArchivedItems() {
   try {
-    const response = await fetch('api/fetch_all_archived.php');
+    const response = await fetch('api/archive/fetch_all_archived.php');
     const result = await response.json();
     
     if (result.success) {
@@ -512,7 +512,7 @@ async function confirmRestore(items) {
   });
 
   try {
-    const response = await fetch('api/restore_archived.php', {
+    const response = await fetch('api/archive/restore_archived.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -563,7 +563,7 @@ async function confirmDelete(items) {
   });
 
   try {
-    const response = await fetch('api/delete_archived.php', {
+    const response = await fetch('api/archive/delete_archived.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -608,7 +608,7 @@ async function confirmEmptyArchive() {
   });
 
   try {
-    const response = await fetch('api/delete_archived.php', {
+    const response = await fetch('api/archive/delete_archived.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

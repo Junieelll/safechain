@@ -8,11 +8,21 @@ window.redirectWithTransition = function (href) {
   document.body.classList.add('page-exit');
   setTimeout(() => {
     window.location.href = href;
-  }, 400); // Match animation duration
+  }, 400);
 };
 
 // Load saved state from localStorage
 let isCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
+
+// Load saved group states
+function getGroupState(groupId) {
+  const saved = localStorage.getItem(`navGroup_${groupId}`);
+  return saved !== null ? saved === 'true' : null;
+}
+
+function saveGroupState(groupId, isOpen) {
+  localStorage.setItem(`navGroup_${groupId}`, isOpen);
+}
 
 function applySidebarState() {
   if (isCollapsed) {
@@ -49,29 +59,122 @@ function applySidebarState() {
     userBtn.classList.add("gap-3", "py-3", "px-3.5");
   }
 
-  document.querySelectorAll(".nav-link").forEach((link) => {
+  // Handle regular nav links
+  document.querySelectorAll(".nav-item .nav-link").forEach((link) => {
     if (isCollapsed) {
       link.classList.add("w-[50px]", "h-[50px]", "p-0", "justify-center");
     } else {
       link.classList.remove("w-[50px]", "h-[50px]", "p-0", "justify-center");
     }
-    link.querySelector(".nav-label").classList.toggle("hidden", isCollapsed);
+    const label = link.querySelector(".nav-label");
+    if (label) {
+      label.classList.toggle("hidden", isCollapsed);
+    }
   });
+
+  // Handle group toggles in collapsed state
+  document.querySelectorAll(".nav-group-toggle").forEach((toggle) => {
+    if (isCollapsed) {
+      toggle.classList.add("w-[50px]", "h-[50px]", "p-0", "justify-center");
+      const arrow = toggle.querySelector(".group-arrow");
+      if (arrow) arrow.classList.add("hidden");
+      const label = toggle.querySelector(".nav-label");
+      if (label) label.classList.add("hidden");
+    } else {
+      toggle.classList.remove("w-[50px]", "h-[50px]", "p-0", "justify-center");
+      const arrow = toggle.querySelector(".group-arrow");
+      if (arrow) arrow.classList.remove("hidden");
+      const label = toggle.querySelector(".nav-label");
+      if (label) label.classList.remove("hidden");
+    }
+  });
+
+  // Collapse all groups when sidebar is collapsed
+  if (isCollapsed) {
+    document.querySelectorAll(".nav-group-items").forEach((groupItems) => {
+      groupItems.style.maxHeight = "0";
+    });
+  }
+}
+
+// Initialize group states
+function initializeGroups() {
+  document.querySelectorAll(".nav-group-toggle").forEach((toggle) => {
+    const groupId = toggle.dataset.group;
+    const defaultOpen = toggle.dataset.defaultOpen === 'true';
+    const savedState = getGroupState(groupId);
+    const shouldOpen = savedState !== null ? savedState : defaultOpen;
+    
+    const groupItems = toggle.nextElementSibling.nextElementSibling;
+    const arrow = toggle.querySelector(".group-arrow");
+    
+    if (shouldOpen && !isCollapsed) {
+      groupItems.style.maxHeight = groupItems.scrollHeight + "px";
+      arrow.style.transform = "rotate(180deg)";
+    }
+  });
+}
+
+// Toggle group - FIXED VERSION
+function toggleGroup(toggle) {
+  // When collapsed, expand the sidebar instead of trying to toggle the group
+  if (isCollapsed) {
+    isCollapsed = false;
+    localStorage.setItem("sidebarCollapsed", false);
+    applySidebarState();
+    setTimeout(() => {
+      initializeGroups();
+      // After expanding, open the clicked group
+      const groupId = toggle.dataset.group;
+      const groupItems = toggle.nextElementSibling.nextElementSibling;
+      const arrow = toggle.querySelector(".group-arrow");
+      groupItems.style.maxHeight = groupItems.scrollHeight + "px";
+      arrow.style.transform = "rotate(180deg)";
+      saveGroupState(groupId, true);
+    }, 300);
+    return;
+  }
+  
+  const groupId = toggle.dataset.group;
+  const groupItems = toggle.nextElementSibling.nextElementSibling;
+  const arrow = toggle.querySelector(".group-arrow");
+  const isOpen = groupItems.style.maxHeight && groupItems.style.maxHeight !== "0px";
+  
+  if (isOpen) {
+    groupItems.style.maxHeight = "0";
+    arrow.style.transform = "rotate(0deg)";
+    saveGroupState(groupId, false);
+  } else {
+    groupItems.style.maxHeight = groupItems.scrollHeight + "px";
+    arrow.style.transform = "rotate(180deg)";
+    saveGroupState(groupId, true);
+  }
 }
 
 // Apply initial state on page load
 applySidebarState();
+initializeGroups();
 
 // Toggle sidebar and save state
 sidebarToggler.addEventListener("click", () => {
   isCollapsed = !isCollapsed;
-  
-  // Save to localStorage
   localStorage.setItem("sidebarCollapsed", isCollapsed);
-  
   applySidebarState();
+  
+  if (!isCollapsed) {
+    setTimeout(initializeGroups, 300);
+  }
 });
 
+// Group toggle handlers
+document.querySelectorAll(".nav-group-toggle").forEach((toggle) => {
+  toggle.addEventListener("click", (e) => {
+    e.preventDefault();
+    toggleGroup(toggle);
+  });
+});
+
+// Tooltip handlers for regular nav items
 document.querySelectorAll(".nav-item").forEach((item) => {
   item.addEventListener("mouseenter", () => {
     if (isCollapsed) {
@@ -94,22 +197,43 @@ document.querySelectorAll(".nav-item").forEach((item) => {
   });
 });
 
+// Tooltip handlers for group toggles
+document.querySelectorAll(".nav-group").forEach((group) => {
+  group.addEventListener("mouseenter", () => {
+    if (isCollapsed) {
+      const tooltip = group.querySelector(".nav-tooltip");
+      if (tooltip) {
+        tooltip.style.opacity = "1";
+        tooltip.style.left = "calc(100% + 15px)";
+      }
+    }
+  });
+
+  group.addEventListener("mouseleave", () => {
+    if (isCollapsed) {
+      const tooltip = group.querySelector(".nav-tooltip");
+      if (tooltip) {
+        tooltip.style.opacity = "0";
+        tooltip.style.left = "calc(100% + 20px)";
+      }
+    }
+  });
+});
+
+// Dark mode toggle
 document.getElementById("darkModeToggle").addEventListener("click", (e) => {
   e.preventDefault();
   const html = document.documentElement;
   
-  // Toggle dark mode on html element
   if (html.getAttribute('data-theme') === 'dark') {
     html.removeAttribute('data-theme');
     localStorage.setItem('theme', 'light');
-    // Switch map theme if switchMapTheme function exists (only on dashboard page)
     if (typeof switchMapTheme === 'function') {
       switchMapTheme(false);
     }
   } else {
     html.setAttribute('data-theme', 'dark');
     localStorage.setItem('theme', 'dark');
-    // Switch map theme if switchMapTheme function exists (only on dashboard page)
     if (typeof switchMapTheme === 'function') {
       switchMapTheme(true);
     }
@@ -140,6 +264,7 @@ if (savedTheme === 'dark') {
   label.textContent = "Light Mode";
 }
 
+// User profile dropdown
 const userProfileBtn = document.getElementById("userProfileBtn");
 const userDropdown = document.getElementById("userDropdown");
 

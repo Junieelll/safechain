@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", function () {
 // Fetch users from API
 async function fetchUsers() {
   try {
-    const response = await fetch("api/get-users.php");
+    const response = await fetch("api/user_management/get-users.php");
     const result = await response.json();
 
     if (result.success) {
@@ -576,7 +576,7 @@ async function findAvailableUsername(baseUsername) {
 // Check if username exists in database
 async function checkIfUsernameExists(username) {
   try {
-    const response = await fetch("api/check-username.php", {
+    const response = await fetch("api/user_management/check-username.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username }),
@@ -710,7 +710,7 @@ async function handleCreateAccount() {
   }
 
   try {
-    const response = await fetch("api/create-user.php", {
+    const response = await fetch("api/user_management/create-user.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fullName, username, role, password }),
@@ -864,7 +864,7 @@ async function handleUpdateAccount(userId) {
   }
 
   try {
-    const response = await fetch("api/update-user.php", {
+    const response = await fetch("api/user_management/update-user.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, fullName, username, role }),
@@ -991,7 +991,7 @@ async function handleChangePassword(userId) {
   }
 
   try {
-    const response = await fetch("api/change-password.php", {
+    const response = await fetch("api/user_management/change-password.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, newPassword }),
@@ -1110,7 +1110,7 @@ function deleteUser(userId) {
 
 async function confirmDeleteUser(userId) {
   try {
-    const response = await fetch("api/delete-user.php", {
+    const response = await fetch("api/user_management/delete-user.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
@@ -1249,7 +1249,7 @@ async function confirmSuspendUser(userId) {
   }
 
   try {
-    const response = await fetch("api/suspend-user.php", {
+    const response = await fetch("api/user_management/suspend-user.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, duration, reason }),
@@ -1346,7 +1346,7 @@ function showUnsuspendModal(user) {
 
 async function confirmUnsuspendUser(userId) {
   try {
-    const response = await fetch("api/unsuspend-user.php", {
+    const response = await fetch("api/user_management/unsuspend-user.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),

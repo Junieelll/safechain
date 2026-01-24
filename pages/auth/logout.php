@@ -14,5 +14,5 @@ session_start();
 $_SESSION['logout_message'] = 'You have been successfully logged out.';
 
 // Redirect to login page
-header('Location: /safechain/auth/login');
+header('Location: /');
 exit;
