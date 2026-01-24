@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 29, 2025 at 07:43 AM
+-- Generation Time: Jan 22, 2026 at 02:51 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -24,28 +24,48 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `emergency_responders`
+-- Table structure for table `announcements`
 --
 
-CREATE TABLE `emergency_responders` (
+CREATE TABLE `announcements` (
   `id` int(11) NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `type` enum('fire','police','medical','rescue') NOT NULL,
-  `contact` varchar(20) NOT NULL,
-  `station_address` varchar(255) NOT NULL,
-  `available` tinyint(1) DEFAULT 1,
+  `user_id` varchar(20) NOT NULL,
+  `content` text NOT NULL,
+  `link` varchar(500) DEFAULT NULL,
+  `views` int(11) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `announcement_media`
+--
+
+CREATE TABLE `announcement_media` (
+  `id` int(11) NOT NULL,
+  `announcement_id` int(11) NOT NULL,
+  `media_type` enum('image','video') NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_size` int(11) NOT NULL,
+  `display_order` int(11) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
+
 --
--- Dumping data for table `emergency_responders`
+-- Table structure for table `announcement_views`
 --
 
-INSERT INTO `emergency_responders` (`id`, `name`, `type`, `contact`, `station_address`, `available`, `created_at`) VALUES
-(1, 'Bureau of Fire Protection (BFP)', 'fire', '(02) 8426-0219', 'BFP Station, Quezon City', 1, '2025-12-13 14:11:41'),
-(2, 'Philippine National Police (PNP)', 'police', '(02) 8722-0650', 'Police Station, Quezon City', 1, '2025-12-13 14:11:41'),
-(3, 'Philippine Red Cross', 'medical', '143', 'Red Cross Office, Quezon City', 1, '2025-12-13 14:11:41'),
-(4, 'NDRRMC', 'rescue', '(02) 8911-1406', 'NDRRMC Office, Quezon City', 1, '2025-12-13 14:11:41');
+CREATE TABLE `announcement_views` (
+  `id` int(11) NOT NULL,
+  `announcement_id` int(11) NOT NULL,
+  `user_id` varchar(20) NOT NULL,
+  `viewed_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -111,6 +131,13 @@ CREATE TABLE `incident_notes` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `incident_notes`
+--
+
+INSERT INTO `incident_notes` (`id`, `incident_id`, `admin_name`, `note`, `created_at`) VALUES
+(9, 'EMG-2025-1002', 'Admin Juniel Cardenas', 'hi', '2025-12-29 07:13:08');
+
 -- --------------------------------------------------------
 
 --
@@ -125,6 +152,13 @@ CREATE TABLE `incident_timeline` (
   `actor` varchar(100) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `incident_timeline`
+--
+
+INSERT INTO `incident_timeline` (`id`, `incident_id`, `title`, `description`, `actor`, `created_at`) VALUES
+(17, 'EMG-2025-1002', 'Admin Note Added', 'hi', 'Admin Juniel Cardenas', '2025-12-29 07:13:08');
 
 -- --------------------------------------------------------
 
@@ -171,7 +205,7 @@ CREATE TABLE `users` (
   `name` varchar(100) NOT NULL,
   `username` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `role` enum('admin','bpso','bhert','firefighter') NOT NULL DEFAULT 'bpso',
+  `role` enum('admin','bpso','bhert','firefighter','resident') NOT NULL DEFAULT 'resident',
   `status` enum('active','suspended') DEFAULT 'active',
   `suspended_until` datetime DEFAULT NULL,
   `suspension_reason` text DEFAULT NULL,
@@ -185,19 +219,37 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_id`, `name`, `username`, `password`, `role`, `status`, `suspended_until`, `suspension_reason`, `created_at`, `updated_at`, `last_login`) VALUES
-('USR-2025-001', 'Juniel Cardenas', 'junieelll', '$2y$12$lt51yuFoBB2N1qtrpvAY9.aojxSE0er3AnICbX2mlqh0QJwNudD7y', 'admin', 'active', NULL, NULL, '2025-12-12 08:02:20', '2025-12-29 06:39:58', '2025-12-29 06:39:58'),
+('USR-2025-001', 'Juniel Cardenas', 'junieelll', '$2y$12$lt51yuFoBB2N1qtrpvAY9.aojxSE0er3AnICbX2mlqh0QJwNudD7y', 'admin', 'active', NULL, NULL, '2025-12-12 08:02:20', '2026-01-22 13:11:16', '2026-01-22 13:11:16'),
 ('USR-2025-002', 'Admin', '@admin', '$2y$12$lt51yuFoBB2N1qtrpvAY9.aojxSE0er3AnICbX2mlqh0QJwNudD7y', 'admin', 'active', NULL, NULL, '2025-12-13 06:12:53', '2025-12-13 06:13:11', '2025-12-13 06:13:11'),
-('USR-2025-003', 'Juniel Cardenas', '@juniel.cardenas', '$2y$10$XgvOiHqTM7a/oPi.FnMVZumORaOdC4VWBSoGEWXkGSdk5IlbkMm/S', 'bpso', 'suspended', '2026-01-01 07:42:15', 'hahaha', '2025-12-29 06:40:37', '2025-12-29 06:42:15', NULL);
+('USR-2025-003', 'Juniel Cardenas', '@juniel.cardenas', '$2y$10$XgvOiHqTM7a/oPi.FnMVZumORaOdC4VWBSoGEWXkGSdk5IlbkMm/S', 'bpso', 'active', NULL, NULL, '2025-12-29 06:40:37', '2026-01-02 10:01:36', NULL);
 
 --
 -- Indexes for dumped tables
 --
 
 --
--- Indexes for table `emergency_responders`
+-- Indexes for table `announcements`
 --
-ALTER TABLE `emergency_responders`
-  ADD PRIMARY KEY (`id`);
+ALTER TABLE `announcements`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_created_at` (`created_at`),
+  ADD KEY `idx_user_id` (`user_id`);
+
+--
+-- Indexes for table `announcement_media`
+--
+ALTER TABLE `announcement_media`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_announcement_id` (`announcement_id`);
+
+--
+-- Indexes for table `announcement_views`
+--
+ALTER TABLE `announcement_views`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_view` (`announcement_id`,`user_id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `idx_announcement_id` (`announcement_id`);
 
 --
 -- Indexes for table `incidents`
@@ -254,10 +306,22 @@ ALTER TABLE `users`
 --
 
 --
--- AUTO_INCREMENT for table `emergency_responders`
+-- AUTO_INCREMENT for table `announcements`
 --
-ALTER TABLE `emergency_responders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `announcements`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `announcement_media`
+--
+ALTER TABLE `announcement_media`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `announcement_views`
+--
+ALTER TABLE `announcement_views`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `incident_evidence`
@@ -269,17 +333,36 @@ ALTER TABLE `incident_evidence`
 -- AUTO_INCREMENT for table `incident_notes`
 --
 ALTER TABLE `incident_notes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `incident_timeline`
 --
 ALTER TABLE `incident_timeline`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `announcements`
+--
+ALTER TABLE `announcements`
+  ADD CONSTRAINT `announcements_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `announcement_media`
+--
+ALTER TABLE `announcement_media`
+  ADD CONSTRAINT `announcement_media_ibfk_1` FOREIGN KEY (`announcement_id`) REFERENCES `announcements` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `announcement_views`
+--
+ALTER TABLE `announcement_views`
+  ADD CONSTRAINT `announcement_views_ibfk_1` FOREIGN KEY (`announcement_id`) REFERENCES `announcements` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `announcement_views_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `incident_evidence`

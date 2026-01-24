@@ -24,8 +24,10 @@ class ModalManager {
       body,
       primaryButton,
       secondaryButton,
+      tertiaryButton, // NEW: Add tertiary button config
       onPrimary,
       onSecondary,
+      onTertiary, // NEW: Add tertiary callback
       showWarning = false,
       warningText = ''
     } = config;
@@ -91,6 +93,27 @@ class ModalManager {
 
         <!-- Modal Footer -->
         <div class="flex items-center gap-3 p-6 pt-4">
+          
+          ${
+            tertiaryButton
+              ? `
+            <button
+              id="${id}TertiaryBtn"
+              class="flex-1 px-4 py-3.5 min-h-[45px] text-xs font-medium 
+                     rounded-full transition-colors flex items-center justify-center gap-2
+                     ${tertiaryButton.hidden ? 'hidden' : ''}
+                     ${tertiaryButton.class || 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-neutral-700 hover:bg-gray-200 dark:hover:bg-neutral-600'}"
+            >
+              ${
+                tertiaryButton.icon
+                  ? `<i class="uil ${tertiaryButton.icon} text-lg"></i>`
+                  : ''
+              }
+              ${tertiaryButton.text}
+            </button>
+          `
+              : ''
+          }
 
           ${
             secondaryButton
@@ -144,7 +167,8 @@ class ModalManager {
       element: document.getElementById(id),
       overlay: document.getElementById(`${id}Overlay`),
       onPrimary,
-      onSecondary
+      onSecondary,
+      onTertiary // NEW: Store tertiary callback
     });
 
     this.attachEventListeners(id);
@@ -156,7 +180,7 @@ class ModalManager {
     const modalData = this.modals.get(id);
     if (!modalData) return;
 
-    const { overlay, onPrimary, onSecondary } = modalData;
+    const { overlay, onPrimary, onSecondary, onTertiary } = modalData;
 
     overlay.addEventListener('click', () => this.close(id));
 
@@ -171,6 +195,12 @@ class ModalManager {
         if (onSecondary) onSecondary();
         else this.close(id);
       });
+    }
+
+    // NEW: Attach tertiary button listener
+    const tertiaryBtn = document.getElementById(`${id}TertiaryBtn`);
+    if (tertiaryBtn && onTertiary) {
+      tertiaryBtn.addEventListener('click', () => onTertiary());
     }
   }
 
@@ -211,6 +241,22 @@ class ModalManager {
   updateBody(id, content) {
     const bodyElement = document.getElementById(`${id}Body`);
     if (bodyElement) bodyElement.innerHTML = content;
+  }
+
+  // NEW: Method to show tertiary button
+  showTertiaryButton(id) {
+    const tertiaryBtn = document.getElementById(`${id}TertiaryBtn`);
+    if (tertiaryBtn) {
+      tertiaryBtn.classList.remove('hidden');
+    }
+  }
+
+  // NEW: Method to hide tertiary button
+  hideTertiaryButton(id) {
+    const tertiaryBtn = document.getElementById(`${id}TertiaryBtn`);
+    if (tertiaryBtn) {
+      tertiaryBtn.classList.add('hidden');
+    }
   }
 
   destroy(id) {

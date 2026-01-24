@@ -49,13 +49,43 @@ function applySidebarState() {
     userBtn.classList.add("gap-3", "py-3", "px-3.5");
   }
 
+  // Handle all nav links (both standalone and grouped)
   document.querySelectorAll(".nav-link").forEach((link) => {
     if (isCollapsed) {
       link.classList.add("w-[50px]", "h-[50px]", "p-0", "justify-center");
     } else {
       link.classList.remove("w-[50px]", "h-[50px]", "p-0", "justify-center");
     }
-    link.querySelector(".nav-label").classList.toggle("hidden", isCollapsed);
+    const label = link.querySelector(".nav-label");
+    if (label) {
+      label.classList.toggle("hidden", isCollapsed);
+    }
+  });
+
+  // Handle group toggle buttons
+  document.querySelectorAll(".nav-group-toggle").forEach((toggle) => {
+    if (isCollapsed) {
+      toggle.classList.add("w-[50px]", "h-[50px]", "p-0", "justify-center");
+    } else {
+      toggle.classList.remove("w-[50px]", "h-[50px]", "p-0", "justify-center");
+    }
+    const label = toggle.querySelector(".nav-label");
+    const arrow = toggle.querySelector(".group-arrow");
+    if (label) {
+      label.classList.toggle("hidden", isCollapsed);
+    }
+    if (arrow) {
+      arrow.classList.toggle("hidden", isCollapsed);
+    }
+  });
+
+  // Hide group items when sidebar is collapsed
+  document.querySelectorAll(".nav-group-items").forEach((groupItems) => {
+    if (isCollapsed) {
+      groupItems.classList.add("hidden");
+    } else {
+      groupItems.classList.remove("hidden");
+    }
   });
 }
 
@@ -72,7 +102,7 @@ sidebarToggler.addEventListener("click", () => {
   applySidebarState();
 });
 
-document.querySelectorAll(".nav-item").forEach((item) => {
+document.querySelectorAll(".nav-item, .nav-group").forEach((item) => {
   item.addEventListener("mouseenter", () => {
     if (isCollapsed) {
       const tooltip = item.querySelector(".nav-tooltip");
@@ -162,3 +192,29 @@ userProfileBtn.addEventListener("click", (e) => {
 
 document.addEventListener("click", () => userDropdown.classList.add("hidden"));
 userDropdown.addEventListener("click", (e) => e.stopPropagation());
+
+// Group toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const groupToggles = document.querySelectorAll('.nav-group-toggle');
+  
+  groupToggles.forEach(toggle => {
+    toggle.addEventListener('click', function() {
+      // Don't toggle if sidebar is collapsed
+      if (isCollapsed) return;
+      
+      const parent = this.parentElement;
+      const groupItems = parent.querySelector('.nav-group-items');
+      const icon = this.querySelector('.group-arrow');
+      
+      if (groupItems.classList.contains('max-h-0')) {
+        groupItems.classList.remove('max-h-0');
+        groupItems.classList.add('max-h-[500px]');
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        groupItems.classList.add('max-h-0');
+        groupItems.classList.remove('max-h-[500px]');
+        icon.style.transform = 'rotate(0deg)';
+      }
+    });
+  });
+});

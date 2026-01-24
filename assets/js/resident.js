@@ -430,7 +430,7 @@ function renderPagination() {
           currentPage === totalPages
             ? "bg-emerald-500 text-white"
             : "hover:bg-white text-gray-600"
-        } text-sm font-medium transition">
+        } texf.t-sm font-medium transition">
         ${totalPages}
       </button>
     `;
