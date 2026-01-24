@@ -179,15 +179,20 @@ let isInitialLoad = true;
 
 function checkForNewIncidents(data) {
   const newIncidents = [];
+  const currentIncidentIds = new Set();
   
   ["fire", "crime", "flood"].forEach((type) => {
     if (data[type] && Array.isArray(data[type])) {
       data[type].forEach((incident) => {
-        if (!knownIncidentIds.has(incident.id)) {
+        currentIncidentIds.add(incident.id);
+        
+        // On initial load, just populate the known IDs without treating as "new"
+        if (isInitialLoad) {
           knownIncidentIds.add(incident.id);
-          
-          // Only track as "new" if not initial load
-          if (!isInitialLoad) {
+        } else {
+          // Only on subsequent loads, check if it's truly new
+          if (!knownIncidentIds.has(incident.id)) {
+            knownIncidentIds.add(incident.id);
             newIncidents.push({ type, incident });
           }
         }
@@ -195,13 +200,23 @@ function checkForNewIncidents(data) {
     }
   });
 
+  // Clean up old incident IDs that no longer exist
+  // (incidents that were resolved/deleted from database)
+  if (!isInitialLoad) {
+    knownIncidentIds.forEach((id) => {
+      if (!currentIncidentIds.has(id)) {
+        knownIncidentIds.delete(id);
+      }
+    });
+  }
+
   // Save to localStorage
   localStorage.setItem(
     "knownIncidentIds",
     JSON.stringify([...knownIncidentIds])
   );
 
-  // Show notifications only after initial load
+  // Show notifications only after initial load AND only for new incidents
   if (!isInitialLoad && newIncidents.length > 0) {
     newIncidents.forEach(({ type, incident }) => {
       showToast("info", `New ${type} incident: ${incident.user.name}`);
@@ -209,7 +224,11 @@ function checkForNewIncidents(data) {
     playNotificationSound(); // Play once for all new incidents
   }
 
-  isInitialLoad = false;
+  // Mark initial load as complete
+  if (isInitialLoad) {
+    isInitialLoad = false;
+    console.log('✓ Initial load complete - populated known incidents:', knownIncidentIds.size);
+  }
 }
 
 function playNotificationSound() {
