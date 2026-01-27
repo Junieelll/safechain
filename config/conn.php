@@ -2,7 +2,7 @@
 date_default_timezone_set('Asia/Manila');
 
 // Load secure config
-$config = require __DIR__ . '/../secure/db_config.php';
+$config = require '/home/u131483420/domains/safechain.site/secure/db_config.php';
 
 // Connect to database
 $conn = mysqli_connect(
