@@ -754,7 +754,7 @@ function focusIncidentOnMap(incidentId, lat, lng, type) {
 }
 
 function viewIncidentDetails(incidentId) {
-  window.location.href = `admin/incidents/details?id=${encodeURIComponent(
+  window.location.href = `incidents/details?id=${encodeURIComponent(
     incidentId
   )}`;
 }
