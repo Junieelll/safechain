@@ -25,7 +25,7 @@ LOCAL_API = 'http://localhost/safechain/api/receive_incident.php'
 REMOTE_API = 'https://safechain.site/api/receive_incident.php'  # ← FIXED: Added second slash
 
 # Mode: 'local', 'remote', or 'both'
-MODE = 'remote'  # Start with 'both' for testing
+MODE = 'both'  # Start with 'both' for testing
 
 # Queue settings
 DB_FILE = 'offline_queue.db'
@@ -50,6 +50,9 @@ DEVICE_MAP = {
 TYPE_MAP = {
     'FIRE': 'fire',
     'CRIME': 'crime',
+    'FALL': 'crime',     # Map fall to crime for now
+    'SOS': 'crime',
+    'PANIC': 'crime',
     'FLOOD': 'flood',
     'SAFE': 'crime',     # Gateway may send SAFE
     'TEST': 'crime'      # Gateway may send TEST
