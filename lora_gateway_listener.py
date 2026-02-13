@@ -50,10 +50,6 @@ DEVICE_MAP = {
 TYPE_MAP = {
     'FIRE': 'fire',
     'CRIME': 'crime',
-    'MEDICAL': 'flood',  # Map medical to flood for now
-    'FALL': 'crime',     # Map fall to crime for now
-    'SOS': 'crime',
-    'PANIC': 'crime',
     'FLOOD': 'flood',
     'SAFE': 'crime',     # ← NEW: Gateway may send SAFE
     'TEST': 'crime'      # ← NEW: Gateway may send TEST
