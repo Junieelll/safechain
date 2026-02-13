@@ -22,7 +22,7 @@ BAUD_RATE = 115200
 
 # API Endpoints
 LOCAL_API = 'http://localhost/safechain/api/receive_incident.php'
-REMOTE_API = 'https://safechain.site/api/receive_incident.php'  # ← FIXED: Added second slash
+REMOTE_API = 'https://safechain.site/api/receive_incident.php' 
 
 # Mode: 'local', 'remote', or 'both'
 MODE = 'both'  # Start with 'both' for testing
@@ -214,7 +214,7 @@ def parse_gateway_output(line):
     return None
 
 # ============================================
-# API COMMUNICATION
+# API COMMUNICATION (UPDATED)
 # ============================================
 
 def send_to_server(packet, api_url, server_name):
@@ -229,11 +229,19 @@ def send_to_server(packet, api_url, server_name):
             'lng': packet['lng']
         }
         
+        # HEADERS ARE CRITICAL FOR HOSTINGER/CLOUDFLARE
+        # We must pretend to be a browser or a real app, not a python script
+        headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': 'SafeChain-IoT-Gateway/1.0', 
+            'Accept': 'application/json'
+        }
+        
         response = requests.post(
             api_url, 
             json=api_packet, 
-            timeout=10,
-            headers={'Content-Type': 'application/json'}
+            timeout=15, # Increased timeout for shared hosting
+            headers=headers
         )
         
         if response.status_code == 200:
@@ -250,6 +258,11 @@ def send_to_server(packet, api_url, server_name):
                 return False
         else:
             print(f"  ✗ [{server_name}] HTTP {response.status_code}")
+            # Print response text to debug Hostinger errors (HTML/Cloudflare page)
+            if len(response.text) < 500:
+                print(f"    Server said: {response.text}")
+            else:
+                print(f"    Server said: {response.text[:200]}... (truncated)")
             return False
             
     except requests.exceptions.ConnectionError:
@@ -322,8 +335,8 @@ def process_queue():
 def main():
     """Main loop"""
     print("=" * 70)
-    print("         SafeChain Bridge Server v1.0")
-    print("         Local Gateway → Cloud Server")
+    print("          SafeChain Bridge Server v1.0")
+    print("          Local Gateway → Cloud Server")
     print("=" * 70)
     print()
     print(f"Mode: {MODE.upper()}")
@@ -379,17 +392,16 @@ def main():
                     print(f"\n{'='*70}")
                     print(f"[{timestamp}] 📦 ALERT #{packet_count} DETECTED")
                     print(f"{'='*70}")
-                    print(f"FOB ID:      {packet['fob_id']}")
-                    print(f"Device ID:   {packet['device_id']}")
-                    print(f"Alert Type:  {packet['alert_type']} → {packet['button'].upper()}")
-                    print(f"Location:    ({packet['lat']:.6f}, {packet['lng']:.6f})")
+                    print(f"FOB ID:       {packet['fob_id']}")
+                    print(f"Device ID:    {packet['device_id']}")
+                    print(f"Alert Type:   {packet['alert_type']} → {packet['button'].upper()}")
+                    print(f"Location:     ({packet['lat']:.6f}, {packet['lng']:.6f})")
                     print(f"{'='*70}")
                     
                     # Process packet (send to APIs)
                     process_packet(packet)
                     print()
             
-            # ← FIXED: Added queue processing check
             # Process queue every RETRY_INTERVAL seconds
             if time.time() - last_queue_check > RETRY_INTERVAL:
                 process_queue()
