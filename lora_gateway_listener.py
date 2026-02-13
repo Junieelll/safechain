@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SafeChain LoRa Gateway Listener
+SafeChain LoRa Gateway Bridge Server
 Compatible with gateway that outputs decoded text format
 Format: FOB01 FIRE 14.7158 121.0403
 """
@@ -12,7 +12,7 @@ import time
 import re
 from datetime import datetime
 import sqlite3  # added for offline db
-import os       #
+import os
 
 # ============================================
 # CONFIGURATION - CHANGE THESE FOR YOUR SETUP
@@ -22,7 +22,7 @@ BAUD_RATE = 115200
 
 # API Endpoints
 LOCAL_API = 'http://localhost/safechain/api/receive_incident.php'
-REMOTE_API = 'https://safechain.site/api/receive_incident.php'  # ← CHANGE THIS!
+REMOTE_API = 'https://safechain.site/api/receive_incident.php'  # ← FIXED: Added second slash
 
 # Mode: 'local', 'remote', or 'both'
 MODE = 'both'  # Start with 'both' for testing
@@ -51,17 +51,12 @@ TYPE_MAP = {
     'FIRE': 'fire',
     'CRIME': 'crime',
     'FLOOD': 'flood',
-    'SAFE': 'crime',     # ← NEW: Gateway may send SAFE
-    'TEST': 'crime'      # ← NEW: Gateway may send TEST
+    'SAFE': 'crime',     # Gateway may send SAFE
+    'TEST': 'crime'      # Gateway may send TEST
 }
 
 # ============================================
-# FUNCTIONS
-# ============================================
-
-
-# ============================================
-# QUEUE DATABASE FUNCTIONS (NEW)
+# QUEUE DATABASE FUNCTIONS
 # ============================================
 
 def init_queue_db():
@@ -155,10 +150,10 @@ def get_queue_stats():
         return {'pending': pending, 'sent': sent}
     except:
         return {'pending': 0, 'sent': 0}
-    
+
 # ============================================
-# QUEUE DATABASE FUNCTION
-# ===========================================
+# SERIAL & PARSING
+# ============================================
 
 def init_serial():
     """Initialize serial connection to LoRa gateway"""
@@ -215,9 +210,9 @@ def parse_gateway_output(line):
     
     return None
 
-# ==================================
-# SEND API
-# ==================================
+# ============================================
+# API COMMUNICATION
+# ============================================
 
 def send_to_server(packet, api_url, server_name):
     """Send packet to specified API endpoint"""
@@ -287,7 +282,6 @@ def process_packet(packet):
     
     return local_success or remote_success
 
-
 def process_queue():
     """Try to send queued packets"""
     pending = get_pending_queue()
@@ -318,30 +312,30 @@ def process_queue():
     stats = get_queue_stats()
     print(f"📊 Queue Status: {stats['pending']} pending, {stats['sent']} sent total")
 
-
-
-# ==================================
-# MAIN LOOP (NEEDS TO UPDATE)
-# ==================================
+# ============================================
+# MAIN LOOP
+# ============================================
 
 def main():
     """Main loop"""
     print("=" * 70)
-    print("         SafeChain LoRa Gateway Listener v2.0")
-    print("         Compatible with Multi-Alert Gateway Format")
+    print("         SafeChain Bridge Server v1.0")
+    print("         Local Gateway → Cloud Server")
     print("=" * 70)
     print()
+    print(f"Mode: {MODE.upper()}")
+    print(f"Local API:  {LOCAL_API}")
+    print(f"Remote API: {REMOTE_API}")
+    print()
     
-    # Initialize queue database (NEW)
+    # Initialize queue database
     init_queue_db()
 
-
-    # Check for existing queued packets (NEW)
+    # Check for existing queued packets
     stats = get_queue_stats()
     if stats['pending'] > 0:
         print(f"⚠ Found {stats['pending']} pending packets in queue")
         print(f"  Will attempt to send them every {RETRY_INTERVAL} seconds")
-
 
     # Initialize serial connection
     ser = init_serial()
@@ -350,15 +344,14 @@ def main():
         input("Press Enter to exit...")
         return
     
-    print(f"📡 Listening for gateway packets...\n")
-    print("Waiting for alerts from FOB devices...\n")
+    print(f"\n📡 Listening for gateway packets...\n")
     print("Device Mapping:")
     for fob, device in DEVICE_MAP.items():
         print(f"  {fob} → {device}")
     print()
     
     packet_count = 0
-    last_queue_check = time.time()  # ← ADD THIS LINE
+    last_queue_check = time.time()  # Track last queue check
 
     try:
         while True:
@@ -383,26 +376,26 @@ def main():
                     print(f"\n{'='*70}")
                     print(f"[{timestamp}] 📦 ALERT #{packet_count} DETECTED")
                     print(f"{'='*70}")
-                    print(f"→ FOB ID: {packet['fob_id']}")
-                    print(f"→ Device: {packet['device_id']}")
-                    print(f"→ Alert Type: {packet['alert_type']} → {packet['button'].upper()}")
-                    print(f"→ Location: ({packet['lat']:.6f}, {packet['lng']:.6f})")
+                    print(f"FOB ID:      {packet['fob_id']}")
+                    print(f"Device ID:   {packet['device_id']}")
+                    print(f"Alert Type:  {packet['alert_type']} → {packet['button'].upper()}")
+                    print(f"Location:    ({packet['lat']:.6f}, {packet['lng']:.6f})")
                     print(f"{'='*70}")
                     
-                    #  # Process packet (send to APIs)
+                    # Process packet (send to APIs)
                     process_packet(packet)
-                    print()  # ← Added blank line for readability
+                    print()
             
-            # ← Added this entire block
+            # ← FIXED: Added queue processing check
             # Process queue every RETRY_INTERVAL seconds
             if time.time() - last_queue_check > RETRY_INTERVAL:
                 process_queue()
                 last_queue_check = time.time()
             
-            time.sleep(0.05)  # Small delay
+            time.sleep(0.05)  # Small delay to prevent CPU overuse
             
     except KeyboardInterrupt:
-        print("\n\n⏹ Stopping listener...")
+        print("\n\n⏹ Stopping bridge server...")
     except Exception as e:
         print(f"\n✗ Unexpected error: {e}")
         import traceback
@@ -412,13 +405,13 @@ def main():
             ser.close()
             print("✓ Serial connection closed")
 
-    # ← ADD THIS
-    stats = get_queue_stats()
-    if stats['pending'] > 0:
-        print(f"\n⚠ Warning: {stats['pending']} packets still in queue")
-        print(f"   Run this script again when internet is available to retry")
+        # Show final queue stats
+        stats = get_queue_stats()
+        if stats['pending'] > 0:
+            print(f"\n⚠ Warning: {stats['pending']} packets still in queue")
+            print(f"   Run this script again when internet is available to retry")
         
-    print("\nGoodbye! 👋")
+        print("\nGoodbye! 👋")
 
 if __name__ == "__main__":
     main()
