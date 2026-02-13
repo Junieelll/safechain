@@ -11,13 +11,26 @@ import requests
 import time
 import re
 from datetime import datetime
+import sqlite3  # added for offline db
+import os       #
 
 # ============================================
 # CONFIGURATION - CHANGE THESE FOR YOUR SETUP
 # ============================================
 SERIAL_PORT = 'COM7'  # Windows: COM3, COM4, etc. | Linux: /dev/ttyUSB0, /dev/ttyACM0
 BAUD_RATE = 115200
-API_ENDPOINT = 'http://localhost/safechain/api/receive_incident.php'
+
+# API Endpoints
+LOCAL_API = 'http://localhost/safechain/api/receive_incident.php'
+REMOTE_API = 'https://yourdomain.com/api/receive_incident.php'  # ← CHANGE THIS!
+
+# Mode: 'local', 'remote', or 'both'
+MODE = 'both'  # Start with 'both' for testing
+
+# Queue settings
+DB_FILE = 'offline_queue.db'
+RETRY_INTERVAL = 30  # seconds
+MAX_RETRIES = 10
 
 # Device ID mapping (FOB01 -> SC-KC-001)
 DEVICE_MAP = {
@@ -47,6 +60,107 @@ TYPE_MAP = {
 # ============================================
 # FUNCTIONS
 # ============================================
+
+
+# ============================================
+# QUEUE DATABASE FUNCTIONS (NEW)
+# ============================================
+
+def init_queue_db():
+    """Initialize SQLite database for offline queue"""
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS incident_queue (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            packet_data TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            retry_count INTEGER DEFAULT 0,
+            sent INTEGER DEFAULT 0,
+            last_error TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+    print(f"✓ Offline queue database initialized: {DB_FILE}")
+
+def add_to_queue(packet):
+    """Add packet to offline queue"""
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute('INSERT INTO incident_queue (packet_data, created_at) VALUES (?, ?)',
+                  (json.dumps(packet), int(time.time())))
+        conn.commit()
+        queue_id = c.lastrowid
+        conn.close()
+        return queue_id
+    except Exception as e:
+        print(f"  ✗ Failed to add to queue: {e}")
+        return None
+
+def get_pending_queue():
+    """Get all unsent packets from queue"""
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute('''
+            SELECT id, packet_data, retry_count 
+            FROM incident_queue 
+            WHERE sent = 0 AND retry_count < ? 
+            ORDER BY created_at
+        ''', (MAX_RETRIES,))
+        items = c.fetchall()
+        conn.close()
+        return [(row[0], json.loads(row[1]), row[2]) for row in items]
+    except Exception as e:
+        print(f"  ✗ Failed to get queue: {e}")
+        return []
+
+def mark_sent(queue_id):
+    """Mark packet as successfully sent"""
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute('UPDATE incident_queue SET sent = 1 WHERE id = ?', (queue_id,))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"  ✗ Failed to mark as sent: {e}")
+
+def increment_retry(queue_id, error_msg=""):
+    """Increment retry count"""
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute('''
+            UPDATE incident_queue 
+            SET retry_count = retry_count + 1,
+                last_error = ?
+            WHERE id = ?
+        ''', (error_msg, queue_id))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"  ✗ Failed to update retry count: {e}")
+
+def get_queue_stats():
+    """Get queue statistics"""
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute('SELECT COUNT(*) FROM incident_queue WHERE sent = 0')
+        pending = c.fetchone()[0]
+        c.execute('SELECT COUNT(*) FROM incident_queue WHERE sent = 1')
+        sent = c.fetchone()[0]
+        conn.close()
+        return {'pending': pending, 'sent': sent}
+    except:
+        return {'pending': 0, 'sent': 0}
+    
+# ============================================
+# QUEUE DATABASE FUNCTION
+# ===========================================
 
 def init_serial():
     """Initialize serial connection to LoRa gateway"""
@@ -103,29 +217,114 @@ def parse_gateway_output(line):
     
     return None
 
-def send_to_api(packet):
-    """Send parsed data to PHP API"""
+# ==================================
+# SEND API
+# ==================================
+
+def send_to_server(packet, api_url, server_name):
+    """Send packet to specified API endpoint"""
     try:
-        response = requests.post(API_ENDPOINT, json=packet, timeout=5)
+        # Extract only needed fields for API
+        api_packet = {
+            'device_id': packet['device_id'],
+            'type': packet['type'],
+            'button': packet['button'],
+            'lat': packet['lat'],
+            'lng': packet['lng']
+        }
+        
+        response = requests.post(
+            api_url, 
+            json=api_packet, 
+            timeout=10,
+            headers={'Content-Type': 'application/json'}
+        )
         
         if response.status_code == 200:
             result = response.json()
             if result.get('success'):
-                incident_id = result.get('incident_id')
+                incident_id = result.get('incident_id', 'N/A')
                 reporter = result.get('reporter', 'Unknown')
-                print(f"✓ Saved: {incident_id} - {reporter}")
+                reporter_id = result.get('reporter_id', '')
+                print(f"  ✓ [{server_name}] Saved: {incident_id} - {reporter} ({reporter_id})")
                 return True
             else:
-                print(f"✗ API Error: {result.get('message')}")
+                error_msg = result.get('message', 'Unknown error')
+                print(f"  ✗ [{server_name}] API Error: {error_msg}")
+                return False
         else:
-            print(f"✗ HTTP Error: {response.status_code}")
+            print(f"  ✗ [{server_name}] HTTP {response.status_code}")
+            return False
             
     except requests.exceptions.ConnectionError:
-        print(f"✗ Cannot connect to {API_ENDPOINT}")
-        print(f"   Make sure XAMPP Apache is running!")
+        print(f"  ✗ [{server_name}] Connection failed (offline?)")
+        return False
+    except requests.exceptions.Timeout:
+        print(f"  ✗ [{server_name}] Request timeout")
+        return False
     except Exception as e:
-        print(f"✗ Request failed: {e}")
-    return False
+        print(f"  ✗ [{server_name}] Error: {e}")
+        return False
+
+def process_packet(packet):
+    """Process new packet - send to server(s) and queue if needed"""
+    local_success = False
+    remote_success = False
+    
+    # Send to local API (XAMPP)
+    if MODE in ['local', 'both']:
+        print("  → Sending to LOCAL server...")
+        local_success = send_to_server(packet, LOCAL_API, 'LOCAL')
+    
+    # Send to remote API (Hostinger)
+    if MODE in ['remote', 'both']:
+        print("  → Sending to REMOTE server...")
+        remote_success = send_to_server(packet, REMOTE_API, 'REMOTE')
+        
+        # If remote failed, add to queue
+        if not remote_success:
+            queue_id = add_to_queue(packet)
+            if queue_id:
+                print(f"  📥 Added to offline queue (ID: {queue_id})")
+    
+    return local_success or remote_success
+
+
+def process_queue():
+    """Try to send queued packets"""
+    pending = get_pending_queue()
+    
+    if not pending:
+        return
+    
+    print(f"\n{'='*70}")
+    print(f"📤 Processing {len(pending)} queued packets...")
+    print(f"{'='*70}")
+    
+    success_count = 0
+    
+    for queue_id, packet, retry_count in pending:
+        print(f"\nQueue ID {queue_id} (Retry {retry_count + 1}/{MAX_RETRIES}):")
+        
+        if send_to_server(packet, REMOTE_API, 'REMOTE'):
+            mark_sent(queue_id)
+            success_count += 1
+            print(f"  ✓ Successfully sent!")
+        else:
+            increment_retry(queue_id, "Connection failed")
+            print(f"  ✗ Failed (will retry later)")
+    
+    if success_count > 0:
+        print(f"\n✓ Sent {success_count}/{len(pending)} queued packets")
+    
+    stats = get_queue_stats()
+    print(f"📊 Queue Status: {stats['pending']} pending, {stats['sent']} sent total")
+
+
+
+# ==================================
+# MAIN LOOP (NEEDS TO UPDATE)
+# ==================================
 
 def main():
     """Main loop"""
@@ -135,6 +334,17 @@ def main():
     print("=" * 70)
     print()
     
+    # Initialize queue database (NEW)
+    init_queue_db()
+
+
+    # Check for existing queued packets (NEW)
+    stats = get_queue_stats()
+    if stats['pending'] > 0:
+        print(f"⚠ Found {stats['pending']} pending packets in queue")
+        print(f"  Will attempt to send them every {RETRY_INTERVAL} seconds")
+
+
     # Initialize serial connection
     ser = init_serial()
     if not ser:
@@ -150,7 +360,8 @@ def main():
     print()
     
     packet_count = 0
-    
+    last_queue_check = time.time()  # ← ADD THIS LINE
+
     try:
         while True:
             if ser.in_waiting > 0:
@@ -180,10 +391,8 @@ def main():
                     print(f"→ Location: ({packet['lat']:.6f}, {packet['lng']:.6f})")
                     print(f"{'='*70}")
                     
-                    # Send to API
-                    if send_to_api(packet):
-                        print(f"✓ Incident saved to database!")
-                    print()
+                    # Process packet (send to APIs)
+                    process_packet(packet)
             
             time.sleep(0.05)  # Small delay to prevent CPU overuse
             
@@ -197,7 +406,14 @@ def main():
         if ser and ser.is_open:
             ser.close()
             print("✓ Serial connection closed")
-        print("\nGoodbye! 👋")
+
+    # ← ADD THIS
+    stats = get_queue_stats()
+    if stats['pending'] > 0:
+        print(f"\n⚠ Warning: {stats['pending']} packets still in queue")
+        print(f"   Run this script again when internet is available to retry")
+        
+    print("\nGoodbye! 👋")
 
 if __name__ == "__main__":
     main()
