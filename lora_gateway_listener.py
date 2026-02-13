@@ -17,12 +17,12 @@ import os       #
 # ============================================
 # CONFIGURATION - CHANGE THESE FOR YOUR SETUP
 # ============================================
-SERIAL_PORT = 'COM7'  # Windows: COM3, COM4, etc. | Linux: /dev/ttyUSB0, /dev/ttyACM0
+SERIAL_PORT = 'COM11'  # Windows: COM3, COM4, etc. | Linux: /dev/ttyUSB0, /dev/ttyACM0
 BAUD_RATE = 115200
 
 # API Endpoints
 LOCAL_API = 'http://localhost/safechain/api/receive_incident.php'
-REMOTE_API = 'https://yourdomain.com/api/receive_incident.php'  # ← CHANGE THIS!
+REMOTE_API = 'https:/safechain.site/api/receive_incident.php'  # ← CHANGE THIS!
 
 # Mode: 'local', 'remote', or 'both'
 MODE = 'both'  # Start with 'both' for testing
