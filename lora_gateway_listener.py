@@ -25,7 +25,7 @@ LOCAL_API = 'http://localhost/safechain/api/receive_incident.php'
 REMOTE_API = 'https://safechain.site/api/receive_incident.php'  # ← FIXED: Added second slash
 
 # Mode: 'local', 'remote', or 'both'
-MODE = 'both'  # Start with 'both' for testing
+MODE = 'remote'  # Start with 'both' for testing
 
 # Queue settings
 DB_FILE = 'offline_queue.db'
