@@ -22,7 +22,7 @@ BAUD_RATE = 115200
 
 # API Endpoints
 LOCAL_API = 'http://localhost/safechain/api/receive_incident.php'
-REMOTE_API = 'https:/safechain.site/api/receive_incident.php'  # ← CHANGE THIS!
+REMOTE_API = 'https://safechain.site/api/receive_incident.php'  # ← CHANGE THIS!
 
 # Mode: 'local', 'remote', or 'both'
 MODE = 'both'  # Start with 'both' for testing
@@ -54,7 +54,9 @@ TYPE_MAP = {
     'FALL': 'crime',     # Map fall to crime for now
     'SOS': 'crime',
     'PANIC': 'crime',
-    'FLOOD': 'flood'
+    'FLOOD': 'flood',
+    'SAFE': 'crime',     # ← NEW: Gateway may send SAFE
+    'TEST': 'crime'      # ← NEW: Gateway may send TEST
 }
 
 # ============================================
@@ -391,10 +393,17 @@ def main():
                     print(f"→ Location: ({packet['lat']:.6f}, {packet['lng']:.6f})")
                     print(f"{'='*70}")
                     
-                    # Process packet (send to APIs)
+                    #  # Process packet (send to APIs)
                     process_packet(packet)
+                    print()  # ← Added blank line for readability
             
-            time.sleep(0.05)  # Small delay to prevent CPU overuse
+            # ← Added this entire block
+            # Process queue every RETRY_INTERVAL seconds
+            if time.time() - last_queue_check > RETRY_INTERVAL:
+                process_queue()
+                last_queue_check = time.time()
+            
+            time.sleep(0.05)  # Small delay
             
     except KeyboardInterrupt:
         print("\n\n⏹ Stopping listener...")
