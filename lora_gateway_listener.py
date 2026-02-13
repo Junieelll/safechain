@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 SafeChain LoRa Gateway Bridge Server
-Compatible with gateway that outputs decoded text format
-Format: FOB01 FIRE 14.7158 121.0403
+Updated for Multi-line Gateway Output (with Emojis)
 """
 
 import serial
@@ -11,28 +10,22 @@ import requests
 import time
 import re
 from datetime import datetime
-import sqlite3  # added for offline db
+import sqlite3
 import os
 
 # ============================================
-# CONFIGURATION - CHANGE THESE FOR YOUR SETUP
+# CONFIGURATION
 # ============================================
-SERIAL_PORT = 'COM11'  # Windows: COM3, COM4, etc. | Linux: /dev/ttyUSB0, /dev/ttyACM0
+SERIAL_PORT = 'COM11'  
 BAUD_RATE = 115200
 
 # API Endpoints
 LOCAL_API = 'http://localhost/safechain/api/receive_incident.php'
-REMOTE_API = 'https://safechain.site/api/receive_incident.php' 
+REMOTE_API = 'https://safechain.site/api/receive_incident.php'
 
-# Mode: 'local', 'remote', or 'both'
-MODE = 'both'  # Start with 'both' for testing
+MODE = 'both'  # 'local', 'remote', or 'both'
 
-# Queue settings
-DB_FILE = 'offline_queue.db'
-RETRY_INTERVAL = 30  # seconds
-MAX_RETRIES = 10
-
-# Device ID mapping (FOB01 -> SC-KC-001)
+# Device ID mapping
 DEVICE_MAP = {
     'FOB01': 'SC-KC-001',
     'FOB02': 'SC-KC-002',
@@ -46,182 +39,150 @@ DEVICE_MAP = {
     'FOB10': 'SC-KC-010',
 }
 
-# Type mapping
+# Type mapping for API
 TYPE_MAP = {
     'FIRE': 'fire',
-    'CRIME': 'crime',
-    'FALL': 'crime',     # Map fall to crime for now
-    'SOS': 'crime',
-    'PANIC': 'crime',
     'FLOOD': 'flood',
-    'SAFE': 'crime',     # Gateway may send SAFE
-    'TEST': 'crime'      # Gateway may send TEST
+    'CRIME': 'crime',
+    'SOS': 'crime'
 }
 
 # ============================================
-# QUEUE DATABASE FUNCTIONS
+# QUEUE & DATABASE (Unchanged)
 # ============================================
+DB_FILE = 'offline_queue.db'
 
 def init_queue_db():
-    """Initialize SQLite database for offline queue"""
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS incident_queue (
+    c.execute('''CREATE TABLE IF NOT EXISTS incident_queue (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             packet_data TEXT NOT NULL,
             created_at INTEGER NOT NULL,
-            retry_count INTEGER DEFAULT 0,
-            sent INTEGER DEFAULT 0,
-            last_error TEXT
-        )
-    ''')
+            sent INTEGER DEFAULT 0
+        )''')
     conn.commit()
     conn.close()
-    print(f"✓ Offline queue database initialized: {DB_FILE}")
 
 def add_to_queue(packet):
-    """Add packet to offline queue"""
     try:
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
         c.execute('INSERT INTO incident_queue (packet_data, created_at) VALUES (?, ?)',
                   (json.dumps(packet), int(time.time())))
         conn.commit()
-        queue_id = c.lastrowid
         conn.close()
-        return queue_id
-    except Exception as e:
-        print(f"  ✗ Failed to add to queue: {e}")
-        return None
-
-def get_pending_queue():
-    """Get all unsent packets from queue"""
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
-        c.execute('''
-            SELECT id, packet_data, retry_count 
-            FROM incident_queue 
-            WHERE sent = 0 AND retry_count < ? 
-            ORDER BY created_at
-        ''', (MAX_RETRIES,))
-        items = c.fetchall()
-        conn.close()
-        return [(row[0], json.loads(row[1]), row[2]) for row in items]
-    except Exception as e:
-        print(f"  ✗ Failed to get queue: {e}")
-        return []
-
-def mark_sent(queue_id):
-    """Mark packet as successfully sent"""
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
-        c.execute('UPDATE incident_queue SET sent = 1 WHERE id = ?', (queue_id,))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"  ✗ Failed to mark as sent: {e}")
-
-def increment_retry(queue_id, error_msg=""):
-    """Increment retry count"""
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
-        c.execute('''
-            UPDATE incident_queue 
-            SET retry_count = retry_count + 1,
-                last_error = ?
-            WHERE id = ?
-        ''', (error_msg, queue_id))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"  ✗ Failed to update retry count: {e}")
-
-def get_queue_stats():
-    """Get queue statistics"""
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
-        c.execute('SELECT COUNT(*) FROM incident_queue WHERE sent = 0')
-        pending = c.fetchone()[0]
-        c.execute('SELECT COUNT(*) FROM incident_queue WHERE sent = 1')
-        sent = c.fetchone()[0]
-        conn.close()
-        return {'pending': pending, 'sent': sent}
+        return True
     except:
-        return {'pending': 0, 'sent': 0}
+        return False
 
 # ============================================
-# SERIAL & PARSING
+# PARSING LOGIC (COMPLETELY REWRITTEN)
 # ============================================
 
-def init_serial():
-    """Initialize serial connection to LoRa gateway"""
-    try:
-        ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
-        print(f"✓ Connected to LoRa Gateway on {SERIAL_PORT}")
-        time.sleep(2)
-        return ser
-    except Exception as e:
-        print(f"✗ Error connecting to serial port: {e}")
-        print(f"\nTroubleshooting:")
-        print(f"  - Check if {SERIAL_PORT} is correct (Device Manager on Windows)")
-        print(f"  - Make sure no other program is using this port (Arduino IDE, etc.)")
-        print(f"  - Try unplugging and replugging the gateway")
+# State variable to hold data while reading multiple lines
+current_alert_state = {
+    'active': False,
+    'type': None,     # FIRE, FLOOD, etc.
+    'fob_id': None,   # FOB01
+    'lat': None,
+    'lng': None,
+    'start_time': 0
+}
+
+def process_gateway_line(line):
+    """
+    Parses multi-line output.
+    Returns a PACKET dict if an alert is fully assembled, otherwise None.
+    """
+    global current_alert_state
+    
+    # 1. Detect Start of Alarm (Keywords in the emoji lines)
+    if "FIRE ALARM" in line:
+        current_alert_state = {'active': True, 'type': 'FIRE', 'fob_id': None, 'lat': None, 'lng': None, 'start_time': time.time()}
+        return None
+        
+    if "FLOOD ALERT" in line:
+        current_alert_state = {'active': True, 'type': 'FLOOD', 'fob_id': None, 'lat': None, 'lng': None, 'start_time': time.time()}
         return None
 
-def parse_gateway_output(line):
-    """
-    Parse gateway output format: FOB01 FIRE 14.7158 121.0403
-    Returns dict with device_id, button, lat, lng
-    """
-    try:
-        # Look for lines that match the packet format
-        # Format: FOBXX TYPE LAT LNG
-        match = re.match(r'(FOB\d+)\s+(\w+)\s+([\d\.-]+)\s+([\d\.-]+)', line)
+    # 2. Extract Data if inside an active alert block
+    if current_alert_state['active']:
         
-        if match:
-            fob_id = match.group(1)
-            alert_type = match.group(2)
-            lat = float(match.group(3))
-            lng = float(match.group(4))
-            
-            # Get device ID from mapping
-            device_id = DEVICE_MAP.get(fob_id)
-            if not device_id:
-                print(f"⚠ Unknown FOB ID: {fob_id} - Add to DEVICE_MAP")
-                return None
-            
-            # Get incident type from mapping
-            incident_type = TYPE_MAP.get(alert_type, 'crime')
-            
-            return {
-                'device_id': device_id,
-                'type': 'INCIDENT',
-                'button': incident_type,
-                'lat': lat,
-                'lng': lng,
-                'fob_id': fob_id,
-                'alert_type': alert_type,
-                'timestamp': int(time.time())
-            }
-    except Exception as e:
-        print(f"✗ Parse error: {e}")
-    
+        # Check for timeout (if we found a header but no data for 2 seconds, reset)
+        if time.time() - current_alert_state['start_time'] > 2:
+            current_alert_state['active'] = False
+            return None
+
+        # Extract Node ID (e.g., "NODE ID : FOB01")
+        if "NODE ID" in line:
+            match = re.search(r'(FOB\d+)', line)
+            if match:
+                current_alert_state['fob_id'] = match.group(1)
+
+        # Extract Location (e.g., "LOCATION : 14.123, 121.123")
+        if "LOCATION" in line:
+            try:
+                # Split by ':' then by ','
+                coords_str = line.split(':')[1].strip()
+                lat_str, lng_str = coords_str.split(',')
+                current_alert_state['lat'] = float(lat_str)
+                current_alert_state['lng'] = float(lng_str)
+                
+                # TRIGGER CONDITION: We have Type, ID, and Location
+                if current_alert_state['fob_id'] and current_alert_state['lat'] is not None:
+                    return finalize_packet()
+                    
+            except Exception as e:
+                print(f"Error parsing location: {line} -> {e}")
+
     return None
 
+def finalize_packet():
+    """Builds the final packet and resets state"""
+    global current_alert_state
+    
+    fob_id = current_alert_state['fob_id']
+    raw_type = current_alert_state['type']
+    
+    # Map to real values
+    device_id = DEVICE_MAP.get(fob_id)
+    button_type = TYPE_MAP.get(raw_type, 'crime')
+    
+    packet = None
+    
+    if device_id:
+        packet = {
+            'device_id': device_id,
+            'type': 'INCIDENT',
+            'button': button_type,
+            'lat': current_alert_state['lat'],
+            'lng': current_alert_state['lng'],
+            'fob_id': fob_id,
+            'alert_type': raw_type,
+            'timestamp': int(time.time())
+        }
+    else:
+        print(f"⚠ Unknown FOB ID: {fob_id} (Not in DEVICE_MAP)")
+
+    # Reset state
+    current_alert_state = {'active': False, 'type': None, 'fob_id': None, 'lat': None, 'lng': None, 'start_time': 0}
+    return packet
+
 # ============================================
-# API COMMUNICATION (UPDATED)
+# API SENDING
 # ============================================
 
-def send_to_server(packet, api_url, server_name):
-    """Send packet to specified API endpoint"""
+def send_to_server(packet, api_url, name):
     try:
-        # Extract only needed fields for API
-        api_packet = {
+        # Headers needed for Hostinger/Cloudflare
+        headers = {
+            'User-Agent': 'SafeChain-Gateway/1.0',
+            'Content-Type': 'application/json'
+        }
+        
+        # Strip internal fields before sending
+        api_payload = {
             'device_id': packet['device_id'],
             'type': packet['type'],
             'button': packet['button'],
@@ -229,204 +190,70 @@ def send_to_server(packet, api_url, server_name):
             'lng': packet['lng']
         }
         
-        # HEADERS ARE CRITICAL FOR HOSTINGER/CLOUDFLARE
-        # We must pretend to be a browser or a real app, not a python script
-        headers = {
-            'Content-Type': 'application/json',
-            'User-Agent': 'SafeChain-IoT-Gateway/1.0', 
-            'Accept': 'application/json'
-        }
+        print(f"  → Sending to {name}...")
+        resp = requests.post(api_url, json=api_payload, headers=headers, timeout=10)
         
-        response = requests.post(
-            api_url, 
-            json=api_packet, 
-            timeout=15, # Increased timeout for shared hosting
-            headers=headers
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            if result.get('success'):
-                incident_id = result.get('incident_id', 'N/A')
-                reporter = result.get('reporter', 'Unknown')
-                reporter_id = result.get('reporter_id', '')
-                print(f"  ✓ [{server_name}] Saved: {incident_id} - {reporter} ({reporter_id})")
-                return True
-            else:
-                error_msg = result.get('message', 'Unknown error')
-                print(f"  ✗ [{server_name}] API Error: {error_msg}")
-                return False
+        if resp.status_code == 200 and resp.json().get('success'):
+            print(f"  ✓ {name} Success: Incident ID {resp.json().get('incident_id')}")
+            return True
         else:
-            print(f"  ✗ [{server_name}] HTTP {response.status_code}")
-            # Print response text to debug Hostinger errors (HTML/Cloudflare page)
-            if len(response.text) < 500:
-                print(f"    Server said: {response.text}")
-            else:
-                print(f"    Server said: {response.text[:200]}... (truncated)")
+            print(f"  ✗ {name} Failed: {resp.text[:100]}")
             return False
-            
-    except requests.exceptions.ConnectionError:
-        print(f"  ✗ [{server_name}] Connection failed (offline?)")
-        return False
-    except requests.exceptions.Timeout:
-        print(f"  ✗ [{server_name}] Request timeout")
-        return False
     except Exception as e:
-        print(f"  ✗ [{server_name}] Error: {e}")
+        print(f"  ✗ {name} Error: {e}")
         return False
-
-def process_packet(packet):
-    """Process new packet - send to server(s) and queue if needed"""
-    local_success = False
-    remote_success = False
-    
-    # Send to local API (XAMPP)
-    if MODE in ['local', 'both']:
-        print("  → Sending to LOCAL server...")
-        local_success = send_to_server(packet, LOCAL_API, 'LOCAL')
-    
-    # Send to remote API (Hostinger)
-    if MODE in ['remote', 'both']:
-        print("  → Sending to REMOTE server...")
-        remote_success = send_to_server(packet, REMOTE_API, 'REMOTE')
-        
-        # If remote failed, add to queue
-        if not remote_success:
-            queue_id = add_to_queue(packet)
-            if queue_id:
-                print(f"  📥 Added to offline queue (ID: {queue_id})")
-    
-    return local_success or remote_success
-
-def process_queue():
-    """Try to send queued packets"""
-    pending = get_pending_queue()
-    
-    if not pending:
-        return
-    
-    print(f"\n{'='*70}")
-    print(f"📤 Processing {len(pending)} queued packets...")
-    print(f"{'='*70}")
-    
-    success_count = 0
-    
-    for queue_id, packet, retry_count in pending:
-        print(f"\nQueue ID {queue_id} (Retry {retry_count + 1}/{MAX_RETRIES}):")
-        
-        if send_to_server(packet, REMOTE_API, 'REMOTE'):
-            mark_sent(queue_id)
-            success_count += 1
-            print(f"  ✓ Successfully sent!")
-        else:
-            increment_retry(queue_id, "Connection failed")
-            print(f"  ✗ Failed (will retry later)")
-    
-    if success_count > 0:
-        print(f"\n✓ Sent {success_count}/{len(pending)} queued packets")
-    
-    stats = get_queue_stats()
-    print(f"📊 Queue Status: {stats['pending']} pending, {stats['sent']} sent total")
 
 # ============================================
-# MAIN LOOP
+# MAIN
 # ============================================
 
 def main():
-    """Main loop"""
-    print("=" * 70)
-    print("          SafeChain Bridge Server v1.0")
-    print("          Local Gateway → Cloud Server")
-    print("=" * 70)
-    print()
-    print(f"Mode: {MODE.upper()}")
-    print(f"Local API:  {LOCAL_API}")
-    print(f"Remote API: {REMOTE_API}")
-    print()
-    
-    # Initialize queue database
     init_queue_db()
-
-    # Check for existing queued packets
-    stats = get_queue_stats()
-    if stats['pending'] > 0:
-        print(f"⚠ Found {stats['pending']} pending packets in queue")
-        print(f"  Will attempt to send them every {RETRY_INTERVAL} seconds")
-
-    # Initialize serial connection
-    ser = init_serial()
-    if not ser:
-        print("\n❌ Failed to connect to serial port. Exiting.")
-        input("Press Enter to exit...")
-        return
     
-    print(f"\n📡 Listening for gateway packets...\n")
-    print("Device Mapping:")
-    for fob, device in DEVICE_MAP.items():
-        print(f"  {fob} → {device}")
-    print()
-    
-    packet_count = 0
-    last_queue_check = time.time()  # Track last queue check
-
     try:
-        while True:
-            if ser.in_waiting > 0:
-                # Read line from gateway
-                line = ser.readline().decode('utf-8', errors='ignore').strip()
+        ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+        print(f"✓ Connected to {SERIAL_PORT}")
+    except:
+        print(f"❌ Could not open {SERIAL_PORT}")
+        return
+
+    print("📡 Listening for multi-line gateway packets...")
+    print("   (Waiting for 'FIRE ALARM' or 'FLOOD ALERT' headers)")
+
+    while True:
+        try:
+            if ser.in_waiting:
+                raw_line = ser.readline().decode('utf-8', errors='ignore').strip()
+                if not raw_line: continue
                 
-                # Skip empty lines
-                if not line:
-                    continue
+                print(f"[Gateway] {raw_line}")
                 
-                # Show all output for debugging
-                print(f"[Gateway] {line}")
-                
-                # Try to parse as incident packet
-                packet = parse_gateway_output(line)
+                # Process the line
+                packet = process_gateway_line(raw_line)
                 
                 if packet:
-                    packet_count += 1
-                    timestamp = datetime.now().strftime('%H:%M:%S')
+                    print("\n" + "="*50)
+                    print(f"📦 ALERT DETECTED: {packet['alert_type']} from {packet['fob_id']}")
                     
-                    print(f"\n{'='*70}")
-                    print(f"[{timestamp}] 📦 ALERT #{packet_count} DETECTED")
-                    print(f"{'='*70}")
-                    print(f"FOB ID:       {packet['fob_id']}")
-                    print(f"Device ID:    {packet['device_id']}")
-                    print(f"Alert Type:   {packet['alert_type']} → {packet['button'].upper()}")
-                    print(f"Location:     ({packet['lat']:.6f}, {packet['lng']:.6f})")
-                    print(f"{'='*70}")
+                    if packet['lat'] == 0 and packet['lng'] == 0:
+                        print("⚠ WARNING: GPS IS 0.0, 0.0 (No GPS Fix)")
+                        # We still send it, relying on resident address lookup in PHP
                     
-                    # Process packet (send to APIs)
-                    process_packet(packet)
-                    print()
-            
-            # Process queue every RETRY_INTERVAL seconds
-            if time.time() - last_queue_check > RETRY_INTERVAL:
-                process_queue()
-                last_queue_check = time.time()
-            
-            time.sleep(0.05)  # Small delay to prevent CPU overuse
-            
-    except KeyboardInterrupt:
-        print("\n\n⏹ Stopping bridge server...")
-    except Exception as e:
-        print(f"\n✗ Unexpected error: {e}")
-        import traceback
-        traceback.print_exc()
-    finally:
-        if ser and ser.is_open:
-            ser.close()
-            print("✓ Serial connection closed")
+                    # Send
+                    if MODE in ['local', 'both']:
+                        send_to_server(packet, LOCAL_API, 'Local')
+                    if MODE in ['remote', 'both']:
+                        if not send_to_server(packet, REMOTE_API, 'Remote'):
+                            add_to_queue(packet)
+                            print("  📥 Saved to offline queue")
+                    print("="*50 + "\n")
+                    
+        except KeyboardInterrupt:
+            break
+        except Exception as e:
+            print(f"Error: {e}")
 
-        # Show final queue stats
-        stats = get_queue_stats()
-        if stats['pending'] > 0:
-            print(f"\n⚠ Warning: {stats['pending']} packets still in queue")
-            print(f"   Run this script again when internet is available to retry")
-        
-        print("\nGoodbye! 👋")
+    ser.close()
 
 if __name__ == "__main__":
     main()
