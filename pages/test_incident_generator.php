@@ -1,3 +1,9 @@
+<?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);   
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -51,7 +57,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Select Device</label>
                     <select id="moveDevice" class="w-full p-3 border rounded-lg">
                         <?php
-                         include $_SERVER['DOCUMENT_ROOT'] . '/safechain/config/conn.php'; 
+                         include $_SERVER['DOCUMENT_ROOT'] . '/config/conn.php'; 
                         $query = "SELECT device_id, name FROM residents WHERE is_archived = 0 ORDER BY name";
                         $result = mysqli_query($conn, $query);
                         while ($row = mysqli_fetch_assoc($result)) {
@@ -113,7 +119,7 @@
         async function checkAPIConnection() {
             const status = document.getElementById('status');
             try {
-                const response = await fetch('api/get_incidents.php');
+                const response = await fetch('api/dashboard/get_incidents.php');
                 const result = await response.json();
                 if (result.success) {
                     status.innerHTML = '<p class="text-sm text-green-800">✓ Connected to API | Total incidents: ' + result.count.total + '</p>';

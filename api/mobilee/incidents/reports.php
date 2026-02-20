@@ -51,7 +51,7 @@ function handle_get(mysqli $conn, array $user): void
         WHERE r.submitted_by = ?
         ORDER BY r.created_at DESC
     ');
-    $stmt->bind_param('s', $user['name']);
+    $stmt->bind_param('s', $user['username']);
     $stmt->execute();
     $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
@@ -90,7 +90,8 @@ function handle_create(mysqli $conn, array $user): void
 
     // ── Map fields ─────────────────────────────────────────────────────────
     $incident_id = $body['incident_id'];
-    $submitted_by = $user['name'];
+    $submitted_by = $user['username'];
+    $submitted_by_id = $user['id'];
     $description = $body['description'];
     $severity_level = $body['severity_level'];
     $casualties = (int) ($body['casualties'] ?? 0);
@@ -114,7 +115,7 @@ function handle_create(mysqli $conn, array $user): void
     // ── Insert ─────────────────────────────────────────────────────────────
     $stmt = $conn->prepare('
         INSERT INTO incident_reports (
-            incident_id, submitted_by, description, severity_level,
+            incident_id, submitted_by, submitted_by_id, description, severity_level,
             casualties, injuries, rescued, evacuated,
             property_damage, estimated_cost,
             response_time_minutes, response_time_seconds,
@@ -122,7 +123,7 @@ function handle_create(mysqli $conn, array $user): void
             response_team, actions_taken,
             resolution_status, summary,
             follow_up_required, follow_up_notes, recommendations
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ');
 
     if (!$stmt) {
@@ -132,9 +133,10 @@ function handle_create(mysqli $conn, array $user): void
 
     // 21 params: s s s s i i i i s d i i i i s s s s i s s
     $stmt->bind_param(
-        'ssssiiiisdiiiisssiiss',
+        'sssssiiiisdiiiisssiiss',
         $incident_id,
         $submitted_by,
+        $submitted_by_id,
         $description,
         $severity_level,
         $casualties,
