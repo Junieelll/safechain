@@ -7,7 +7,8 @@
  */
 function getUserByUsername($conn, $username) {
     $stmt = mysqli_prepare($conn, 
-        "SELECT user_id, name, username, password, role, status 
+        "SELECT user_id, name, username, password, role, status, 
+                suspended_until, suspension_reason, created_at, updated_at, last_login
          FROM users WHERE username = ?"
     );
     
