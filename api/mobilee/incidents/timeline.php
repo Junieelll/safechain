@@ -14,7 +14,7 @@ $user   = mobile_authenticate();
 $method = $_SERVER['REQUEST_METHOD'];
 
 match ($method) {
-    'GET'  => handle_get_recent($conn),
+    'GET'  => handle_get_recent($conn, $user),
     'POST' => handle_create($conn, $user),
     default => ResponseHelper::error('Method not allowed', 405),
 };
@@ -22,18 +22,20 @@ match ($method) {
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /incidents/timeline.php?limit=5
 // ═══════════════════════════════════════════════════════════════════════════
-function handle_get_recent(mysqli $conn): void
+function handle_get_recent(mysqli $conn, array $user): void
 {
-    $limit = min(20, (int) ($_GET['limit'] ?? 5));
+    $limit   = min(20, (int) ($_GET['limit'] ?? 5));
+    $user_id = $user['id'] ?? null;
 
     $stmt = $conn->prepare("
         SELECT t.*, i.type AS incident_type, i.status AS incident_status
         FROM incident_timeline t
         LEFT JOIN incidents i ON i.id = t.incident_id
+        WHERE t.user_id = ?
         ORDER BY t.created_at DESC
         LIMIT ?
     ");
-    $stmt->bind_param('i', $limit);
+    $stmt->bind_param('si', $user_id, $limit);
     $stmt->execute();
     $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
@@ -43,7 +45,7 @@ function handle_get_recent(mysqli $conn): void
             'id'            => (int) $row['id'],
             'incident_id'   => $row['incident_id'],
             'incident_type' => $row['incident_type'] ?? 'unknown',
-            'status'        => $row['incident_status'] ?? 'pending', // add this
+            'status'        => $row['incident_status'] ?? 'pending',
             'title'         => $row['title'],
             'description'   => $row['description'],
             'actor'         => $row['actor'],
@@ -74,6 +76,7 @@ function handle_create(mysqli $conn, array $user): void
     $title       = trim($body['title']);
     $description = trim($body['description']);
     $actor       = trim($body['actor']);
+    $user_id     = $user['id'] ?? null; // ← get user_id from authenticated user
 
     $check = $conn->prepare('SELECT id FROM incidents WHERE id = ? LIMIT 1');
     $check->bind_param('s', $incident_id);
@@ -86,10 +89,10 @@ function handle_create(mysqli $conn, array $user): void
     }
 
     $stmt = $conn->prepare(
-        'INSERT INTO incident_timeline (incident_id, title, description, actor)
-         VALUES (?, ?, ?, ?)'
+        'INSERT INTO incident_timeline (incident_id, title, description, actor, user_id)
+         VALUES (?, ?, ?, ?, ?)'  // ← added user_id
     );
-    $stmt->bind_param('ssss', $incident_id, $title, $description, $actor);
+    $stmt->bind_param('sssss', $incident_id, $title, $description, $actor, $user_id); // ← added
 
     if (!$stmt->execute()) {
         $stmt->close();

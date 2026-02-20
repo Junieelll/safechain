@@ -9,11 +9,11 @@ ini_set('log_errors', '1');
 
 setCorsHeaders();
 
-$user   = mobile_authenticate();
+$user = mobile_authenticate();
 $method = $_SERVER['REQUEST_METHOD'];
 
 match ($method) {
-    'GET'  => handle_get($conn, $user),
+    'GET' => handle_get($conn, $user),
     'POST' => handle_create($conn, $user),
     default => ResponseHelper::error('Method not allowed', 405),
 };
@@ -61,7 +61,7 @@ function handle_get(mysqli $conn, array $user): void
 
 function handle_create(mysqli $conn, array $user): void
 {
-    $raw  = file_get_contents('php://input');
+    $raw = file_get_contents('php://input');
     $body = json_decode($raw, true) ?? [];
 
     // ── Validation ─────────────────────────────────────────────────────────
@@ -89,27 +89,27 @@ function handle_create(mysqli $conn, array $user): void
     }
 
     // ── Map fields ─────────────────────────────────────────────────────────
-    $incident_id             =         $body['incident_id'];
-    $submitted_by            =         $user['name'];
-    $description             =         $body['description'];
-    $severity_level          =         $body['severity_level'];
-    $casualties              = (int)   ($body['casualties']              ?? 0);
-    $injuries                = (int)   ($body['injuries']                ?? 0);
-    $rescued                 = (int)   ($body['rescued']                 ?? 0);
-    $evacuated               = (int)   ($body['evacuated']               ?? 0);
-    $property_damage         =         ($body['property_damage']         ?? 'none');
-    $estimated_cost          = (float) ($body['estimated_cost']          ?? 0);
-    $response_time_minutes   = (int)   ($body['response_time_minutes']   ?? 0);
-    $response_time_seconds   = (int)   ($body['response_time_seconds']   ?? 0);
-    $resolution_time_minutes = (int)   ($body['resolution_time_minutes'] ?? 0);
-    $resolution_time_seconds = (int)   ($body['resolution_time_seconds'] ?? 0);
-    $response_team           = json_encode($body['response_team']        ?? []);
-    $actions_taken           = json_encode($body['actions_taken']        ?? []);
-    $resolution_status       =         $body['resolution_status'];
-    $summary                 =         $body['summary'];
-    $follow_up_required      = (int)   ($body['follow_up_required']      ?? 0);
-    $follow_up_notes         =         ($body['follow_up_notes']         ?? null);
-    $recommendations         =         ($body['recommendations']         ?? null);
+    $incident_id = $body['incident_id'];
+    $submitted_by = $user['name'];
+    $description = $body['description'];
+    $severity_level = $body['severity_level'];
+    $casualties = (int) ($body['casualties'] ?? 0);
+    $injuries = (int) ($body['injuries'] ?? 0);
+    $rescued = (int) ($body['rescued'] ?? 0);
+    $evacuated = (int) ($body['evacuated'] ?? 0);
+    $property_damage = ($body['property_damage'] ?? 'none');
+    $estimated_cost = (float) ($body['estimated_cost'] ?? 0);
+    $response_time_minutes = (int) ($body['response_time_minutes'] ?? 0);
+    $response_time_seconds = (int) ($body['response_time_seconds'] ?? 0);
+    $resolution_time_minutes = (int) ($body['resolution_time_minutes'] ?? 0);
+    $resolution_time_seconds = (int) ($body['resolution_time_seconds'] ?? 0);
+    $response_team = json_encode($body['response_team'] ?? []);
+    $actions_taken = json_encode($body['actions_taken'] ?? []);
+    $resolution_status = $body['resolution_status'];
+    $summary = $body['summary'];
+    $follow_up_required = (int) ($body['follow_up_required'] ?? 0);
+    $follow_up_notes = ($body['follow_up_notes'] ?? null);
+    $recommendations = ($body['recommendations'] ?? null);
 
     // ── Insert ─────────────────────────────────────────────────────────────
     $stmt = $conn->prepare('
@@ -175,16 +175,17 @@ function handle_create(mysqli $conn, array $user): void
         $update->close();
     }
 
-    // ── Timeline entry ─────────────────────────────────────────────────────
+    // ── Timeline entry ─────────────────────────────────────────────────────────
     $timeline_stmt = $conn->prepare('
-        INSERT INTO incident_timeline (incident_id, title, description, actor)
-        VALUES (?, ?, ?, ?)
-    ');
+    INSERT INTO incident_timeline (incident_id, title, description, actor, user_id)
+    VALUES (?, ?, ?, ?, ?)
+');
 
     if ($timeline_stmt) {
-        $title      = 'Report Submitted';
-        $tl_desc    = 'An incident report has been submitted by ' . $submitted_by . '.';
-        $timeline_stmt->bind_param('ssss', $incident_id, $title, $tl_desc, $submitted_by);
+        $title = 'Report Submitted';
+        $tl_desc = 'An incident report has been submitted by ' . $submitted_by . '.';
+        $user_id = $user['id'];
+        $timeline_stmt->bind_param('sssss', $incident_id, $title, $tl_desc, $submitted_by, $user_id);
         $timeline_stmt->execute();
         $timeline_stmt->close();
     }
