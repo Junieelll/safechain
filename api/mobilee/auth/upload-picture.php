@@ -20,7 +20,7 @@ if (empty($_FILES['photo'])) {
 
 $file    = $_FILES['photo'];
 $ext     = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-$allowed = ['jpg', 'jpeg', 'png', 'webp'];
+$allowed = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
 $maxSize = 3 * 1024 * 1024;
 
 if (!in_array($ext, $allowed)) {
