@@ -56,7 +56,7 @@ function sendFCMToAllResponders(mysqli $conn, array $incident): void
                     'priority' => 'high',
                     'notification' => [
                         'channel_id' => 'default',
-                        'sound' => 'alert', // ← no extension for FCM
+                        'sound' => 'alert-v2', // ← no extension for FCM
                     ],
                 ],
             ],
