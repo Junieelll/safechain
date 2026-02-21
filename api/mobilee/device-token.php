@@ -14,13 +14,15 @@ if (!$token) {
     return;
 }
 
-$name = $user['name'];
+$user_id = $user['id'];
+$role    = $user['role'] ?? '';
+
 $stmt = $conn->prepare('
-    INSERT INTO device_tokens (user_name, token, updated_at)
-    VALUES (?, ?, NOW())
-    ON DUPLICATE KEY UPDATE token = VALUES(token), updated_at = NOW()
+    INSERT INTO device_tokens (user_id, role, token, updated_at)
+    VALUES (?, ?, ?, NOW())
+    ON DUPLICATE KEY UPDATE role = VALUES(role), token = VALUES(token), updated_at = NOW()
 ');
-$stmt->bind_param('ss', $name, $token);
+$stmt->bind_param('iss', $user_id, $role, $token);
 $stmt->execute();
 $stmt->close();
 
