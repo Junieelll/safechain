@@ -10,6 +10,7 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
 
 require_once '../config/conn.php';
+require_once 'helpers/fcm_helper.php';
 
 // Get JSON data from Python script
 $input = file_get_contents('php://input');
@@ -40,7 +41,7 @@ $result = mysqli_query($conn, $query);
 
 if (!$result || mysqli_num_rows($result) == 0) {
     echo json_encode([
-        'success' => false, 
+        'success' => false,
         'message' => "Device '$device_id' not registered"
     ]);
     exit;
@@ -58,11 +59,12 @@ if ($data['type'] === 'INCIDENT') {
 /**
  * Create new incident
  */
-function handleNewIncident($conn, $data, $resident) {
+function handleNewIncident($conn, $data, $resident)
+{
     // Generate incident ID
     $query = "SELECT id FROM incidents ORDER BY created_at DESC LIMIT 1";
     $result = mysqli_query($conn, $query);
-    
+
     if ($result && mysqli_num_rows($result) > 0) {
         $lastIncident = mysqli_fetch_assoc($result);
         preg_match('/(\d+)$/', $lastIncident['id'], $matches);
@@ -70,9 +72,9 @@ function handleNewIncident($conn, $data, $resident) {
     } else {
         $newNumber = 1001;
     }
-    
+
     $incidentId = 'EMG-' . date('Y') . '-' . $newNumber;
-    
+
     // Map button to incident type
     $typeMap = [
         'fire' => 'fire',
@@ -80,7 +82,7 @@ function handleNewIncident($conn, $data, $resident) {
         'flood' => 'flood'
     ];
     $type = mysqli_real_escape_string($conn, $typeMap[$data['button']] ?? 'fire');
-    
+
     // Prepare data
     $lat = floatval($data['lat']);
     $lng = floatval($data['lng']);
@@ -88,13 +90,13 @@ function handleNewIncident($conn, $data, $resident) {
     $reporter_id = mysqli_real_escape_string($conn, $resident['resident_id']);
     $reporter_name = mysqli_real_escape_string($conn, $resident['name']);
     $device_id = mysqli_real_escape_string($conn, $data['device_id']);
-    
+
     // Insert incident
     $query = "INSERT INTO incidents 
               (id, type, location, reporter, reporter_id, device_id, date_time, status, is_archived, latitude, longitude) 
               VALUES 
               ('$incidentId', '$type', '$location', '$reporter_name', '$reporter_id', '$device_id', NOW(), 'pending', 0, $lat, $lng)";
-    
+
     if (mysqli_query($conn, $query)) {
         // Log to PHP error log
         error_log(sprintf(
@@ -106,7 +108,13 @@ function handleNewIncident($conn, $data, $resident) {
             $lat,
             $lng
         ));
-        
+
+        sendFCMToAllResponders($conn, [
+            'id' => $incidentId,
+            'type' => $type,
+            'location' => $resident['address'],
+        ]);
+
         echo json_encode([
             'success' => true,
             'incident_id' => $incidentId,
@@ -115,7 +123,7 @@ function handleNewIncident($conn, $data, $resident) {
             'reporter_id' => $reporter_id,
             'device_id' => $device_id,
             'location' => [
-                'lat' => $lat, 
+                'lat' => $lat,
                 'lng' => $lng,
                 'address' => $resident['address']
             ],
@@ -132,11 +140,12 @@ function handleNewIncident($conn, $data, $resident) {
 /**
  * Update GPS location for existing incident
  */
-function handleGPSUpdate($conn, $data, $resident) {
+function handleGPSUpdate($conn, $data, $resident)
+{
     // Find active incident using reporter_id
     $reporter_id = mysqli_real_escape_string($conn, $resident['resident_id']);
     $device_id = mysqli_real_escape_string($conn, $data['device_id']);
-    
+
     $query = "SELECT id FROM incidents
               WHERE reporter_id = '$reporter_id' 
               AND device_id = '$device_id'
@@ -144,19 +153,20 @@ function handleGPSUpdate($conn, $data, $resident) {
               AND is_archived = 0
               ORDER BY created_at DESC 
               LIMIT 1";
-    
+
     $result = mysqli_query($conn, $query);
-    
+
     if ($result && mysqli_num_rows($result) > 0) {
         $incident = mysqli_fetch_assoc($result);
         $incident_id = mysqli_real_escape_string($conn, $incident['id']);
-        
+
         $lat = floatval($data['lat']);
         $lng = floatval($data['lng']);
-        $location = mysqli_real_escape_string($conn, 
+        $location = mysqli_real_escape_string(
+            $conn,
             sprintf("%.6f°N, %.6f°E - %s", $lat, $lng, $resident['address'])
         );
-        
+
         // Update incident with new location
         $updateQuery = "UPDATE incidents SET 
                         latitude = $lat, 
@@ -164,7 +174,7 @@ function handleGPSUpdate($conn, $data, $resident) {
                         location = '$location',
                         updated_at = NOW()
                         WHERE id = '$incident_id'";
-        
+
         if (mysqli_query($conn, $updateQuery)) {
             echo json_encode([
                 'success' => true,
