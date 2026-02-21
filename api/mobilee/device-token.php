@@ -22,7 +22,7 @@ $stmt = $conn->prepare('
     VALUES (?, ?, ?, NOW())
     ON DUPLICATE KEY UPDATE role = VALUES(role), token = VALUES(token), updated_at = NOW()
 ');
-$stmt->bind_param('iss', $user_id, $role, $token);
+$stmt->bind_param('sss', $user_id, $role, $token);
 $stmt->execute();
 $stmt->close();
 
