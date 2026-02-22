@@ -167,26 +167,7 @@ if (!AuthChecker::isLoggedIn()) {
                         <div
                             id="yearDropdownMenu"
                             class="hidden absolute top-full right-0 mt-2 w-full bg-white dark:bg-neutral-800 dark:border-gray-600 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.15)] overflow-hidden z-50 border border-gray-200">
-                            <div
-                                class="year-option px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300/80 hover:bg-gray-100 dark:hover:bg-emerald-700/20 cursor-pointer transition-colors active bg-[#01af78]/10 font-medium"
-                                data-year="2024">
-                                2024
-                            </div>
-                            <div
-                                class="year-option px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300/80 hover:bg-gray-100 dark:hover:bg-emerald-700/20 cursor-pointer transition-colors"
-                                data-year="2023">
-                                2023
-                            </div>
-                            <div
-                                class="year-option px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300/80 hover:bg-gray-100 dark:hover:bg-emerald-700/20 cursor-pointer transition-colors"
-                                data-year="2022">
-                                2022
-                            </div>
-                            <div
-                                class="year-option px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300/80 hover:bg-gray-100 dark:hover:bg-emerald-700/20 cursor-pointer transition-colors"
-                                data-year="2021">
-                                2021
-                            </div>
+                            
                         </div>
                     </div>
                 </div>
