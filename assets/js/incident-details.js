@@ -16,6 +16,126 @@ let currentAdminName = "Admin";
 let currentUserId = "";
 let currentUserRole = "";
 
+let eventSource = null;
+let reconnectTimer = null;
+
+function startSSE() {
+  if (eventSource) eventSource.close();
+
+  eventSource = new EventSource(
+    `api/incident_details/sse_incident.php?incident_id=${incidentId}`
+  );
+
+  eventSource.addEventListener("timeline",  (e) => renderTimeline(JSON.parse(e.data)));
+  eventSource.addEventListener("notes",     (e) => renderNotes(JSON.parse(e.data)));
+  eventSource.addEventListener("evidence",  (e) => renderEvidenceGrid(JSON.parse(e.data)));
+
+  eventSource.addEventListener("timeline_update", (e) => appendTimelineItems(JSON.parse(e.data)));
+  eventSource.addEventListener("notes_update",    (e) => appendNoteItems(JSON.parse(e.data)));
+  eventSource.addEventListener("evidence_update", (e) => appendEvidenceItems(JSON.parse(e.data)));
+
+  eventSource.addEventListener("heartbeat", () => {/* alive */});
+
+  eventSource.onerror = () => {
+    eventSource.close();
+    eventSource = null;
+
+    // Retry with backoff — max 10s
+    const delay = Math.min((reconnectTimer?._delay || 1000) * 2, 10000);
+    console.warn(`SSE disconnected. Reconnecting in ${delay / 1000}s...`);
+
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer._delay = delay;
+      startSSE();
+    }, delay);
+  };
+
+  // Reset backoff on successful open
+  eventSource.onopen = () => {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    console.log("SSE connected");
+  };
+}
+
+// Append helpers (so existing items don't re-render/flicker)
+function appendTimelineItems(newItems) {
+  const timeline = document.getElementById("timeline");
+  const empty = timeline.querySelector("p");
+  if (empty) empty.remove();
+
+  // Remove pulse from current last item
+  const existing = timeline.querySelectorAll(".relative.pl-8");
+  existing.forEach((el) => {
+    el.querySelector(".animate-pulse")?.classList.remove("animate-pulse");
+    if (!el.classList.contains("pb-6")) el.classList.add("pb-6");
+  });
+
+  newItems.forEach((item) => {
+    const div = document.createElement("div");
+    div.className = "relative pl-8";
+    div.innerHTML = `
+      <div class="absolute left-0 top-1.5 w-4 h-4 rounded-full bg-blue-500 border-4 border-blue-100 dark:border-blue-900 animate-pulse"></div>
+      <div class="flex justify-between items-center mb-1">
+        <span class="font-semibold text-gray-900 dark:text-neutral-300 text-sm">${item.title}</span>
+        <span class="text-xs text-gray-500">${item.time ?? item.created_at}</span>
+      </div>
+      <div class="text-sm text-gray-500 leading-relaxed">${item.description}</div>
+      <div class="text-xs text-gray-500 mt-1">By: ${item.actor}</div>
+    `;
+    timeline.appendChild(div);
+    div.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+}
+
+function appendNoteItems(newNotes) {
+  const list = document.getElementById("remarksList");
+  const empty = list.querySelector("p");
+  if (empty) empty.remove();
+
+  newNotes.forEach((note) => {
+    const div = document.createElement("div");
+    div.className = "bg-gray-50 dark:bg-neutral-700 rounded-lg p-3";
+    div.innerHTML = `
+      <div class="flex justify-between items-center mb-1.5">
+        <span class="font-semibold text-sm text-gray-900 dark:text-neutral-300">${note.admin_name}</span>
+        <span class="text-xs text-gray-500 dark:text-neutral-300">${note.time ?? note.created_at}</span>
+      </div>
+      <div class="text-xs text-gray-600 dark:text-neutral-400 leading-relaxed">${note.note}</div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function appendEvidenceItems(newEvidence) {
+  const grid = document.getElementById("evidenceGrid");
+
+  // Remove empty state if present
+  const empty = grid.querySelector(".col-span-3");
+  if (empty) empty.remove();
+
+  // Remove the "Add" tile, re-add after new items
+  const addTile = grid.lastElementChild;
+  if (addTile) grid.removeChild(addTile);
+
+  newEvidence.forEach((ev) => {
+    grid.insertAdjacentHTML("beforeend", buildEvidenceTile(ev));
+  });
+
+  // Re-append Add tile
+  grid.insertAdjacentHTML("beforeend", `
+    <div onclick="uploadEvidence()"
+         class="aspect-square bg-transparent border-2 border-dashed border-gray-300 dark:border-neutral-600 
+                rounded-lg flex flex-col items-center justify-center cursor-pointer 
+                hover:border-gray-400 dark:hover:border-neutral-400 transition-all">
+      <i class="uil uil-plus text-4xl text-gray-400"></i>
+      <span class="text-xs text-gray-400 mt-1">Add</span>
+    </div>
+  `);
+}
+
 // Set admin name from session/PHP on page load
 async function getCurrentAdminName() {
   try {
@@ -1387,4 +1507,5 @@ setInterval(() => {
 document.addEventListener("DOMContentLoaded", () => {
   getCurrentAdminName();
   fetchIncidentDetails();
+  startSSE();
 });
