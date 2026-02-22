@@ -287,3 +287,84 @@ userProfileBtn.addEventListener("click", (e) => {
 
 document.addEventListener("click", () => userDropdown.classList.add("hidden"));
 userDropdown.addEventListener("click", (e) => e.stopPropagation());
+
+const POLL_INTERVAL = 3000;
+let knownIncidentIds = new Set(
+  JSON.parse(localStorage.getItem("knownIncidentIds") || "[]")
+);
+let isInitialLoad = true;
+
+// Audio
+let notificationAudio = null;
+let audioInitialized = false;
+
+function initializeAudio() {
+  if (!audioInitialized) {
+    notificationAudio = new Audio("assets/sounds/alert.mp3");
+    notificationAudio.volume = 0.7;
+    notificationAudio.load();
+    audioInitialized = true;
+
+    notificationAudio.play().then(() => {
+      notificationAudio.pause();
+      notificationAudio.currentTime = 0;
+    }).catch(() => {});
+  }
+}
+
+initializeAudio();
+["click", "keydown", "touchstart"].forEach((event) => {
+  document.addEventListener(event, () => {
+    initializeAudio();
+  }, { once: true });
+});
+
+function playNotificationSound() {
+  if (!audioInitialized) initializeAudio();
+  if (notificationAudio) {
+    notificationAudio.currentTime = 0;
+    notificationAudio.play().catch(() => {});
+    setTimeout(() => {
+      notificationAudio.pause();
+      notificationAudio.currentTime = 0;
+    }, 3000);
+  }
+}
+
+async function checkNewIncidents() {
+  // If dashboard.js is active, it handles everything — skip to avoid duplicates
+  if (window.__dashboardActive) return;
+
+  try {
+    const response = await fetch("api/get_incidents.php");
+    const result = await response.json();
+
+    if (result.success) {
+      ["fire", "crime", "flood"].forEach((type) => {
+        if (result.data[type]) {
+          result.data[type].forEach((incident) => {
+            if (!knownIncidentIds.has(incident.id)) {
+              knownIncidentIds.add(incident.id);
+              localStorage.setItem(
+                "knownIncidentIds",
+                JSON.stringify([...knownIncidentIds])
+              );
+
+              if (!isInitialLoad && typeof showToast === "function") {
+                showToast("info", `New ${type} incident: ${incident.user.name}`);
+                playNotificationSound();
+              }
+            }
+          });
+        }
+      });
+
+      if (isInitialLoad) isInitialLoad = false;
+    }
+  } catch (error) {
+    console.error("Sidebar polling error:", error);
+  }
+}
+
+setInterval(checkNewIncidents, POLL_INTERVAL);
+checkNewIncidents();

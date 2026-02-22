@@ -2,8 +2,12 @@
 // SAFECHAIN DASHBOARD - CONFIGURATION
 // ============================================
 
-const API_BASE = "api/dashboard/";
-const POLL_INTERVAL = 3000; // Poll every 3 seconds
+// Tell sidebar.js to back off — dashboard owns notifications on this page
+window.__dashboardActive = true;
+
+const API_BASE = "api/";
+// POLL_INTERVAL is declared in sidebar.js — reuse it here
+const DASH_POLL_INTERVAL = window.POLL_INTERVAL || 3000;
 let lastUpdateTime = null;
 let pollingActive = true;
 
@@ -91,167 +95,58 @@ const heatmapConfigs = {
 
 async function fetchLiveIncidents() {
   try {
-    // Always fetch all incidents (no time filter)
-    const url = `${API_BASE}get_incidents.php`;
-
-    const response = await fetch(url);
+    const response = await fetch(`${API_BASE}get_incidents.php`);
     const result = await response.json();
 
     if (result.success) {
-      // Update incident data (both formats)
-      incidentData = result.data; // Keep for backward compatibility
-      
-      // Store the flat sorted array if available
+      // Update incident data
+      incidentData = result.data;
+
       if (result.all_incidents) {
         incidentData.all = result.all_incidents;
       }
 
-      // Update historical heatmap data from database
       if (result.heatmap) {
         historicalIncidents = result.heatmap;
       }
 
       lastUpdateTime = result.timestamp;
 
-      // Update UI
+      // Update map UI
       updateMapMarkers();
       updateAllHeatmaps();
       incidentContent.innerHTML = renderEmergencyList();
 
-      // Check for new incidents
-      checkForNewIncidents(result.data);
+      // Check for new incidents and notify
+      // Audio is handled by sidebar.js (playNotificationSound is available globally)
+      ["fire", "crime", "flood"].forEach((type) => {
+        if (result.data[type] && Array.isArray(result.data[type])) {
+          result.data[type].forEach((incident) => {
+            if (!knownIncidentIds.has(incident.id)) {
+              knownIncidentIds.add(incident.id);
+              localStorage.setItem(
+                "knownIncidentIds",
+                JSON.stringify([...knownIncidentIds])
+              );
+
+              if (!isInitialLoad && typeof showToast === "function") {
+                showToast("info", `New ${type} incident: ${incident.user.name}`);
+                // playNotificationSound() lives in sidebar.js, available globally
+                if (typeof playNotificationSound === "function") {
+                  playNotificationSound();
+                }
+              }
+            }
+          });
+        }
+      });
+
+      if (isInitialLoad) isInitialLoad = false;
 
       console.log(`✓ Updated at ${result.timestamp}`, result.count);
     }
   } catch (error) {
     console.error("Failed to fetch incidents:", error);
-  }
-}
-
-// ============================================
-// NOTIFICATION SYSTEM
-// ============================================
-
-let notificationAudio = null;
-let audioInitialized = false;
-
-// Try to initialize audio immediately
-function initializeAudio() {
-  if (!audioInitialized) {
-    notificationAudio = new Audio("assets/sounds/alert.mp3");
-    notificationAudio.volume = 0.7;
-    notificationAudio.load();
-    audioInitialized = true;
-    console.log("✓ Audio initialized");
-    
-    // Try to play silently to unlock audio (will fail in most browsers, but worth trying)
-    notificationAudio.play().then(() => {
-      notificationAudio.pause();
-      notificationAudio.currentTime = 0;
-      console.log("✓ Audio unlocked successfully");
-    }).catch(() => {
-      console.log("⚠ Audio autoplay blocked - waiting for user interaction");
-    });
-  }
-}
-
-// Initialize audio immediately when script loads
-initializeAudio();
-
-// Also listen for first user interaction as fallback
-let userInteracted = false;
-["click", "keydown", "touchstart"].forEach((event) => {
-  document.addEventListener(event, () => {
-    if (!userInteracted) {
-      userInteracted = true;
-      initializeAudio();
-      console.log("✓ Audio enabled after user interaction");
-    }
-  }, { once: true });
-});
-
-let knownIncidentIds = new Set(
-  JSON.parse(localStorage.getItem("knownIncidentIds") || "[]")
-);
-
-// Initialize known incidents from the first fetch
-let isInitialLoad = true;
-
-function checkForNewIncidents(data) {
-  const newIncidents = [];
-  const currentIncidentIds = new Set();
-  
-  ["fire", "crime", "flood"].forEach((type) => {
-    if (data[type] && Array.isArray(data[type])) {
-      data[type].forEach((incident) => {
-        currentIncidentIds.add(incident.id);
-        
-        // On initial load, just populate the known IDs without treating as "new"
-        if (isInitialLoad) {
-          knownIncidentIds.add(incident.id);
-        } else {
-          // Only on subsequent loads, check if it's truly new
-          if (!knownIncidentIds.has(incident.id)) {
-            knownIncidentIds.add(incident.id);
-            newIncidents.push({ type, incident });
-          }
-        }
-      });
-    }
-  });
-
-  // Clean up old incident IDs that no longer exist
-  // (incidents that were resolved/deleted from database)
-  if (!isInitialLoad) {
-    knownIncidentIds.forEach((id) => {
-      if (!currentIncidentIds.has(id)) {
-        knownIncidentIds.delete(id);
-      }
-    });
-  }
-
-  // Save to localStorage
-  localStorage.setItem(
-    "knownIncidentIds",
-    JSON.stringify([...knownIncidentIds])
-  );
-
-  // Show notifications only after initial load AND only for new incidents
-  if (!isInitialLoad && newIncidents.length > 0) {
-    newIncidents.forEach(({ type, incident }) => {
-      showToast("info", `New ${type} incident: ${incident.user.name}`);
-    });
-    playNotificationSound(); // Play once for all new incidents
-  }
-
-  // Mark initial load as complete
-  if (isInitialLoad) {
-    isInitialLoad = false;
-    console.log('✓ Initial load complete - populated known incidents:', knownIncidentIds.size);
-  }
-}
-
-function playNotificationSound() {
-  if (!audioInitialized) {
-    initializeAudio();
-  }
-
-  if (notificationAudio) {
-    // Reset and play
-    notificationAudio.currentTime = 0;
-    notificationAudio.play().catch((e) => {
-      console.warn("⚠ Audio play failed:", e.message);
-      // Show a one-time prompt to enable audio
-      if (!userInteracted) {
-        showToast("warning", "Click anywhere to enable alert sounds");
-      }
-    });
-
-    // Stop after 3 seconds
-    setTimeout(() => {
-      notificationAudio.pause();
-      notificationAudio.currentTime = 0;
-    }, 3000);
   }
 }
 
@@ -282,17 +177,13 @@ function generateHeatmapData(type) {
 
 function updateAllHeatmaps() {
   ["fire", "crime", "flood"].forEach((type) => {
-    // Remove old layer
     if (heatmapLayers[type]) {
       map.removeLayer(heatmapLayers[type]);
     }
 
-    // Add new layer if visible
     if (heatmapVisible[type]) {
       const heatData = generateHeatmapData(type);
-      heatmapLayers[type] = L.heatLayer(heatData, heatmapConfigs[type]).addTo(
-        map
-      );
+      heatmapLayers[type] = L.heatLayer(heatData, heatmapConfigs[type]).addTo(map);
     }
   });
 }
@@ -320,24 +211,21 @@ function updateHeatmapsForTheme(isDark) {
 const markers = { fire: [], crime: [], flood: [] };
 
 const fireIcon = L.divIcon({
-  className:
-    "custom-marker marker-fire rounded-full flex items-center justify-center",
+  className: "custom-marker marker-fire rounded-full flex items-center justify-center",
   html: '<i class="uil uil-fire"></i>',
   iconSize: [35, 35],
   iconAnchor: [17, 17],
 });
 
 const crimeIcon = L.divIcon({
-  className:
-    "custom-marker marker-crime rounded-full flex items-center justify-center",
+  className: "custom-marker marker-crime rounded-full flex items-center justify-center",
   html: '<i class="uil uil-shield-plus"></i>',
   iconSize: [35, 35],
   iconAnchor: [17, 17],
 });
 
 const floodIcon = L.divIcon({
-  className:
-    "custom-marker marker-flood rounded-full flex items-center justify-center",
+  className: "custom-marker marker-flood rounded-full flex items-center justify-center",
   html: '<i class="uil uil-water"></i>',
   iconSize: [35, 35],
   iconAnchor: [17, 17],
@@ -352,7 +240,7 @@ const iconMap = {
 const markerFiltersActive = {
   fire: true,
   crime: true,
-  flood: true
+  flood: true,
 };
 
 function updateMapMarkers() {
@@ -362,33 +250,23 @@ function updateMapMarkers() {
     markers[type] = [];
   });
 
-  // Get incidents - handle both old and new data format
-  let incidentsToProcess = {
-    fire: [],
-    crime: [],
-    flood: []
-  };
+  let incidentsToProcess = { fire: [], crime: [], flood: [] };
 
-  // Check if we have the new flat array format
   if (incidentData.all && Array.isArray(incidentData.all)) {
-    // Convert flat array back to grouped format for marker processing
     incidentData.all.forEach((incident) => {
-      // Extract the base type from the formatted type string
       const typeString = incident.type.toLowerCase();
-      if (typeString.includes('fire')) {
+      if (typeString.includes("fire")) {
         incidentsToProcess.fire.push(incident);
-      } else if (typeString.includes('crime')) {
+      } else if (typeString.includes("crime")) {
         incidentsToProcess.crime.push(incident);
-      } else if (typeString.includes('flood')) {
+      } else if (typeString.includes("flood")) {
         incidentsToProcess.flood.push(incident);
       }
     });
   } else {
-    // Use the old grouped format
     incidentsToProcess = incidentData;
   }
 
-  // Add new markers, respecting filter state
   Object.keys(incidentsToProcess).forEach((type) => {
     if (incidentsToProcess[type] && Array.isArray(incidentsToProcess[type])) {
       incidentsToProcess[type].forEach((incident) => {
@@ -396,7 +274,6 @@ function updateMapMarkers() {
           icon: iconMap[type],
         });
 
-        // Only add to map if filter is active
         if (markerFiltersActive[type]) {
           marker.addTo(map);
         }
@@ -439,22 +316,13 @@ function startPolling() {
     if (pollingActive) {
       fetchLiveIncidents();
     }
-  }, POLL_INTERVAL);
+  }, DASH_POLL_INTERVAL);
 }
 
-// Pause polling when page hidden (saves resources)
-// document.addEventListener('visibilitychange', () => {
-//   pollingActive = !document.hidden;
-//   if (pollingActive) {
-//     fetchLiveIncidents();
-//   }
-// });
-
 // ============================================
-// INITIALIZE
+// INITIALIZE POLLING
 // ============================================
 
-// Start polling when page loads
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", startPolling);
 } else {
@@ -462,12 +330,13 @@ if (document.readyState === "loading") {
 }
 
 console.log(
-  "SafeChain Dashboard initialized - Polling every " +
-    POLL_INTERVAL / 1000 +
-    " seconds"
+  "SafeChain Dashboard initialized - Polling every " + POLL_INTERVAL / 1000 + " seconds"
 );
 
-// Data structure for different years
+// ============================================
+// CHART DATA
+// ============================================
+
 const chartDataByYear = {
   2024: {
     fire: [28, 35, 32, 38, 30, 22, 48, 47, 35, 15, 32, 38],
@@ -496,6 +365,10 @@ const chartDataByYear = {
   },
 };
 
+// ============================================
+// RENDER FUNCTIONS
+// ============================================
+
 function renderSkeletonLoading() {
   return `
     <div class="skeleton-loading">
@@ -512,7 +385,6 @@ function renderSkeletonLoading() {
           </div>
         </div>
       </div>
-
       <div class="mb-6">
         <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-5 w-40 rounded mb-3"></div>
         <div class="bg-neutral-100 dark:bg-neutral-700 rounded-lg p-4 space-y-3">
@@ -530,7 +402,6 @@ function renderSkeletonLoading() {
           </div>
         </div>
       </div>
-
       <div class="mb-6">
         <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-5 w-36 rounded mb-3"></div>
         <div class="bg-neutral-100 dark:bg-neutral-700 rounded-lg p-4 space-y-3">
@@ -552,7 +423,6 @@ function renderSkeletonLoading() {
           </div>
         </div>
       </div>
-
       <div class="mb-6">
         <div class="bg-neutral-300 dark:bg-neutral-600 animate-pulse h-5 w-32 rounded mb-3"></div>
         <div class="space-y-4">
@@ -584,27 +454,21 @@ function renderSkeletonLoading() {
 }
 
 function renderEmergencyList() {
-  // Use the pre-sorted flat array from API if available
   let allIncidents;
-  
+
   if (incidentData.all && Array.isArray(incidentData.all)) {
-    // Use the flat array from API (already sorted by date from SQL)
     allIncidents = incidentData.all;
   } else {
-    // Fallback: collect from grouped data
     allIncidents = ["fire", "crime", "flood"].flatMap(
       (type) => incidentData[type] || []
     );
-    
-    // Sort by datetime field (more reliable than formatted time)
     allIncidents.sort((a, b) => {
       const dateA = new Date(a.datetime || a.time);
       const dateB = new Date(b.datetime || b.time);
-      return dateB - dateA; // newest first
+      return dateB - dateA;
     });
   }
 
-  // If no incidents
   if (allIncidents.length === 0) {
     return `
       <div class="flex flex-col items-center justify-center h-full text-center p-6">
@@ -617,150 +481,92 @@ function renderEmergencyList() {
 
   const colorClasses = {
     red: "bg-red-50 text-red-600 dark:bg-red-900/40 dark:text-red-300",
-    yellow:
-      "bg-yellow-50 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-300",
+    yellow: "bg-yellow-50 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-300",
     blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300",
   };
 
   const statusColors = {
-    pending:
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
-    responding:
-      "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-    resolved:
-      "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+    pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+    responding: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+    resolved: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
   };
 
   return `
     <div class="space-y-4">
-      ${allIncidents
-        .map(
-          (incident) => `
-        <div onclick="focusIncidentOnMap('${incident.id}', ${incident.lat}, ${
-            incident.lng
-          }, '${
-            incident.type
-          }')" class="bg-[#FFFFFF] border border-neutral-300 dark:border-neutral-600 rounded-2xl p-4 space-y-3 text-sm dark:bg-neutral-700 cursor-pointer hover:shadow-lg hover:border-emerald-400 transition-all duration-200">
-          <!-- Emergency Type Badge -->
-          <div class="inline-flex items-center gap-2 ${
-            colorClasses[incident.color]
-          } px-3 py-2 rounded-lg">
+      ${allIncidents.map((incident) => `
+        <div onclick="focusIncidentOnMap('${incident.id}', ${incident.lat}, ${incident.lng}, '${incident.type}')"
+          class="bg-[#FFFFFF] border border-neutral-300 rounded-2xl p-4 space-y-3 text-sm dark:bg-neutral-700 cursor-pointer hover:shadow-lg hover:border-emerald-400 transition-all duration-200">
+          <div class="inline-flex items-center gap-2 ${colorClasses[incident.color]} px-3 py-2 rounded-lg">
             <i class="uil ${incident.icon} text-lg"></i>
             <span class="text-sm font-medium">${incident.type}</span>
           </div>
-
-          <!-- Status -->
           <div class="flex justify-between items-center">
             <p class="text-gray-500 dark:text-gray-300 text-xs">Emergency Status</p>
-            <span class="text-xs px-2 py-1 rounded-full font-medium ${
-              statusColors[incident.status] || statusColors.pending
-            }">
-              ${
-                incident.status
-                  ? incident.status.charAt(0).toUpperCase() +
-                    incident.status.slice(1)
-                  : "Pending"
-              }
+            <span class="text-xs px-2 py-1 rounded-full font-medium ${statusColors[incident.status] || statusColors.pending}">
+              ${incident.status ? incident.status.charAt(0).toUpperCase() + incident.status.slice(1) : "Pending"}
             </span>
           </div>
-
-          <!-- Time Reported -->
           <div class="flex justify-between">
             <p class="text-gray-500 dark:text-gray-300 text-xs">Time Reported</p>
-            <p class="font-medium text-gray-800 dark:text-white/90 text-xs">${
-              incident.time
-            }</p>
+            <p class="font-medium text-gray-800 dark:text-white/90 text-xs">${incident.time}</p>
           </div>
-
-          <!-- Reporter Name -->
           <div class="flex justify-between">
             <p class="text-gray-500 dark:text-gray-300 text-xs">Reporter</p>
-            <p class="font-medium text-gray-800 dark:text-white/90 text-xs">${
-              incident.user.name
-            }</p>
+            <p class="font-medium text-gray-800 dark:text-white/90 text-xs">${incident.user.name}</p>
           </div>
-
-          <!-- Action Buttons -->
           <div class="flex flex-col gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-            <button 
-              onclick="event.stopPropagation(); viewIncidentDetails('${incident.id}')" 
+            <button
+              onclick="event.stopPropagation(); viewIncidentDetails('${incident.id}')"
               class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium py-2.5 px-3 rounded-xl transition">
               <i class="uil uil-eye"></i> View Details
             </button>
-            <button 
-              onclick="event.stopPropagation(); notifyResponders('${incident.id}')" 
+            <button
+              onclick="event.stopPropagation(); notifyResponders('${incident.id}')"
               class="flex-1 bg-transparent hover:bg-emerald-200/50 border border-emerald-400 dark:border-emerald-600 text-emerald-500 text-xs font-medium py-2.5 px-3 rounded-xl transition">
               <i class="uil uil-bell"></i> Notify Responders
             </button>
           </div>
         </div>
-      `
-        )
-        .join("")}
+      `).join("")}
     </div>
   `;
 }
 
+// ============================================
+// MAP & PANEL SETUP
+// ============================================
+
 function focusIncidentOnMap(incidentId, lat, lng, type) {
   let markerType = null;
   const lowerType = type.toLowerCase();
-  
-  if (lowerType.includes('fire')) {
-    markerType = 'fire';
-  } else if (lowerType.includes('crime')) {
-    markerType = 'crime';
-  } else if (lowerType.includes('flood')) {
-    markerType = 'flood';
-  }
-  
-  console.log('Focusing on:', { incidentId, lat, lng, type, markerType });
-  
-  // Center and zoom to the incident location
-  map.setView([lat, lng], 17, {
-    animate: true,
-    duration: 1.0
-  });
 
-  // Wait a bit to ensure markers are loaded
+  if (lowerType.includes("fire")) markerType = "fire";
+  else if (lowerType.includes("crime")) markerType = "crime";
+  else if (lowerType.includes("flood")) markerType = "flood";
+
+  map.setView([lat, lng], 17, { animate: true, duration: 1.0 });
+
   setTimeout(() => {
     const incidentMarkers = markers[markerType];
-    console.log('Available markers for', markerType, ':', incidentMarkers ? incidentMarkers.length : 0);
-    
     if (incidentMarkers && incidentMarkers.length > 0) {
-      let found = false;
       incidentMarkers.forEach((marker) => {
         const markerLatLng = marker.getLatLng();
-        
-        // Use a more generous comparison for coordinates
-        if (Math.abs(markerLatLng.lat - lat) < 0.00001 && 
-            Math.abs(markerLatLng.lng - lng) < 0.00001) {
-          found = true;
-          // Open the popup
+        if (
+          Math.abs(markerLatLng.lat - lat) < 0.00001 &&
+          Math.abs(markerLatLng.lng - lng) < 0.00001
+        ) {
           marker.openPopup();
-          console.log('Popup opened!');
         }
       });
-      
-      if (!found) {
-        console.log('No matching marker found. Looking for:', lat, lng);
-        console.log('Available markers:', incidentMarkers.map(m => m.getLatLng()));
-      }
-    } else {
-      console.log('No markers array found for type:', markerType);
-      console.log('All markers:', markers);
     }
-  }, 1000); // Wait 1 second for map animation and marker loading
-
+  }, 1000);
 }
 
 function viewIncidentDetails(incidentId) {
-  window.location.href = `incidents/details?id=${encodeURIComponent(
-    incidentId
-  )}`;
+  window.location.href = `admin/incidents/details?id=${encodeURIComponent(incidentId)}`;
 }
 
 function notifyResponders(incidentId) {
-  // TODO: Implement notification logic
   showToast("info", "Notify Responders feature coming soon...");
   console.log("Notify responders for incident:", incidentId);
 }
@@ -774,22 +580,18 @@ var map = L.map("map").setView([14.7158532, 121.0403842], 16);
 
 const isOnline = navigator.onLine;
 
-// Determine tile URLs based on online status
-const lightTileUrl = isOnline 
+const lightTileUrl = isOnline
   ? "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7"
   : "assets/tiles/street-v2/{z}/{x}/{y}.png";
 
-const darkTileUrl = isOnline 
+const darkTileUrl = isOnline
   ? "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7"
   : "assets/tiles/street-v2-dark/{z}/{x}/{y}.png";
 
-// Create tile layers
 const lightLayer = L.tileLayer(lightTileUrl, {
   attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-}).on('tileerror', function(error, tile) {
-  const url = tile.tile.src;
-  const matches = url.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
-  
+}).on("tileerror", function (error, tile) {
+  const matches = tile.tile.src.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
   if (matches) {
     const [, z, x, y] = matches;
     tile.tile.src = `assets/tiles/street-v2/${z}/${x}/${y}.png`;
@@ -798,28 +600,24 @@ const lightLayer = L.tileLayer(lightTileUrl, {
 
 const darkLayer = L.tileLayer(darkTileUrl, {
   attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-}).on('tileerror', function(error, tile) {
-  const url = tile.tile.src;
-  const matches = url.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
-  
+}).on("tileerror", function (error, tile) {
+  const matches = tile.tile.src.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
   if (matches) {
     const [, z, x, y] = matches;
     tile.tile.src = `assets/tiles/street-v2-dark/${z}/${x}/${y}.png`;
   }
 });
 
-// Listen for online/offline changes and update both layers
-window.addEventListener('online', () => {
+window.addEventListener("online", () => {
   lightLayer.setUrl("https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7");
-  darkLayer.setUrl("https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7");
+  darkLayer.setUrl("https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7");
 });
 
-window.addEventListener('offline', () => {
+window.addEventListener("offline", () => {
   lightLayer.setUrl("assets/tiles/street-v2/{z}/{x}/{y}.png");
   darkLayer.setUrl("assets/tiles/street-v2-dark/{z}/{x}/{y}.png");
 });
 
-// Add the appropriate layer based on current theme
 const currentTheme = document.documentElement.getAttribute("data-theme");
 if (currentTheme === "dark") {
   darkLayer.addTo(map);
@@ -827,7 +625,6 @@ if (currentTheme === "dark") {
   lightLayer.addTo(map);
 }
 
-// Function to switch map theme
 function switchMapTheme(isDark) {
   if (isDark) {
     map.removeLayer(lightLayer);
@@ -836,15 +633,12 @@ function switchMapTheme(isDark) {
     map.removeLayer(darkLayer);
     map.addLayer(lightLayer);
   }
-
-  // Update heatmaps for theme
   updateHeatmapsForTheme(isDark);
 }
 
-// Add all markers with staggered animation
+// Staggered marker animation on initial load
 setTimeout(() => {
-  // Only process fire, crime, flood (not 'all')
-  ['fire', 'crime', 'flood'].forEach((type, typeIndex) => {
+  ["fire", "crime", "flood"].forEach((type, typeIndex) => {
     const incidents = incidentData[type] || [];
     incidents.forEach((incident, incidentIndex) => {
       setTimeout(() => {
@@ -853,20 +647,12 @@ setTimeout(() => {
           opacity: 0,
         })
           .addTo(map)
-          .bindPopup(
-            `<strong>${incident.type}</strong><br>${incident.user.name}`
-          );
+          .bindPopup(`<strong>${incident.type}</strong><br>${incident.user.name}`);
 
-        // Animate marker appearance
-        setTimeout(() => {
-          marker.setOpacity(1);
-        }, 50);
+        setTimeout(() => marker.setOpacity(1), 50);
 
         marker.on("click", () => {
-          // Zoom to marker location
           map.setView([incident.lat, incident.lng], 17);
-
-          // Open marker popup
           marker.openPopup();
         });
 
@@ -876,7 +662,10 @@ setTimeout(() => {
   });
 }, 1000);
 
-// Heatmap toggle button handlers
+// ============================================
+// HEATMAP TOGGLE BUTTONS
+// ============================================
+
 const heatmapToggleButtons = document.querySelectorAll("[data-heatmap]");
 heatmapToggleButtons.forEach((btn) => {
   btn.addEventListener("click", (e) => {
@@ -887,38 +676,37 @@ heatmapToggleButtons.forEach((btn) => {
     heatmapVisible[heatmapType] = !heatmapVisible[heatmapType];
 
     if (heatmapVisible[heatmapType]) {
-      if (heatmapLayers[heatmapType]) {
-        heatmapLayers[heatmapType].addTo(map);
-      }
+      if (heatmapLayers[heatmapType]) heatmapLayers[heatmapType].addTo(map);
     } else {
-      if (heatmapLayers[heatmapType]) {
-        map.removeLayer(heatmapLayers[heatmapType]);
-      }
+      if (heatmapLayers[heatmapType]) map.removeLayer(heatmapLayers[heatmapType]);
     }
   });
 });
 
-// Load emergency list
+// ============================================
+// EMERGENCY LIST + PANEL INIT
+// ============================================
+
 incidentContent.innerHTML = renderSkeletonLoading();
 setTimeout(() => {
   incidentContent.innerHTML = renderEmergencyList();
-
-  // Make sure panel is always visible
-  if (isRightPanelCollapsed) {
-    rightPanelToggle.click();
-  }
+  if (isRightPanelCollapsed) rightPanelToggle.click();
 }, 1500);
 
-document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
-document
-  .getElementById("zoomOut")
-  .addEventListener("click", () => map.zoomOut());
+// ============================================
+// ZOOM CONTROLS
+// ============================================
 
-// Add this at the top with your other variables
+document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
+document.getElementById("zoomOut").addEventListener("click", () => map.zoomOut());
+
+// ============================================
+// USER LOCATION
+// ============================================
+
 let userLocationMarker = null;
 let userLocationCircle = null;
 
-// Create a blue dot icon for user location using Tailwind classes
 const userLocationIcon = L.divIcon({
   className: "user-location-marker",
   html: `
@@ -931,80 +719,59 @@ const userLocationIcon = L.divIcon({
   iconAnchor: [10, 10],
 });
 
-// Update the locate button functionality
 document.getElementById("locate").addEventListener("click", () => {
-  if (navigator.geolocation) {
-    showToast("info", "Getting your location...");
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const userLat = position.coords.latitude;
-        const userLng = position.coords.longitude;
-        const accuracy = position.coords.accuracy;
-
-        // Remove existing user location marker and circle
-        if (userLocationMarker) {
-          map.removeLayer(userLocationMarker);
-        }
-        if (userLocationCircle) {
-          map.removeLayer(userLocationCircle);
-        }
-
-        // Add accuracy circle
-        userLocationCircle = L.circle([userLat, userLng], {
-          color: "#3B82F6",
-          fillColor: "#3B82F6",
-          fillOpacity: 0.1,
-          radius: accuracy,
-          weight: 1,
-        }).addTo(map);
-
-        // Add user location marker with blue dot
-        userLocationMarker = L.marker([userLat, userLng], {
-          icon: userLocationIcon,
-        }).addTo(map).bindPopup(`
-            <div class="p-2">
-              <div class="font-semibold text-sm text-gray-800 dark:text-white mb-1">Your Location</div>
-              <div class="text-xs text-gray-600 dark:text-gray-400">
-                Accuracy: ±${Math.round(accuracy)}m
-              </div>
-            </div>
-          `);
-
-        // Center map on user location
-        map.setView([userLat, userLng], 16);
-
-        showToast("success", "Location found!");
-      },
-      (error) => {
-        let errorMessage = "Could not get your location";
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = "Location permission denied";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Location information unavailable";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "Location request timed out";
-            break;
-        }
-
-        showToast("error", errorMessage);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
-    );
-  } else {
+  if (!navigator.geolocation) {
     showToast("error", "Geolocation is not supported by your browser");
+    return;
   }
+
+  showToast("info", "Getting your location...");
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const userLat = position.coords.latitude;
+      const userLng = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
+
+      if (userLocationMarker) map.removeLayer(userLocationMarker);
+      if (userLocationCircle) map.removeLayer(userLocationCircle);
+
+      userLocationCircle = L.circle([userLat, userLng], {
+        color: "#3B82F6",
+        fillColor: "#3B82F6",
+        fillOpacity: 0.1,
+        radius: accuracy,
+        weight: 1,
+      }).addTo(map);
+
+      userLocationMarker = L.marker([userLat, userLng], {
+        icon: userLocationIcon,
+      }).addTo(map).bindPopup(`
+          <div class="p-2">
+            <div class="font-semibold text-sm text-gray-800 dark:text-white mb-1">Your Location</div>
+            <div class="text-xs text-gray-600 dark:text-gray-400">Accuracy: ±${Math.round(accuracy)}m</div>
+          </div>
+        `);
+
+      map.setView([userLat, userLng], 16);
+      showToast("success", "Location found!");
+    },
+    (error) => {
+      const messages = {
+        [error.PERMISSION_DENIED]: "Location permission denied",
+        [error.POSITION_UNAVAILABLE]: "Location information unavailable",
+        [error.TIMEOUT]: "Location request timed out",
+      };
+      showToast("error", messages[error.code] || "Could not get your location");
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
 });
 
-// Filter buttons for markers (excluding heatmap buttons)
+// ============================================
+// MARKER FILTER BUTTONS
+// ============================================
+
 const filterButtons = document.querySelectorAll("[data-filter]");
 filterButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -1012,7 +779,7 @@ filterButtons.forEach((btn) => {
     if (filter === "heatmap") return;
 
     btn.classList.toggle("active");
-    markerFiltersActive[filter] = btn.classList.contains("active"); // Track state
+    markerFiltersActive[filter] = btn.classList.contains("active");
 
     markers[filter].forEach((marker) => {
       if (markerFiltersActive[filter]) {
@@ -1024,229 +791,133 @@ filterButtons.forEach((btn) => {
   });
 });
 
-// Heatmap menu toggle functionality
+// ============================================
+// HEATMAP MENU TOGGLE
+// ============================================
+
 const heatmapMenuToggle = document.getElementById("heatmapMenuToggle");
-const heatmapControlsContainer = document.getElementById(
-  "heatmapControlsContainer"
-);
+const heatmapControlsContainer = document.getElementById("heatmapControlsContainer");
 let isHeatmapMenuOpen = false;
 
 heatmapMenuToggle.addEventListener("click", (e) => {
   e.stopPropagation();
   isHeatmapMenuOpen = !isHeatmapMenuOpen;
 
-  // Toggle container visibility
   heatmapControlsContainer.classList.toggle("hidden");
   heatmapControlsContainer.classList.toggle("flex");
-
-  // Toggle button active state
   heatmapMenuToggle.classList.toggle("active");
 
-  // Change icon
   const icon = heatmapMenuToggle.querySelector("i");
-  if (isHeatmapMenuOpen) {
-    icon.classList.remove("uil-ellipsis-h");
-    icon.classList.add("uil-times");
-  } else {
-    icon.classList.remove("uil-times");
-    icon.classList.add("uil-ellipsis-h");
-  }
+  icon.classList.toggle("uil-ellipsis-h", !isHeatmapMenuOpen);
+  icon.classList.toggle("uil-times", isHeatmapMenuOpen);
 });
 
-// Close heatmap menu when clicking outside
 document.addEventListener("click", (e) => {
   if (
     isHeatmapMenuOpen &&
     !heatmapMenuToggle.contains(e.target) &&
     !heatmapControlsContainer.contains(e.target)
   ) {
-    // Close the menu
     isHeatmapMenuOpen = false;
     heatmapControlsContainer.classList.add("hidden");
     heatmapControlsContainer.classList.remove("flex");
     heatmapMenuToggle.classList.remove("active");
 
-    // Reset icon
     const icon = heatmapMenuToggle.querySelector("i");
     icon.classList.remove("uil-times");
     icon.classList.add("uil-ellipsis-h");
   }
 });
 
-// Prevent clicks inside container from closing it
-heatmapControlsContainer.addEventListener("click", (e) => {
-  e.stopPropagation();
-});
+heatmapControlsContainer.addEventListener("click", (e) => e.stopPropagation());
 
-// rightPanelToggle.addEventListener("click", () => {
-//   isRightPanelCollapsed = !isRightPanelCollapsed;
+// ============================================
+// CHART.JS
+// ============================================
 
-//   if (isRightPanelCollapsed) {
-//     rightPanel.style.transform = "translateX(100%)";
-//     mainContent.classList.remove("mr-[360px]");
-//     mainContent.classList.add("mr-0");
-//   } else {
-//     rightPanel.style.transform = "translateX(0)";
-//     mainContent.classList.remove("mr-0");
-//     mainContent.classList.add("mr-[360px]");
-//   }
-
-//   const icon = rightPanelToggle.querySelector("i");
-//   icon.classList.toggle("uil-angle-right", !isRightPanelCollapsed);
-//   icon.classList.toggle("uil-angle-left", isRightPanelCollapsed);
-
-//   setTimeout(() => map.invalidateSize(), 300);
-// });
-
-// Chart.js Configuration
 let emergencyChart;
 setTimeout(() => {
   const ctx = document.getElementById("emergencyChart").getContext("2d");
   emergencyChart = new Chart(ctx, {
     type: "line",
     data: {
-      labels: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ],
+      labels: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
       datasets: [
         {
           label: "Fire",
           data: chartDataByYear[2024].fire,
           borderColor: "#ff4444",
           backgroundColor: "rgba(255, 68, 68, 0.1)",
-          tension: 0.4,
-          fill: true,
-          borderWidth: 3,
-          pointRadius: 5,
-          pointHoverRadius: 7,
+          tension: 0.4, fill: true, borderWidth: 3,
+          pointRadius: 5, pointHoverRadius: 7,
           pointBackgroundColor: "#ff4444",
-          pointBorderColor: "#fff",
-          pointBorderWidth: 2,
+          pointBorderColor: "#fff", pointBorderWidth: 2,
           pointHoverBackgroundColor: "#ff4444",
-          pointHoverBorderColor: "#fff",
-          pointHoverBorderWidth: 3,
+          pointHoverBorderColor: "#fff", pointHoverBorderWidth: 3,
         },
         {
           label: "Flood",
           data: chartDataByYear[2024].flood,
           borderColor: "#3B82F6",
           backgroundColor: "rgba(59, 130, 246, 0.1)",
-          tension: 0.4,
-          fill: true,
-          borderWidth: 3,
-          pointRadius: 5,
-          pointHoverRadius: 7,
+          tension: 0.4, fill: true, borderWidth: 3,
+          pointRadius: 5, pointHoverRadius: 7,
           pointBackgroundColor: "#3B82F6",
-          pointBorderColor: "#fff",
-          pointBorderWidth: 2,
+          pointBorderColor: "#fff", pointBorderWidth: 2,
           pointHoverBackgroundColor: "#3B82F6",
-          pointHoverBorderColor: "#fff",
-          pointHoverBorderWidth: 3,
+          pointHoverBorderColor: "#fff", pointHoverBorderWidth: 3,
         },
         {
           label: "Crime",
           data: chartDataByYear[2024].crime,
           borderColor: "#FBBF24",
           backgroundColor: "rgba(251, 191, 36, 0.1)",
-          tension: 0.4,
-          fill: true,
-          borderWidth: 3,
-          pointRadius: 5,
-          pointHoverRadius: 7,
+          tension: 0.4, fill: true, borderWidth: 3,
+          pointRadius: 5, pointHoverRadius: 7,
           pointBackgroundColor: "#FBBF24",
-          pointBorderColor: "#fff",
-          pointBorderWidth: 2,
+          pointBorderColor: "#fff", pointBorderWidth: 2,
           pointHoverBackgroundColor: "#FBBF24",
-          pointHoverBorderColor: "#fff",
-          pointHoverBorderWidth: 3,
+          pointHoverBorderColor: "#fff", pointHoverBorderWidth: 3,
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: {
-        mode: "index",
-        intersect: false,
-      },
-      animation: {
-        duration: 2000,
-        easing: "easeInOutQuart",
-      },
+      interaction: { mode: "index", intersect: false },
+      animation: { duration: 2000, easing: "easeInOutQuart" },
       plugins: {
         legend: {
           display: true,
-          labels: {
-            usePointStyle: true,
-            pointStyle: "circle",
-            padding: 10,
-            font: {
-              size: 13,
-            },
-          },
+          labels: { usePointStyle: true, pointStyle: "circle", padding: 10, font: { size: 13 } },
         },
         tooltip: {
           backgroundColor: "rgba(0, 0, 0, 0.8)",
-          padding: 12,
-          cornerRadius: 8,
-          titleFont: {
-            size: 14,
-            weight: "600",
-          },
-          bodyFont: {
-            size: 13,
-          },
-          displayColors: true,
-          boxWidth: 10,
-          boxHeight: 10,
-          usePointStyle: true,
+          padding: 12, cornerRadius: 8,
+          titleFont: { size: 14, weight: "600" },
+          bodyFont: { size: 13 },
+          displayColors: true, boxWidth: 10, boxHeight: 10, usePointStyle: true,
         },
       },
       scales: {
         y: {
-          beginAtZero: true,
-          max: 100,
-          ticks: {
-            stepSize: 25,
-            color: "#94a3b8",
-            font: {
-              size: 12,
-            },
-          },
-          grid: {
-            color: "rgba(148, 163, 184, 0.15)",
-            drawBorder: false,
-          },
+          beginAtZero: true, max: 100,
+          ticks: { stepSize: 25, color: "#94a3b8", font: { size: 12 } },
+          grid: { color: "rgba(148, 163, 184, 0.15)", drawBorder: false },
         },
         x: {
-          ticks: {
-            color: "#94a3b8",
-            font: {
-              size: 12,
-            },
-          },
-          grid: {
-            display: false,
-            drawBorder: false,
-          },
+          ticks: { color: "#94a3b8", font: { size: 12 } },
+          grid: { display: false, drawBorder: false },
         },
       },
     },
   });
 }, 1100);
 
-// Year Dropdown Functionality
+// ============================================
+// YEAR DROPDOWN
+// ============================================
+
 const yearDropdownBtn = document.getElementById("yearDropdownBtn");
 const yearDropdownMenu = document.getElementById("yearDropdownMenu");
 const yearDropdownIcon = document.getElementById("yearDropdownIcon");
@@ -1256,9 +927,7 @@ const yearOptions = document.querySelectorAll(".year-option");
 yearDropdownBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   yearDropdownMenu.classList.toggle("hidden");
-  yearDropdownIcon.style.transform = yearDropdownMenu.classList.contains(
-    "hidden"
-  )
+  yearDropdownIcon.style.transform = yearDropdownMenu.classList.contains("hidden")
     ? "rotate(0deg)"
     : "rotate(180deg)";
 });
@@ -1268,70 +937,43 @@ yearOptions.forEach((option) => {
     e.stopPropagation();
     const year = option.dataset.year;
 
-    // Update selected year
     selectedYearSpan.textContent = year;
 
-    // Update active state
     yearOptions.forEach((opt) => {
-      opt.classList.remove(
-        "active",
-        "bg-[#01af78]/10",
-        "font-medium",
-        "text-emerald-600",
-        "dark:text-emerald-700"
-      );
+      opt.classList.remove("active", "bg-[#01af78]/10", "font-medium", "text-emerald-600", "dark:text-emerald-700");
     });
-    option.classList.add(
-      "active",
-      "bg-[#01af78]/10",
-      "font-medium",
-      "text-emerald-600",
-      "dark:text-emerald-700"
-    );
+    option.classList.add("active", "bg-[#01af78]/10", "font-medium", "text-emerald-600", "dark:text-emerald-700");
 
-    // Close dropdown
     yearDropdownMenu.classList.add("hidden");
     yearDropdownIcon.style.transform = "rotate(0deg)";
 
-    // Update chart with data for selected year
     if (chartDataByYear[year]) {
       emergencyChart.data.datasets[0].data = chartDataByYear[year].fire;
       emergencyChart.data.datasets[1].data = chartDataByYear[year].flood;
       emergencyChart.data.datasets[2].data = chartDataByYear[year].crime;
       emergencyChart.update("active");
     }
-
-    console.log("Selected year:", year);
   });
 });
 
-// Close dropdown when clicking outside
 document.addEventListener("click", (e) => {
-  if (
-    !yearDropdownBtn.contains(e.target) &&
-    !yearDropdownMenu.contains(e.target)
-  ) {
+  if (!yearDropdownBtn.contains(e.target) && !yearDropdownMenu.contains(e.target)) {
     yearDropdownMenu.classList.add("hidden");
     yearDropdownIcon.style.transform = "rotate(0deg)";
   }
 });
 
+// ============================================
+// DATE/TIME DISPLAY
+// ============================================
+
 function updateDateTime() {
   const now = new Date();
-
-  const options = {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  };
-
-  const dateString = now.toLocaleDateString("en-US", options);
+  const dateString = now.toLocaleDateString("en-US", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  });
   const timeString = now.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
   });
 
   const dateTimeElement = document.querySelector(".header p");
@@ -1340,8 +982,5 @@ function updateDateTime() {
   }
 }
 
-// Update immediately on load
 updateDateTime();
-
-// Update every second
 setInterval(updateDateTime, 1000);
