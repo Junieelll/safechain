@@ -4,7 +4,7 @@ header('Access-Control-Allow-Origin: *');
 
 require_once '../../config/conn.php';
 
-$year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
+$year = isset($_GET['year']) ? intval($_GET['year']) : intval(date('Y'));
 
 $sql = "SELECT 
     type,
@@ -18,7 +18,6 @@ ORDER BY type, month";
 
 $result = mysqli_query($conn, $sql);
 
-// Initialize all months as 0
 $data = [
     'fire'  => array_fill(1, 12, 0),
     'crime' => array_fill(1, 12, 0),
@@ -35,7 +34,13 @@ if ($result) {
     }
 }
 
-// Re-index to 0-based array for JS
+// Get available years from DB
+$yearsResult = mysqli_query($conn, "SELECT DISTINCT YEAR(date_time) as year FROM incidents WHERE is_archived = 0 ORDER BY year DESC");
+$years = [];
+while ($row = mysqli_fetch_assoc($yearsResult)) {
+    $years[] = intval($row['year']);
+}
+
 echo json_encode([
     'success' => true,
     'year'    => $year,
