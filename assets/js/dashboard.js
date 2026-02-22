@@ -329,41 +329,6 @@ if (document.readyState === "loading") {
   startPolling();
 }
 
-console.log(
-  "SafeChain Dashboard initialized - Polling every " + POLL_INTERVAL / 1000 + " seconds"
-);
-
-// ============================================
-// CHART DATA
-// ============================================
-
-const chartDataByYear = {
-  2024: {
-    fire: [28, 35, 32, 38, 30, 22, 48, 47, 35, 15, 32, 38],
-    flood: [32, 42, 38, 28, 12, 8, 28, 22, 18, 35, 38, 42],
-    crime: [25, 12, 22, 18, 12, 25, 22, 25, 22, 15, 25, 18],
-  },
-  2023: {
-    fire: [22, 28, 35, 31, 27, 19, 42, 39, 30, 12, 28, 35],
-    flood: [28, 38, 35, 24, 10, 6, 25, 19, 15, 32, 35, 39],
-    crime: [20, 10, 19, 15, 10, 22, 19, 22, 19, 12, 22, 15],
-  },
-  2022: {
-    fire: [25, 30, 28, 35, 28, 20, 45, 43, 33, 14, 30, 36],
-    flood: [30, 40, 36, 26, 11, 7, 26, 20, 16, 33, 36, 40],
-    crime: [22, 11, 20, 16, 11, 23, 20, 23, 20, 13, 23, 16],
-  },
-  2021: {
-    fire: [20, 26, 30, 33, 25, 18, 40, 38, 28, 11, 26, 33],
-    flood: [26, 36, 33, 22, 9, 5, 22, 17, 13, 30, 33, 37],
-    crime: [18, 9, 17, 13, 9, 20, 17, 20, 17, 10, 20, 13],
-  },
-  2020: {
-    fire: [18, 24, 27, 30, 23, 16, 38, 35, 26, 10, 24, 30],
-    flood: [24, 34, 30, 20, 8, 4, 20, 15, 11, 28, 30, 35],
-    crime: [16, 8, 15, 11, 8, 18, 15, 18, 15, 9, 18, 11],
-  },
-};
 
 // ============================================
 // RENDER FUNCTIONS
@@ -835,6 +800,23 @@ heatmapControlsContainer.addEventListener("click", (e) => e.stopPropagation());
 // CHART.JS
 // ============================================
 
+// Fetch chart data from API
+async function fetchChartData(year) {
+  try {
+    const response = await fetch(`api/dashboard/get_chart_data.php?year=${year}`);
+    const result = await response.json();
+
+    if (result.success && emergencyChart) {
+      emergencyChart.data.datasets[0].data = result.data.fire;
+      emergencyChart.data.datasets[1].data = result.data.flood;
+      emergencyChart.data.datasets[2].data = result.data.crime;
+      emergencyChart.update("active");
+    }
+  } catch (error) {
+    console.error("Failed to fetch chart data:", error);
+  }
+}
+
 let emergencyChart;
 setTimeout(() => {
   const ctx = document.getElementById("emergencyChart").getContext("2d");
@@ -845,7 +827,7 @@ setTimeout(() => {
       datasets: [
         {
           label: "Fire",
-          data: chartDataByYear[2024].fire,
+          data: [], // populated by fetchChartData()
           borderColor: "#ff4444",
           backgroundColor: "rgba(255, 68, 68, 0.1)",
           tension: 0.4, fill: true, borderWidth: 3,
@@ -857,7 +839,7 @@ setTimeout(() => {
         },
         {
           label: "Flood",
-          data: chartDataByYear[2024].flood,
+          data: [], // populated by fetchChartData()
           borderColor: "#3B82F6",
           backgroundColor: "rgba(59, 130, 246, 0.1)",
           tension: 0.4, fill: true, borderWidth: 3,
@@ -869,7 +851,7 @@ setTimeout(() => {
         },
         {
           label: "Crime",
-          data: chartDataByYear[2024].crime,
+          data: [], // populated by fetchChartData()
           borderColor: "#FBBF24",
           backgroundColor: "rgba(251, 191, 36, 0.1)",
           tension: 0.4, fill: true, borderWidth: 3,
@@ -912,6 +894,9 @@ setTimeout(() => {
       },
     },
   });
+
+  // Load current year data immediately after chart is created
+  fetchChartData(new Date().getFullYear());
 }, 1100);
 
 // ============================================
@@ -947,12 +932,8 @@ yearOptions.forEach((option) => {
     yearDropdownMenu.classList.add("hidden");
     yearDropdownIcon.style.transform = "rotate(0deg)";
 
-    if (chartDataByYear[year]) {
-      emergencyChart.data.datasets[0].data = chartDataByYear[year].fire;
-      emergencyChart.data.datasets[1].data = chartDataByYear[year].flood;
-      emergencyChart.data.datasets[2].data = chartDataByYear[year].crime;
-      emergencyChart.update("active");
-    }
+    // Fetch real data instead of static
+    fetchChartData(year);
   });
 });
 

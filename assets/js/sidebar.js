@@ -300,7 +300,7 @@ let audioInitialized = false;
 
 function initializeAudio() {
   if (!audioInitialized) {
-    notificationAudio = new Audio("assets/sounds/alert.mp3");
+    notificationAudio = new Audio("/assets/sounds/alert.mp3");
     notificationAudio.volume = 0.7;
     notificationAudio.load();
     audioInitialized = true;
@@ -309,6 +309,7 @@ function initializeAudio() {
       notificationAudio.pause();
       notificationAudio.currentTime = 0;
     }).catch(() => {});
+
   }
 }
 
