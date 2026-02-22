@@ -336,7 +336,7 @@ async function checkNewIncidents() {
   if (window.__dashboardActive) return;
 
   try {
-    const response = await fetch("api/get_incidents.php");
+    const response = await fetch("api/dashboard/get_incidents.php");
     const result = await response.json();
 
     if (result.success) {

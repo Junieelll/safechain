@@ -5,7 +5,7 @@
 // Tell sidebar.js to back off — dashboard owns notifications on this page
 window.__dashboardActive = true;
 
-const API_BASE = "api/";
+const API_BASE = "api/dashboard/";
 // POLL_INTERVAL is declared in sidebar.js — reuse it here
 const DASH_POLL_INTERVAL = window.POLL_INTERVAL || 3000;
 let lastUpdateTime = null;
