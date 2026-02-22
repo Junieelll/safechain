@@ -182,6 +182,13 @@ function getRoleConfig(role) {
       textColor: "text-red-700 dark:text-red-400",
       borderColor: "border-red-700 dark:border-red-800",
     },
+    resident: {
+      label: "RESIDENT",
+      icon: "uil uil-user",
+      bgColor: "bg-purple-100 dark:bg-purple-900/20",
+      textColor: "text-purple-500 dark:text-purple-400",
+      borderColor: "border-purple-500 dark:border-purple-800",
+    },
   };
 
   return configs[role] || configs["bpso"];
