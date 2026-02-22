@@ -39,6 +39,7 @@ if ($result) {
 echo json_encode([
     'success' => true,
     'year'    => $year,
+    'years'   => $years,
     'data'    => [
         'fire'  => array_values($data['fire']),
         'crime' => array_values($data['crime']),

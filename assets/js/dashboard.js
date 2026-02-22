@@ -800,7 +800,6 @@ heatmapControlsContainer.addEventListener("click", (e) => e.stopPropagation());
 // CHART.JS
 // ============================================
 
-// Fetch chart data from API
 async function fetchChartData(year) {
   try {
     const response = await fetch(`api/dashboard/get_chart_data.php?year=${year}`);
@@ -811,10 +810,47 @@ async function fetchChartData(year) {
       emergencyChart.data.datasets[1].data = result.data.flood;
       emergencyChart.data.datasets[2].data = result.data.crime;
       emergencyChart.update("active");
+
+      // Populate year dropdown from real DB data on first load
+      if (result.years && result.years.length > 0) {
+        populateYearDropdown(result.years, year);
+      }
     }
   } catch (error) {
     console.error("Failed to fetch chart data:", error);
   }
+}
+
+function populateYearDropdown(years, selectedYear) {
+  // Only rebuild if count changed
+  const existing = yearDropdownMenu.querySelectorAll(".year-option");
+  if (existing.length === years.length) return;
+
+  yearDropdownMenu.innerHTML = years.map(y => `
+    <div class="year-option px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300/80 hover:bg-gray-100 dark:hover:bg-emerald-700/20 cursor-pointer transition-colors ${y == selectedYear ? 'active bg-[#01af78]/10 font-medium text-emerald-600 dark:text-emerald-400' : ''}" data-year="${y}">
+      ${y}
+    </div>
+  `).join("");
+
+  // Re-attach click listeners to new elements
+  yearDropdownMenu.querySelectorAll(".year-option").forEach(option => {
+    option.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const year = option.dataset.year;
+
+      selectedYearSpan.textContent = year;
+
+      yearDropdownMenu.querySelectorAll(".year-option").forEach(opt => {
+        opt.classList.remove("active", "bg-[#01af78]/10", "font-medium", "text-emerald-600", "dark:text-emerald-400");
+      });
+      option.classList.add("active", "bg-[#01af78]/10", "font-medium", "text-emerald-600", "dark:text-emerald-400");
+
+      yearDropdownMenu.classList.add("hidden");
+      yearDropdownIcon.style.transform = "rotate(0deg)";
+
+      fetchChartData(year);
+    });
+  });
 }
 
 let emergencyChart;
@@ -827,7 +863,7 @@ setTimeout(() => {
       datasets: [
         {
           label: "Fire",
-          data: [], // populated by fetchChartData()
+          data: [],
           borderColor: "#ff4444",
           backgroundColor: "rgba(255, 68, 68, 0.1)",
           tension: 0.4, fill: true, borderWidth: 3,
@@ -839,7 +875,7 @@ setTimeout(() => {
         },
         {
           label: "Flood",
-          data: [], // populated by fetchChartData()
+          data: [],
           borderColor: "#3B82F6",
           backgroundColor: "rgba(59, 130, 246, 0.1)",
           tension: 0.4, fill: true, borderWidth: 3,
@@ -851,7 +887,7 @@ setTimeout(() => {
         },
         {
           label: "Crime",
-          data: [], // populated by fetchChartData()
+          data: [],
           borderColor: "#FBBF24",
           backgroundColor: "rgba(251, 191, 36, 0.1)",
           tension: 0.4, fill: true, borderWidth: 3,
@@ -895,19 +931,20 @@ setTimeout(() => {
     },
   });
 
-  // Load current year data immediately after chart is created
-  fetchChartData(new Date().getFullYear());
+  // Set label and load current year data
+  const currentYear = new Date().getFullYear();
+  selectedYearSpan.textContent = currentYear;
+  fetchChartData(currentYear);
 }, 1100);
 
 // ============================================
 // YEAR DROPDOWN
 // ============================================
 
-const yearDropdownBtn = document.getElementById("yearDropdownBtn");
+const yearDropdownBtn  = document.getElementById("yearDropdownBtn");
 const yearDropdownMenu = document.getElementById("yearDropdownMenu");
 const yearDropdownIcon = document.getElementById("yearDropdownIcon");
 const selectedYearSpan = document.getElementById("selectedYear");
-const yearOptions = document.querySelectorAll(".year-option");
 
 yearDropdownBtn.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -915,26 +952,6 @@ yearDropdownBtn.addEventListener("click", (e) => {
   yearDropdownIcon.style.transform = yearDropdownMenu.classList.contains("hidden")
     ? "rotate(0deg)"
     : "rotate(180deg)";
-});
-
-yearOptions.forEach((option) => {
-  option.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const year = option.dataset.year;
-
-    selectedYearSpan.textContent = year;
-
-    yearOptions.forEach((opt) => {
-      opt.classList.remove("active", "bg-[#01af78]/10", "font-medium", "text-emerald-600", "dark:text-emerald-700");
-    });
-    option.classList.add("active", "bg-[#01af78]/10", "font-medium", "text-emerald-600", "dark:text-emerald-700");
-
-    yearDropdownMenu.classList.add("hidden");
-    yearDropdownIcon.style.transform = "rotate(0deg)";
-
-    // Fetch real data instead of static
-    fetchChartData(year);
-  });
 });
 
 document.addEventListener("click", (e) => {
