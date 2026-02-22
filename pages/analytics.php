@@ -75,7 +75,7 @@
             </div>
           </div>
           <div
-            class="animate-count-up text-4xl font-semibold text-[#4B4B4B] mb-2">
+            class="animate-count-up text-4xl font-semibold text-[#4B4B4B] mb-2 " data-stat="total">
             247
           </div>
           <div class="text-sm text-[#5a5a5a] font-medium">
@@ -100,7 +100,7 @@
             </div>
           </div>
           <div
-            class="animate-count-up text-4xl font-semibold text-[#4B4B4B] mb-2">
+            class="animate-count-up text-4xl font-semibold text-[#4B4B4B] mb-2" data-stat="response">
             2.4m
           </div>
           <div class="text-sm text-[#5a5a5a] font-medium">
@@ -125,7 +125,7 @@
             </div>
           </div>
           <div
-            class="animate-count-up text-4xl font-semibold text-[#4B4B4B] mb-2">
+            class="animate-count-up text-4xl font-semibold text-[#4B4B4B] mb-2" data-stat="resolution">
             98.2%
           </div>
           <div class="text-sm text-[#5a5a5a] font-medium">
