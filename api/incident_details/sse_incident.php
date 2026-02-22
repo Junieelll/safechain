@@ -1,5 +1,5 @@
 <?php
-require_once '../../../config/conn.php';
+require_once '../../config/conn.php';
 
 header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
