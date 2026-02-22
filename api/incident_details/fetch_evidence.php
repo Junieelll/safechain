@@ -9,15 +9,34 @@ try {
     }
 
     $incident_id = mysqli_real_escape_string($conn, $_GET['incident_id']);
+    $method = $_SERVER['REQUEST_METHOD'];
 
-    $query = "
-        SELECT * FROM incident_evidence
-        WHERE incident_id = '$incident_id'
-        ORDER BY uploaded_at DESC
-    ";
+    // ← Add this block
+    if ($method === 'DELETE') {
+        if (!isset($_GET['id'])) throw new Exception('Evidence ID is required');
 
-    $result = mysqli_query($conn, $query);
+        $id = (int) $_GET['id'];
 
+        // Get file path first
+        $row = mysqli_fetch_assoc(mysqli_query($conn, "SELECT file_path FROM incident_evidence WHERE id = $id AND incident_id = '$incident_id'"));
+
+        if (!$row) throw new Exception('Evidence not found');
+
+        // Delete physical file
+        $full_path = __DIR__ . '/../../' . $row['file_path'];
+        if (file_exists($full_path)) unlink($full_path);
+
+        // Delete from DB
+        $deleted = mysqli_query($conn, "DELETE FROM incident_evidence WHERE id = $id AND incident_id = '$incident_id'");
+
+        if (!$deleted) throw new Exception(mysqli_error($conn));
+
+        echo json_encode(['success' => true, 'message' => 'Evidence deleted']);
+        exit;
+    }
+
+    // GET — existing code unchanged
+    $result = mysqli_query($conn, "SELECT * FROM incident_evidence WHERE incident_id = '$incident_id' ORDER BY uploaded_at DESC");
     if (!$result) throw new Exception(mysqli_error($conn));
 
     $evidence = [];
@@ -35,6 +54,7 @@ try {
     }
 
     echo json_encode(['success' => true, 'data' => $evidence]);
+
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
