@@ -112,19 +112,21 @@ function appendNoteItems(newNotes) {
 function appendEvidenceItems(newEvidence) {
   const grid = document.getElementById("evidenceGrid");
 
-  // Remove empty state if present
+  // Filter out already-rendered items ← key fix
+  const toAdd = newEvidence.filter((ev) => !renderedEvidenceIds.has(ev.id));
+  if (toAdd.length === 0) return; // nothing new, skip
+
   const empty = grid.querySelector(".col-span-3");
   if (empty) empty.remove();
 
-  // Remove the "Add" tile, re-add after new items
   const addTile = grid.lastElementChild;
   if (addTile) grid.removeChild(addTile);
 
-  newEvidence.forEach((ev) => {
+  toAdd.forEach((ev) => {
     grid.insertAdjacentHTML("beforeend", buildEvidenceTile(ev));
+    renderedEvidenceIds.add(ev.id); // ← track it
   });
 
-  // Re-append Add tile
   grid.insertAdjacentHTML("beforeend", `
     <div onclick="uploadEvidence()"
          class="aspect-square bg-transparent border-2 border-dashed border-gray-300 dark:border-neutral-600 
@@ -206,11 +208,15 @@ async function fetchEvidence() {
   }
 }
 
+// Track rendered evidence IDs
+const renderedEvidenceIds = new Set();
+
 function renderEvidenceGrid(evidenceList) {
   const grid = document.getElementById("evidenceGrid");
   if (!grid) return;
 
   grid.innerHTML = "";
+  renderedEvidenceIds.clear(); // ← reset on full re-render
 
   if (evidenceList.length === 0) {
     grid.innerHTML = `
@@ -222,13 +228,11 @@ function renderEvidenceGrid(evidenceList) {
   } else {
     evidenceList.forEach((ev) => {
       grid.insertAdjacentHTML("beforeend", buildEvidenceTile(ev));
+      renderedEvidenceIds.add(ev.id); // ← track it
     });
   }
 
-  // Add tile always appears last
-  grid.insertAdjacentHTML(
-    "beforeend",
-    `
+  grid.insertAdjacentHTML("beforeend", `
     <div onclick="uploadEvidence()"
          class="aspect-square bg-transparent border-2 border-dashed border-gray-300 dark:border-neutral-600 
                 rounded-lg flex flex-col items-center justify-center cursor-pointer 
@@ -236,8 +240,7 @@ function renderEvidenceGrid(evidenceList) {
       <i class="uil uil-plus text-4xl text-gray-400"></i>
       <span class="text-xs text-gray-400 mt-1">Add</span>
     </div>
-  `,
-  );
+  `);
 }
 
 function buildEvidenceTile(ev) {
