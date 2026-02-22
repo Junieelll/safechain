@@ -87,7 +87,7 @@ function createUserRow(user) {
             </td>
             <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-[linear-gradient(141.34deg,#27C291_4.44%,#20A577_95.56%)] flex items-center justify-center text-white font-semibold text-sm">
+                    <div class="w-10 h-10 rounded-full shrink-0 bg-[linear-gradient(141.34deg,#27C291_4.44%,#20A577_95.56%)] flex items-center justify-center text-white font-semibold text-sm">
                         ${initials}
                     </div>
                     <span class="text-sm font-medium text-gray-900 dark:text-gray-100">${
