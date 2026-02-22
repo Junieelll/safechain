@@ -320,11 +320,6 @@ function renderTable() {
         )}</td>
         <td class="px-6 py-4">
           <div class="flex items-center gap-2">
-            <button onclick="viewResident('${
-              resident.id
-            }')" class="text-gray-500 hover:text-[#01AF78] hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-neutral-700 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
-              <i class="uil uil-eye text-xl"></i>
-            </button>
             <button onclick="editResident('${
               resident.id
             }')" class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] dark:hover:bg-blue-900/20 dark:hover:text-blue-500 dark:bg-neutral-700 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
@@ -774,12 +769,6 @@ async function saveResidentChanges() {
   const address = document.getElementById("editAddress").value.trim();
   const contact = document.getElementById("editContact").value.trim();
   const deviceId = document.getElementById("editDeviceId").value.trim();
-
-  // Validate
-  if (!name || !address || !contact || !deviceId) {
-    showToast("error", "Please fill in all fields");
-    return;
-  }
 
   try {
     const response = await fetch('api/residents/update_resident.php', {

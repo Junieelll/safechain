@@ -12,19 +12,22 @@ try {
     }
 
     $residentId = mysqli_real_escape_string($conn, $data['id']);
-    $name       = mysqli_real_escape_string($conn, $data['name']);
-    $address    = mysqli_real_escape_string($conn, $data['address']);
-    $contact    = mysqli_real_escape_string($conn, $data['contact']);
-    $deviceId   = mysqli_real_escape_string($conn, $data['deviceId']);
+    $fields = [];
 
-    $query = "
-        UPDATE residents SET
-            name = '$name',
-            address = '$address',
-            contact = '$contact',
-            device_id = '$deviceId'
-        WHERE resident_id = '$residentId'
-    ";
+    if (!empty($data['name']))
+        $fields[] = "name = '" . mysqli_real_escape_string($conn, $data['name']) . "'";
+    if (!empty($data['address']))
+        $fields[] = "address = '" . mysqli_real_escape_string($conn, $data['address']) . "'";
+    if (!empty($data['contact']))
+        $fields[] = "contact = '" . mysqli_real_escape_string($conn, $data['contact']) . "'";
+    if (!empty($data['deviceId']))
+        $fields[] = "device_id = '" . mysqli_real_escape_string($conn, $data['deviceId']) . "'";
+
+    if (empty($fields)) {
+        throw new Exception('No fields to update');
+    }
+
+    $query = "UPDATE residents SET " . implode(', ', $fields) . " WHERE resident_id = '$residentId'";
 
     if (!mysqli_query($conn, $query)) {
         throw new Exception(mysqli_error($conn));
