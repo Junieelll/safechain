@@ -1319,6 +1319,57 @@ async function uploadSelectedFiles() {
   selectedFiles = [];
 }
 
+function handleFileSelection(event) {
+  const files = Array.from(event.target.files);
+  files.forEach((file) => {
+    if (!selectedFiles.find((f) => f.name === file.name && f.size === file.size)) {
+      selectedFiles.push(file);
+    }
+  });
+  updateFilesList();
+  event.target.value = "";
+}
+
+function updateFilesList() {
+  const filesList = document.getElementById("selectedFilesList");
+  if (!filesList) return;
+
+  if (selectedFiles.length === 0) {
+    filesList.innerHTML = '<p class="text-center text-sm text-gray-500 dark:text-gray-400 py-4">No files selected</p>';
+    return;
+  }
+
+  filesList.innerHTML = selectedFiles.map((file, index) => {
+    const size = file.size > 1024 * 1024
+      ? (file.size / (1024 * 1024)).toFixed(2) + " MB"
+      : (file.size / 1024).toFixed(1) + " KB";
+
+    let iconClass = "uil-image", iconColor = "text-purple-600";
+    if (file.type.startsWith("video/"))       { iconClass = "uil-video";         iconColor = "text-blue-600"; }
+    else if (file.type === "application/pdf") { iconClass = "uil-file-alt";      iconColor = "text-red-600"; }
+    else if (file.type.includes("word"))      { iconClass = "uil-file-edit-alt"; iconColor = "text-blue-700"; }
+
+    return `
+      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-neutral-700 rounded-lg group">
+        <i class="uil ${iconClass} text-2xl ${iconColor} flex-shrink-0"></i>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">${file.name}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">${size}</p>
+        </div>
+        <button onclick="removeFile(${index})"
+                class="flex-shrink-0 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+          <i class="uil uil-times text-lg text-red-600 dark:text-red-400"></i>
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  updateFilesList();
+}
+
 // Generate Report
 function generateReport() {
   modalManager.create({
