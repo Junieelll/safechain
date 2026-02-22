@@ -258,13 +258,11 @@ $currentUserRole = AuthChecker::getUserRole();
                 <span id="evidenceCount"
                   class="text-xs font-medium bg-gray-100 dark:bg-neutral-700 text-gray-500 dark:text-neutral-400 px-2 py-0.5 rounded-full">0</span>
               </h2>
-              <label
+              <button onclick="uploadEvidence()"
                 class="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-200 rounded-lg text-gray-500 text-sm font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer">
                 <i class="uil uil-upload text-base"></i>
                 Upload
-                <input type="file" id="evidenceFileInput" class="hidden"
-                  accept=".jpg,.jpeg,.png,.mp4,.mov,.mp3,.m4a,.pdf,.doc,.docx" multiple />
-              </label>
+              </button>
             </div>
 
             <!-- Upload progress bar -->
