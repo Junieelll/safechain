@@ -20,7 +20,7 @@ try {
     $file_type   = $file['type'];
     $ext         = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
-    $allowed = ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'mp3', 'm4a', 'pdf', 'doc', 'docx'];
+    $allowed = ['jpg', 'jpeg', 'png', 'jfif', 'gif', 'mp4', 'mov', 'mp3', 'm4a', 'pdf', 'doc', 'docx'];
     if (!in_array($ext, $allowed, true)) throw new Exception('File type not allowed');
 
     $upload_dir = __DIR__ . "/../../uploads/evidence/{$incident_id}/";
