@@ -49,7 +49,7 @@ async function getCurrentAdminName() {
 async function fetchIncidentDetails() {
   try {
     const response = await fetch(
-      `api/incident_details/fetch_incident_details.php?id=${incidentId}`
+      `api/incident_details/fetch_incident_details.php?id=${incidentId}`,
     );
     const result = await response.json();
 
@@ -58,6 +58,7 @@ async function fetchIncidentDetails() {
       populateIncidentDetails(result.data);
       fetchIncidentNotes();
       fetchIncidentTimeline();
+      fetchEvidence();
       //updateActionButtons(result.data.status, result.data.dispatched_to);
     } else {
       showToast("error", "Failed to load incident: " + result.error);
@@ -71,11 +72,207 @@ async function fetchIncidentDetails() {
   }
 }
 
+// ─── Evidence ────────────────────────────────────────────────────────────────
+
+async function fetchEvidence() {
+  try {
+    const response = await fetch(
+      `api/incident_details/fetch_evidence.php?incident_id=${incidentId}`,
+    );
+    const result = await response.json();
+    if (result.success) renderEvidenceGrid(result.data);
+  } catch (err) {
+    console.error("Evidence fetch error:", err);
+  }
+}
+
+function renderEvidenceGrid(evidenceList) {
+  const grid = document.getElementById("evidenceGrid");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+
+  if (evidenceList.length === 0) {
+    grid.innerHTML = `
+      <div class="col-span-3 py-8 flex flex-col items-center justify-center text-gray-400 dark:text-neutral-500">
+        <i class="uil uil-image-slash text-4xl mb-2"></i>
+        <p class="text-xs">No evidence uploaded yet</p>
+      </div>
+    `;
+  } else {
+    evidenceList.forEach((ev) => {
+      grid.insertAdjacentHTML("beforeend", buildEvidenceTile(ev));
+    });
+  }
+
+  // Add tile always appears last
+  grid.insertAdjacentHTML(
+    "beforeend",
+    `
+    <div onclick="uploadEvidence()"
+         class="aspect-square bg-transparent border-2 border-dashed border-gray-300 dark:border-neutral-600 
+                rounded-lg flex flex-col items-center justify-center cursor-pointer 
+                hover:border-gray-400 dark:hover:border-neutral-400 transition-all">
+      <i class="uil uil-plus text-4xl text-gray-400"></i>
+      <span class="text-xs text-gray-400 mt-1">Add</span>
+    </div>
+  `,
+  );
+}
+
+function buildEvidenceTile(ev) {
+  const isImage = ev.file_type.startsWith("image/");
+  const isVideo = ev.file_type.startsWith("video/");
+  const isAudio = ev.file_type.startsWith("audio/");
+
+  let preview = `<i class="uil uil-file text-4xl text-gray-400"></i>`;
+  if (isImage) {
+    preview = `<img src="${ev.file_url}" alt="${ev.file_name}" class="w-full h-full object-cover" />`;
+  } else if (isVideo) {
+    preview = `<i class="uil uil-play-circle text-4xl text-gray-400"></i>`;
+  } else if (isAudio) {
+    preview = `<i class="uil uil-music text-4xl text-gray-400"></i>`;
+  }
+
+  // Encode ev safely for inline onclick
+  const evEncoded = encodeURIComponent(JSON.stringify(ev));
+
+  return `
+    <div class="relative group aspect-square bg-gray-100 dark:bg-neutral-700 rounded-lg 
+                flex items-center justify-center cursor-pointer 
+                hover:scale-105 hover:shadow-md transition-all overflow-hidden"
+         onclick="openEvidenceModal(decodeURIComponent('${evEncoded}'))">
+      ${preview}
+      <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 
+                  transition-opacity flex flex-col items-center justify-center gap-1 p-2">
+        <p class="text-white text-xs font-medium text-center line-clamp-2">${ev.file_name}</p>
+        <p class="text-white/60 text-[10px]">${ev.uploaded_by}</p>
+      </div>
+      <button onclick="event.stopPropagation(); confirmDeleteEvidence(${ev.id}, '${ev.file_name.replace(/'/g, "\\'")}')"
+              class="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 rounded-full 
+                     flex items-center justify-center opacity-0 group-hover:opacity-100 
+                     transition-opacity hover:bg-red-600 z-10">
+        <i class="uil uil-times text-white text-xs"></i>
+      </button>
+    </div>
+  `;
+}
+
+function openEvidenceModal(evRaw) {
+  const ev = typeof evRaw === "string" ? JSON.parse(evRaw) : evRaw;
+  const isImage = ev.file_type.startsWith("image/");
+  const isVideo = ev.file_type.startsWith("video/");
+  const isAudio = ev.file_type.startsWith("audio/");
+
+  let previewBody = "";
+  if (isImage) {
+    previewBody = `<img src="${ev.file_url}" alt="${ev.file_name}" class="max-h-96 max-w-full rounded-lg object-contain mx-auto" />`;
+  } else if (isVideo) {
+    previewBody = `<video src="${ev.file_url}" controls class="max-h-96 max-w-full rounded-lg mx-auto"></video>`;
+  } else if (isAudio) {
+    previewBody = `
+      <div class="flex flex-col items-center gap-4 py-6">
+        <i class="uil uil-music text-6xl text-gray-400"></i>
+        <audio src="${ev.file_url}" controls class="w-full"></audio>
+      </div>`;
+  } else {
+    previewBody = `
+      <div class="flex flex-col items-center gap-3 py-6">
+        <i class="uil uil-file-alt text-6xl text-gray-400"></i>
+        <p class="text-sm text-gray-600 dark:text-gray-400">${ev.file_name}</p>
+      </div>`;
+  }
+
+  modalManager.create({
+    id: "evidenceViewModal",
+    icon: "uil-image",
+    iconColor: "text-purple-600 dark:text-purple-400",
+    iconBg: "bg-purple-100 dark:bg-purple-900/20",
+    title: "Evidence Viewer",
+    subtitle: ev.file_name,
+    body: `
+      <div class="space-y-3">
+        ${previewBody}
+        <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-gray-100 dark:border-neutral-600">
+          <div>
+            <span class="text-gray-500 dark:text-neutral-400">Uploaded by</span>
+            <p class="font-semibold text-gray-800 dark:text-neutral-200">${ev.uploaded_by}</p>
+          </div>
+          <div>
+            <span class="text-gray-500 dark:text-neutral-400">Uploaded at</span>
+            <p class="font-semibold text-gray-800 dark:text-neutral-200">${ev.uploaded_at}</p>
+          </div>
+        </div>
+      </div>
+    `,
+    primaryButton: {
+      text: "Download",
+      icon: "uil-download-alt",
+      class: "bg-purple-500 hover:bg-purple-600",
+    },
+    secondaryButton: { text: "Close" },
+    onPrimary: () => {
+      const a = document.createElement("a");
+      a.href = ev.file_url;
+      a.download = ev.file_name;
+      a.click();
+      modalManager.close("evidenceViewModal");
+    },
+  });
+
+  modalManager.show("evidenceViewModal");
+}
+
+function confirmDeleteEvidence(evidenceId, fileName) {
+  modalManager.create({
+    id: "deleteEvidenceModal",
+    icon: "uil-trash-alt",
+    iconColor: "text-red-600 dark:text-red-400",
+    iconBg: "bg-red-100 dark:bg-red-900/60",
+    title: "Delete Evidence",
+    subtitle: "This action cannot be undone",
+    body: `<p class="text-xs text-center px-2">Are you sure you want to delete <strong>${fileName}</strong>? The file will be permanently removed.</p>`,
+    showWarning: true,
+    warningText: "This will permanently delete the file from the server.",
+    primaryButton: {
+      text: "Yes, Delete",
+      icon: "uil-trash-alt",
+      class: "bg-red-500 hover:bg-red-600",
+    },
+    secondaryButton: { text: "Cancel" },
+    onPrimary: async () => {
+      await deleteEvidence(evidenceId);
+      modalManager.close("deleteEvidenceModal");
+    },
+  });
+
+  modalManager.show("deleteEvidenceModal");
+}
+
+async function deleteEvidence(evidenceId) {
+  try {
+    const response = await fetch(
+      `api/incident_details/fetch_evidence.php?incident_id=${incidentId}&id=${evidenceId}`,
+      { method: "DELETE" },
+    );
+    const result = await response.json();
+
+    if (result.success) {
+      showToast("success", "Evidence deleted");
+      fetchEvidence();
+    } else {
+      showToast("error", result.error || "Failed to delete evidence");
+    }
+  } catch (err) {
+    showToast("error", "Failed to delete evidence");
+  }
+}
+
 // Fetch incident notes
 async function fetchIncidentNotes() {
   try {
     const response = await fetch(
-      `api/incident_details/fetch_incident_notes.php?incident_id=${incidentId}`
+      `api/incident_details/fetch_incident_notes.php?incident_id=${incidentId}`,
     );
     const result = await response.json();
 
@@ -107,7 +304,7 @@ function renderNotes(notes) {
       </div>
       <div class="text-xs text-gray-600 dark:text-neutral-400 leading-relaxed">${note.note}</div>
     </div>
-  `
+  `,
     )
     .join("");
 }
@@ -116,7 +313,7 @@ function renderNotes(notes) {
 async function fetchIncidentTimeline() {
   try {
     const response = await fetch(
-      `api/incident_details/fetch_incident_timeline.php?incident_id=${incidentId}`
+      `api/incident_details/fetch_incident_timeline.php?incident_id=${incidentId}`,
     );
     const result = await response.json();
 
@@ -167,60 +364,6 @@ function renderTimeline(timelineItems) {
     .join("");
 }
 
-// Update action buttons based on status
-// function updateActionButtons(status, dispatchedTo) {
-//   const actionsCard = document.querySelector(
-//     ".bg-white.dark\\:bg-neutral-800.rounded-3xl.p-7 .space-y-2\\.5"
-//   );
-
-//   let buttons = "";
-
-//   // Show dispatch button only if not yet dispatched
-//   if (!dispatchedTo) {
-//     buttons += `
-//       <button
-//         onclick="showDispatchModal()"
-//         class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-purple-500 dark:bg-purple-600 dark:hover:bg-purple-700 text-white rounded-xl text-xs font-medium hover:bg-purple-600 hover:-translate-y-0.5 hover:shadow-lg transition-all">
-//         <i class="uil uil-telegram-alt text-lg"></i>
-//         Dispatch Emergency Responders
-//       </button>
-//     `;
-//   }
-
-//   // Always show update status
-//   buttons += `
-//     <button
-//       onclick="updateStatus()"
-//       class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-xs font-medium hover:bg-blue-600 hover:-translate-y-0.5 hover:shadow-lg transition-all">
-//       <i class="uil uil-pen text-lg"></i>
-//       Update Status
-//     </button>
-//   `;
-
-//   // Show mark as resolved only if not resolved
-//   if (status !== "resolved") {
-//     buttons += `
-//       <button
-//         onclick="markAsResolved()"
-//         class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white rounded-xl text-xs font-medium hover:bg-emerald-600 hover:-translate-y-0.5 hover:shadow-lg transition-all">
-//         <i class="uil uil-check-circle text-lg"></i>
-//         Mark as Resolved
-//       </button>
-//     `;
-//   }
-
-//   buttons += `
-//     <button
-//       onclick="generateReport()"
-//       class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-white dark:bg-neutral-600 dark:hover:bg-neutral-700 dark:border-neutral-700 dark:text-neutral-300 text-gray-500 border-2 border-gray-200 rounded-xl text-xs font-medium hover:bg-gray-50 hover:-translate-y-0.5 hover:border-gray-300 transition-all">
-//       <i class="uil uil-file-download text-lg"></i>
-//       Generate Report
-//     </button>
-//   `;
-
-//   actionsCard.innerHTML = buttons;
-// }
-
 // Function to generate dynamic incident description
 function generateIncidentDescription(incident) {
   const type = incident.type.toLowerCase();
@@ -235,10 +378,10 @@ function generateIncidentDescription(incident) {
     hour >= 6 && hour < 12
       ? "morning"
       : hour >= 12 && hour < 18
-      ? "afternoon"
-      : hour >= 18 && hour < 21
-      ? "evening"
-      : "night";
+        ? "afternoon"
+        : hour >= 18 && hour < 21
+          ? "evening"
+          : "night";
 
   // Day context
   const reportDate = new Date(date);
@@ -304,7 +447,7 @@ function generateIncidentDescription(incident) {
 async function getAddressFromCoordinates(lat, lng) {
   try {
     const response = await fetch(
-      `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=c07f8cdbfe9b47559bebb248afe454f0`
+      `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=c07f8cdbfe9b47559bebb248afe454f0`,
     );
     const data = await response.json();
 
@@ -315,7 +458,9 @@ async function getAddressFromCoordinates(lat, lng) {
       props.street,
       props.suburb || props.district,
       props.city,
-    ].filter(Boolean).join(", ");
+    ]
+      .filter(Boolean)
+      .join(", ");
 
     console.log("Accurate address:", address);
     return address;
@@ -324,8 +469,6 @@ async function getAddressFromCoordinates(lat, lng) {
     return "Address not found";
   }
 }
-
-
 
 // Populate the page with incident data
 async function populateIncidentDetails(incident) {
@@ -338,18 +481,17 @@ async function populateIncidentDetails(incident) {
     ${getIncidentTypeLabel(incident.type)}
   `;
 
-  document.querySelector(
-    ".inline-flex.items-center.gap-2.px-4"
-  ).className = `inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm mb-5 ${getIncidentTypeColor(
-    incident.type
-  )}`;
+  document.querySelector(".inline-flex.items-center.gap-2.px-4").className =
+    `inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm mb-5 ${getIncidentTypeColor(
+      incident.type,
+    )}`;
 
   // Update status badge
   updateStatusBadge(incident.status);
 
   // Update incident details
   document.querySelectorAll(
-    ".grid.grid-cols-1.md\\:grid-cols-2.gap-5"
+    ".grid.grid-cols-1.md\\:grid-cols-2.gap-5",
   )[0].innerHTML = `
     <div class="flex flex-col gap-1.5">
       <span class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">Incident ID</span>
@@ -366,36 +508,34 @@ async function populateIncidentDetails(incident) {
   `;
 
   const descriptionBox = document.querySelector(
-    ".bg-gray-50.dark\\:bg-neutral-700.border-l-4.border-blue-500"
+    ".bg-gray-50.dark\\:bg-neutral-700.border-l-4.border-blue-500",
   );
   if (descriptionBox) {
     const generatedDescription = generateIncidentDescription(incident);
     descriptionBox.textContent = generatedDescription;
   }
 
-   const geocodedAddress =
-      incident.lat && incident.lng
-        ? await getAddressFromCoordinates(incident.lat, incident.lng)
-        : "N/A";
+  const geocodedAddress =
+    incident.lat && incident.lng
+      ? await getAddressFromCoordinates(incident.lat, incident.lng)
+      : "N/A";
 
   // Update location details (keep static for now, but you can make this dynamic too)
   const locationGrid = document.querySelectorAll(
-    ".grid.grid-cols-1.md\\:grid-cols-2.gap-5"
+    ".grid.grid-cols-1.md\\:grid-cols-2.gap-5",
   )[1];
   locationGrid.querySelector("span.text-sm.font-semibold").textContent =
     geocodedAddress;
 
-  document.getElementById(
-    "coordinates"
-  ).textContent = `${incident.lat}, ${incident.lng}`;
+  document.getElementById("coordinates").textContent =
+    `${incident.lat}, ${incident.lng}`;
 
   // Update reporter details
   if (incident.reporter_name) {
     // Fetch address from coordinates
-   
 
     document.querySelectorAll(
-      ".grid.grid-cols-1.md\\:grid-cols-2.gap-5"
+      ".grid.grid-cols-1.md\\:grid-cols-2.gap-5",
     )[2].innerHTML = `
       <div class="flex flex-col gap-1.5">
         <span class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">Name</span>
@@ -461,7 +601,7 @@ function updateIncidentMap(incident) {
   incidentMarker = L.marker(incidentLocation, { icon: markerIcon })
     .addTo(map)
     .bindPopup(
-      `<b>${getIncidentTypeLabel(incident.type)}</b><br>${incident.location}`
+      `<b>${getIncidentTypeLabel(incident.type)}</b><br>${incident.location}`,
     );
 
   // Remove existing circles
@@ -561,21 +701,22 @@ const map = L.map("incidentMap").setView(incidentLocation, 16);
 const isOnline = navigator.onLine;
 
 // Determine tile URLs based on online status
-const lightTileUrl = isOnline 
+const lightTileUrl = isOnline
   ? "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7"
   : "assets/tiles/street-v2/{z}/{x}/{y}.png";
 
-const darkTileUrl = isOnline 
+const darkTileUrl = isOnline
   ? "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7"
   : "assets/tiles/street-v2-dark/{z}/{x}/{y}.png";
 
 // Create tile layers with error fallback
 const lightLayer = L.tileLayer(lightTileUrl, {
-  attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-}).on('tileerror', function(error, tile) {
+  attribution:
+    '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+}).on("tileerror", function (error, tile) {
   const url = tile.tile.src;
   const matches = url.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
-  
+
   if (matches) {
     const [, z, x, y] = matches;
     tile.tile.src = `assets/tiles/street-v2/${z}/${x}/${y}.png`;
@@ -583,11 +724,12 @@ const lightLayer = L.tileLayer(lightTileUrl, {
 });
 
 const darkLayer = L.tileLayer(darkTileUrl, {
-  attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
-}).on('tileerror', function(error, tile) {
+  attribution:
+    '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+}).on("tileerror", function (error, tile) {
   const url = tile.tile.src;
   const matches = url.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
-  
+
   if (matches) {
     const [, z, x, y] = matches;
     tile.tile.src = `assets/tiles/street-v2-dark/${z}/${x}/${y}.png`;
@@ -595,12 +737,16 @@ const darkLayer = L.tileLayer(darkTileUrl, {
 });
 
 // Listen for online/offline changes and update both layers
-window.addEventListener('online', () => {
-  lightLayer.setUrl("https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7");
-  darkLayer.setUrl("https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7");
+window.addEventListener("online", () => {
+  lightLayer.setUrl(
+    "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  );
+  darkLayer.setUrl(
+    "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  );
 });
 
-window.addEventListener('offline', () => {
+window.addEventListener("offline", () => {
   lightLayer.setUrl("assets/tiles/street-v2/{z}/{x}/{y}.png");
   darkLayer.setUrl("assets/tiles/street-v2-dark/{z}/{x}/{y}.png");
 });
@@ -668,7 +814,7 @@ const startIcon = L.divIcon({
 // Initialize marker variables
 let incidentMarker = null;
 const startMarker = L.marker(barangayHall, { icon: startIcon }).bindPopup(
-  "<b>Barangay Hall</b><br>Starting Point"
+  "<b>Barangay Hall</b><br>Starting Point",
 );
 
 // Updated Toggle Directions function
@@ -681,7 +827,7 @@ function toggleDirections() {
     if (!incidentMarker) {
       showToast(
         "error",
-        "Cannot calculate directions: No incident location available"
+        "Cannot calculate directions: No incident location available",
       );
       return;
     }
@@ -728,7 +874,7 @@ function toggleDirections() {
 
       // Remove duplicates and filter out empty strings
       const uniqueRoutes = [...new Set(routeNames)].filter(
-        (name) => name && name.trim() !== ""
+        (name) => name && name.trim() !== "",
       );
 
       // Create route display text
@@ -825,18 +971,21 @@ async function updateStatus() {
       }
 
       try {
-        const response = await fetch("api/incident_details/update_incident_status.php", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const response = await fetch(
+          "api/incident_details/update_incident_status.php",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              id: incidentId,
+              status: status.value,
+              admin_name: `Admin ${currentAdminName}`,
+              notes: notes.value.trim(),
+            }),
           },
-          body: JSON.stringify({
-            id: incidentId,
-            status: status.value,
-            admin_name: `Admin ${currentAdminName}`,
-            notes: notes.value.trim(),
-          }),
-        });
+        );
 
         const result = await response.json();
 
@@ -889,17 +1038,20 @@ async function markAsResolved() {
     },
     onPrimary: async () => {
       try {
-        const response = await fetch("api/incident_details/update_incident_status.php", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const response = await fetch(
+          "api/incident_details/update_incident_status.php",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              id: incidentId,
+              status: "resolved",
+              admin_name: `Admin ${currentAdminName}`,
+            }),
           },
-          body: JSON.stringify({
-            id: incidentId,
-            status: "resolved",
-            admin_name: `Admin ${currentAdminName}`,
-          }),
-        });
+        );
 
         const result = await response.json();
 
@@ -909,9 +1061,6 @@ async function markAsResolved() {
 
           // Refresh timeline to show new entry
           fetchIncidentTimeline();
-
-          // Update action buttons
-          //updateActionButtons("resolved", currentIncident?.dispatched_to);
         } else {
           showToast("error", "Failed to update status: " + result.error);
         }
@@ -939,20 +1088,30 @@ function uploadEvidence() {
     subtitle: "Add photos, videos, or documents",
     body: `
       <div class="space-y-4">
-        <div class="border-2 border-dashed border-gray-300 dark:border-neutral-600 rounded-lg p-6 text-center hover:border-purple-400 dark:hover:border-purple-500 transition-colors cursor-pointer" onclick="triggerFileInput()">
+        <div class="border-2 border-dashed border-gray-300 dark:border-neutral-600 rounded-lg p-6 text-center 
+                    hover:border-purple-400 dark:hover:border-purple-500 transition-colors cursor-pointer" 
+             onclick="document.getElementById('evidenceFileInput').click()">
           <i class="uil uil-cloud-upload text-5xl text-gray-400 mb-3"></i>
           <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Click to browse files</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Images, Videos, PDF, DOC, DOCX</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Images, Videos, PDF, DOC, DOCX (max 50MB)</p>
         </div>
-        
-        <input type="file" id="evidenceFileInput" accept="image/*,video/*,.pdf,.doc,.docx" multiple class="hidden" onchange="handleFileSelection(event)">
-        
-        <div id="selectedFilesList" class="space-y-2 max-h-64 overflow-y-auto">
-          <!-- Selected files will appear here -->
-        </div>
-        
-        <div id="fileCountDisplay" class="text-xs text-gray-500 dark:text-gray-400 text-center hidden">
-          <span id="fileCount">0</span> file(s) selected
+
+        <input type="file" id="evidenceFileInput" 
+               accept="image/*,video/*,.pdf,.doc,.docx" 
+               multiple class="hidden" 
+               onchange="handleFileSelection(event)">
+
+        <div id="selectedFilesList" class="space-y-2 max-h-52 overflow-y-auto"></div>
+
+        <!-- Upload progress (shown during upload) -->
+        <div id="uploadProgress" class="hidden">
+          <div class="flex justify-between text-xs text-gray-500 dark:text-neutral-400 mb-1">
+            <span id="uploadFileName">Uploading...</span>
+            <span id="uploadPercent">0%</span>
+          </div>
+          <div class="w-full bg-gray-200 dark:bg-neutral-600 rounded-full h-1.5">
+            <div id="uploadProgressBar" class="bg-purple-500 h-1.5 rounded-full transition-all duration-200" style="width:0%"></div>
+          </div>
         </div>
       </div>
     `,
@@ -961,142 +1120,83 @@ function uploadEvidence() {
       icon: "uil-check",
       class: "bg-purple-500 hover:bg-purple-600",
     },
-    secondaryButton: {
-      text: "Cancel",
-    },
-    onPrimary: () => {
+    secondaryButton: { text: "Cancel" },
+    onPrimary: async () => {
       if (selectedFiles.length === 0) {
         showToast("error", "Please select at least one file");
         return;
       }
-
-      showToast("info", `Uploading ${selectedFiles.length} file(s)...`);
-
-      setTimeout(() => {
-        addTimelineItem(
-          "Evidence Uploaded",
-          `Admin uploaded ${selectedFiles.length} file(s) as evidence`
-        );
-        showToast(
-          "success",
-          `${selectedFiles.length} file(s) uploaded successfully`
-        );
-
-        // Add placeholder images to grid
-        const grid = document.querySelector(".grid.grid-cols-3");
-        if (grid && grid.children.length < 6) {
-          selectedFiles
-            .slice(0, 3 - (grid.children.length - 1))
-            .forEach((file, index) => {
-              const newImg = document.createElement("div");
-              newImg.className =
-                "aspect-square bg-gray-100 dark:bg-neutral-700 rounded-lg flex items-center justify-center cursor-pointer hover:scale-105 hover:shadow-md transition-all overflow-hidden";
-
-              // Show different icons based on file type
-              let iconClass = "uil-image";
-              if (file.type.startsWith("video/")) {
-                iconClass = "uil-video";
-              } else if (file.type === "application/pdf") {
-                iconClass = "uil-file-alt";
-              } else if (
-                file.type.includes("document") ||
-                file.type.includes("word")
-              ) {
-                iconClass = "uil-file-edit-alt";
-              }
-
-              newImg.innerHTML = `<i class="uil ${iconClass} text-4xl text-gray-400"></i>`;
-              newImg.onclick = () => openImageModal(file.name);
-              grid.insertBefore(newImg, grid.lastElementChild);
-            });
-        }
-
-        modalManager.close("uploadEvidenceModal");
-        selectedFiles = [];
-      }, 1500);
+      await uploadSelectedFiles();
+      modalManager.close("uploadEvidenceModal");
     },
   });
 
   modalManager.show("uploadEvidenceModal");
 }
 
-function triggerFileInput() {
-  document.getElementById("evidenceFileInput").click();
-}
+async function uploadSelectedFiles() {
+  const progress = document.getElementById("uploadProgress");
+  const bar = document.getElementById("uploadProgressBar");
+  const percent = document.getElementById("uploadPercent");
+  const fileName = document.getElementById("uploadFileName");
 
-function handleFileSelection(event) {
-  const files = Array.from(event.target.files);
+  let successCount = 0;
 
-  files.forEach((file) => {
-    // Check if file is already selected
-    if (
-      !selectedFiles.find((f) => f.name === file.name && f.size === file.size)
-    ) {
-      selectedFiles.push(file);
+  for (const file of selectedFiles) {
+    progress.classList.remove("hidden");
+    fileName.textContent = file.name;
+    bar.style.width = "0%";
+    percent.textContent = "0%";
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open(
+          "POST",
+          `api/incident_details/upload_evidence.php?incident_id=${incidentId}`,
+        );
+
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            bar.style.width = pct + "%";
+            percent.textContent = pct + "%";
+          }
+        };
+
+        xhr.onload = () => {
+          try {
+            const result = JSON.parse(xhr.responseText);
+            result.success
+              ? resolve(result.data)
+              : reject(new Error(result.error));
+          } catch {
+            reject(new Error("Invalid server response"));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Network error"));
+        xhr.send(formData);
+      });
+
+      successCount++;
+    } catch (err) {
+      showToast("error", `Failed to upload ${file.name}: ${err.message}`);
     }
-  });
-
-  updateFilesList();
-  event.target.value = ""; // Reset input to allow selecting same file again
-}
-
-function removeFile(index) {
-  selectedFiles.splice(index, 1);
-  updateFilesList();
-}
-
-function updateFilesList() {
-  const filesList = document.getElementById("selectedFilesList");
-  const fileCountDisplay = document.getElementById("fileCountDisplay");
-  const fileCount = document.getElementById("fileCount");
-
-  if (selectedFiles.length === 0) {
-    filesList.innerHTML =
-      '<p class="text-center text-sm text-gray-500 dark:text-gray-400 py-4">No files selected</p>';
-    fileCountDisplay.classList.add("hidden");
-    return;
   }
 
-  fileCountDisplay.classList.remove("hidden");
-  fileCount.textContent = selectedFiles.length;
+  progress.classList.add("hidden");
 
-  filesList.innerHTML = selectedFiles
-    .map((file, index) => {
-      const sizeKB = (file.size / 1024).toFixed(1);
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-      const displaySize =
-        file.size > 1024 * 1024 ? `${sizeMB} MB` : `${sizeKB} KB`;
+  if (successCount > 0) {
+    showToast("success", `${successCount} file(s) uploaded successfully`);
+    fetchEvidence(); // refresh the grid
+    fetchIncidentTimeline(); // log it in the timeline
+  }
 
-      // Determine icon based on file type
-      let iconClass = "uil-image";
-      let iconColor = "text-purple-600";
-      if (file.type.startsWith("video/")) {
-        iconClass = "uil-video";
-        iconColor = "text-blue-600";
-      } else if (file.type === "application/pdf") {
-        iconClass = "uil-file-alt";
-        iconColor = "text-red-600";
-      } else if (file.type.includes("document") || file.type.includes("word")) {
-        iconClass = "uil-file-edit-alt";
-        iconColor = "text-blue-700";
-      }
-
-      return `
-      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-neutral-700 rounded-lg group hover:bg-gray-100 dark:hover:bg-neutral-600 transition-colors">
-        <div class="flex-shrink-0">
-          <i class="uil ${iconClass} text-2xl ${iconColor}"></i>
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">${file.name}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">${displaySize}</p>
-        </div>
-        <button onclick="removeFile(${index})" class="flex-shrink-0 p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors group-hover:opacity-100 opacity-0">
-          <i class="uil uil-times text-lg text-red-600 dark:text-red-400"></i>
-        </button>
-      </div>
-    `;
-    })
-    .join("");
+  selectedFiles = [];
 }
 
 // Generate Report
@@ -1140,7 +1240,10 @@ function generateReport() {
       openBtn.addEventListener("click", () => {
         const url = `api/incident_details/generate_report.php?id=${encodeURIComponent(incidentId)}&admin_name=${encodeURIComponent(currentAdminName)}`;
         window.open(url, "_blank");
-        addTimelineItem("Report Generated", `Report opened: #EMG-${incidentId}`);
+        addTimelineItem(
+          "Report Generated",
+          `Report opened: #EMG-${incidentId}`,
+        );
         showToast("success", "Report opened in a new tab");
         modalManager.close("reportModal");
       });
@@ -1150,7 +1253,9 @@ function generateReport() {
       downloadBtn.addEventListener("click", async () => {
         try {
           showToast("info", "Preparing PDF...");
-          const resp = await fetch(`api/incident_details/generate_report.php?id=${encodeURIComponent(incidentId)}&download=1&admin_name=${encodeURIComponent(currentAdminName)}`);
+          const resp = await fetch(
+            `api/incident_details/generate_report.php?id=${encodeURIComponent(incidentId)}&download=1&admin_name=${encodeURIComponent(currentAdminName)}`,
+          );
           if (!resp.ok) throw new Error("Failed to generate PDF");
           const blob = await resp.blob();
           const url = URL.createObjectURL(blob);
@@ -1161,7 +1266,10 @@ function generateReport() {
           a.click();
           a.remove();
           URL.revokeObjectURL(url);
-          addTimelineItem("Report Generated", `Report downloaded: #EMG-${incidentId}`);
+          addTimelineItem(
+            "Report Generated",
+            `Report downloaded: #EMG-${incidentId}`,
+          );
           showToast("success", "Report downloaded");
           modalManager.close("reportModal");
         } catch (err) {
@@ -1171,44 +1279,6 @@ function generateReport() {
       });
     }
   }, 50);
-}
-
-// Open Image Modal
-function openImageModal(imageId) {
-  modalManager.create({
-    id: "imageModal",
-    icon: "uil-image",
-    iconColor: "text-purple-600",
-    iconBg: "bg-purple-100",
-    title: "Evidence Photo",
-    subtitle: imageId,
-    body: `
-      <div class="bg-gray-100 dark:bg-neutral-700 aspect-video rounded-lg flex items-center justify-center">
-        <div class="text-center">
-          <i class="uil uil-image text-6xl text-gray-400 mb-3"></i>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Image preview: ${imageId}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">Full resolution image would display here</p>
-        </div>
-      </div>
-      <div class="mt-4 space-y-2 text-xs">
-        <div class="flex justify-between">
-          <span class="text-gray-500">File:</span>
-          <span class="font-semibold">${imageId}</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-gray-500">Uploaded:</span>
-          <span class="font-semibold">${new Date().toLocaleString()}</span>
-        </div>
-      </div>
-    `,
-    primaryButton: {
-      text: "Close",
-      icon: "uil-times",
-    },
-    onPrimary: () => modalManager.close("imageModal"),
-  });
-
-  modalManager.show("imageModal");
 }
 
 async function addRemark() {
@@ -1248,108 +1318,6 @@ async function addRemark() {
     showToast("error", "Failed to add note");
   }
 }
-
-// Update dispatch function to use proper admin name
-// async function showDispatchModal() {
-//   try {
-//     const response = await fetch("api/fetch_emergency_responders.php");
-//     const result = await response.json();
-
-//     if (!result.success) {
-//       showToast("error", "Failed to load emergency responders");
-//       return;
-//     }
-
-//     const responders = result.data;
-
-//     modalManager.create({
-//       id: "dispatchModal",
-//       icon: "uil-telegram-alt",
-//       iconColor: "text-purple-600 dark:text-purple-400",
-//       iconBg: "bg-purple-100 dark:bg-purple-900/60",
-//       title: "Dispatch Emergency Responders",
-//       subtitle: "Select team to dispatch",
-//       body: `
-//         <div class="space-y-3">
-//           <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Select Emergency Responder</label>
-//           <select id="responderSelect" class="w-full p-3 border-2 border-gray-200 dark:border-neutral-600 dark:bg-neutral-700 dark:text-white rounded-lg text-sm focus:outline-none focus:border-blue-500">
-//             <option value="">Choose responder...</option>
-//             ${responders
-//               .map(
-//                 (r) => `
-//               <option value="${r.id}" data-name="${r.name}">
-//                 ${r.name} - ${r.type.toUpperCase()} (${r.contact})
-//               </option>
-//             `
-//               )
-//               .join("")}
-//           </select>
-
-//           <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mt-3">
-//             <div class="flex gap-2">
-//               <i class="uil uil-info-circle text-yellow-600 dark:text-yellow-400 text-lg flex-shrink-0"></i>
-//               <p class="text-xs text-yellow-800 dark:text-yellow-300">
-//                 The selected team will be notified and dispatched to the incident location immediately.
-//               </p>
-//             </div>
-//           </div>
-//         </div>
-//       `,
-//       primaryButton: {
-//         text: "Dispatch Now",
-//         icon: "uil-telegram-alt",
-//         class: "bg-purple-500 hover:bg-purple-600",
-//       },
-//       secondaryButton: {
-//         text: "Cancel",
-//       },
-//       onPrimary: async () => {
-//         const select = document.getElementById("responderSelect");
-
-//         if (!select.value) {
-//           showToast("error", "Please select an emergency responder");
-//           return;
-//         }
-
-//         try {
-//           const response = await fetch("api/dispatch_responders.php", {
-//             method: "POST",
-//             headers: {
-//               "Content-Type": "application/json",
-//             },
-//             body: JSON.stringify({
-//               incident_id: incidentId,
-//               responder_id: select.value,
-//               admin_name: `Admin ${currentAdminName}`,
-//             }),
-//           });
-
-//           const result = await response.json();
-
-//           if (result.success) {
-//             showToast(
-//               "success",
-//               `${result.responder} dispatched successfully!`
-//             );
-//             modalManager.close("dispatchModal");
-//             // Refresh page data
-//             fetchIncidentDetails();
-//           } else {
-//             showToast("error", "Failed to dispatch: " + result.error);
-//           }
-//         } catch (error) {
-//           console.error("Dispatch error:", error);
-//           showToast("error", "Failed to dispatch responders");
-//         }
-//       },
-//     });
-
-//     modalManager.show("dispatchModal");
-//   } catch (error) {
-//     console.error("Error loading responders:", error);
-//     showToast("error", "Failed to load emergency responders");
-//   }
-// }
 
 // Add Timeline Item
 function addTimelineItem(title, content) {
