@@ -27,7 +27,7 @@ class JWTHelper
     /**
      * Verify and decode JWT token
      */
-    public static function verifyToken($token)
+    public static function verifyToken($token, $conn = null)
     {
         try {
             $payload = self::decode($token);
@@ -36,12 +36,33 @@ class JWTHelper
                 return false;
             }
 
+            // Check if token was invalidated after it was issued
+            if ($conn && isset($payload['user_id'], $payload['iat'])) {
+                $userId = $payload['user_id'];
+                $issuedAt = $payload['iat'];
+
+                $stmt = mysqli_prepare(
+                    $conn,
+                    "SELECT invalidated_at FROM token_invalidations 
+                 WHERE user_id = ? AND invalidated_at > FROM_UNIXTIME(?)"
+                );
+
+                mysqli_stmt_bind_param($stmt, 'si', $userId, $issuedAt); // 's' for VARCHAR, 'i' for int
+                mysqli_stmt_execute($stmt);
+                $result = mysqli_stmt_get_result($stmt);
+
+                if (mysqli_num_rows($result) > 0) {
+                    return false;
+                }
+
+                mysqli_stmt_close($stmt);
+            }
+
             return $payload;
         } catch (Exception $e) {
             return false;
         }
     }
-
     /**
      * Get token from Authorization header
      * 
