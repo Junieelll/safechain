@@ -49,7 +49,7 @@ async function fetchAnalytics(filters = filterState) {
 
     if (!result.success) return;
 
-    updateStatisticsCards(result.summary);
+    updateStatisticsCards(result.summary, result.changes);
     updateAllCharts(result);
     updateIncidentTable(result.tableData);
 
@@ -58,7 +58,7 @@ async function fetchAnalytics(filters = filterState) {
   }
 }
 
-function updateStatisticsCards(summary) {
+function updateStatisticsCards(summary, changes) {
   const totalEl      = document.querySelector('[data-stat="total"]');
   const responseEl   = document.querySelector('[data-stat="response"]');
   const resolutionEl = document.querySelector('[data-stat="resolution"]');
@@ -66,6 +66,27 @@ function updateStatisticsCards(summary) {
   if (totalEl)      totalEl.textContent      = summary.total;
   if (responseEl)   responseEl.textContent   = summary.avgResponseTime;
   if (resolutionEl) resolutionEl.textContent = summary.resolutionRate;
+
+  if (changes) {
+    updateBadge('[data-badge="total"]',      changes.total);
+    updateBadge('[data-badge="response"]',   changes.avgResponseTime);
+    updateBadge('[data-badge="resolution"]', changes.resolutionRate);
+  }
+}
+
+function updateBadge(selector, changePercent) {
+  const badge = document.querySelector(selector);
+  if (!badge) return;
+
+  const isPositive = changePercent >= 0;
+  const absVal = Math.abs(changePercent);
+
+  badge.className = `animate-pulse-custom flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold
+    ${isPositive
+      ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-500 dark:from-emerald-950/60 dark:to-emerald-900/40 dark:text-emerald-400 dark:border dark:border-emerald-800/30'
+      : 'bg-gradient-to-br from-red-50 to-red-100 text-red-500 dark:from-red-950/60 dark:to-red-900/40 dark:text-red-400 dark:border dark:border-red-800/30'}`;
+
+  badge.innerHTML = `<i class="uil uil-arrow-${isPositive ? 'up' : 'down'}"></i> ${absVal}%`;
 }
 
 function updateAllCharts(data) {
@@ -91,7 +112,6 @@ function updateAllCharts(data) {
 
   // Peak hours
   if (chartInstances.peakHours) {
-    const selectedHours = [6, 9, 12, 15, 18, 21, 0];
     chartInstances.peakHours.data.datasets[0].data = selectedHours.map(h => data.peakHours[h] || 0);
     chartInstances.peakHours.update();
   }
@@ -244,14 +264,15 @@ function initializeCharts() {
   chartInstances.peakHours = new Chart(ctx4, {
     type: 'bar',
     data: {
-      labels: ['6AM', '9AM', '12PM', '3PM', '6PM', '9PM', '12AM'],
+    labels: ['12AM','1AM','2AM','3AM','4AM','5AM','6AM','7AM','8AM','9AM','10AM','11AM',
+         '12PM','1PM','2PM','3PM','4PM','5PM','6PM','7PM','8PM','9PM','10PM','11PM'],
       datasets: [{
         label: 'Incidents',
         data: [],
         backgroundColor: 'rgba(139, 92, 246, 1)',
         borderRadius: Number.MAX_VALUE,
         borderSkipped: false,
-        barThickness: 50,
+        barThickness: 18,
       }],
     },
     options: {

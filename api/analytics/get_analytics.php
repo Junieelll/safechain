@@ -4,28 +4,37 @@ header('Access-Control-Allow-Origin: *');
 
 require_once '../../config/conn.php';
 
-$period    = isset($_GET['period']) ? $_GET['period'] : 'last30days';
-$fromDate  = isset($_GET['from']) ? $_GET['from'] : null;
-$toDate    = isset($_GET['to']) ? $_GET['to'] : null;
-$types     = isset($_GET['types']) ? $_GET['types'] : 'all';
-$status    = isset($_GET['status']) ? $_GET['status'] : 'all';
+$period = isset($_GET['period']) ? $_GET['period'] : 'last30days';
+$fromDate = isset($_GET['from']) ? $_GET['from'] : null;
+$toDate = isset($_GET['to']) ? $_GET['to'] : null;
+$types = isset($_GET['types']) ? $_GET['types'] : 'all';
+$status = isset($_GET['status']) ? $_GET['status'] : 'all';
 
 // Build date condition
 switch ($period) {
-    case 'last7days':  $dateCondition = "AND i.date_time >= DATE_SUB(NOW(), INTERVAL 7 DAY)"; break;
-    case 'last30days': $dateCondition = "AND i.date_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)"; break;
-    case 'last90days': $dateCondition = "AND i.date_time >= DATE_SUB(NOW(), INTERVAL 90 DAY)"; break;
-    case 'lastyear':   $dateCondition = "AND i.date_time >= DATE_SUB(NOW(), INTERVAL 1 YEAR)"; break;
+    case 'last7days':
+        $dateCondition = "AND i.date_time >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+        break;
+    case 'last30days':
+        $dateCondition = "AND i.date_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        break;
+    case 'last90days':
+        $dateCondition = "AND i.date_time >= DATE_SUB(NOW(), INTERVAL 90 DAY)";
+        break;
+    case 'lastyear':
+        $dateCondition = "AND i.date_time >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+        break;
     case 'custom':
         if ($fromDate && $toDate) {
             $from = mysqli_real_escape_string($conn, $fromDate);
-            $to   = mysqli_real_escape_string($conn, $toDate);
+            $to = mysqli_real_escape_string($conn, $toDate);
             $dateCondition = "AND i.date_time BETWEEN '$from' AND '$to 23:59:59'";
         } else {
             $dateCondition = "AND i.date_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         }
         break;
-    default: $dateCondition = "AND i.date_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+    default:
+        $dateCondition = "AND i.date_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
 }
 
 // Build type condition
@@ -59,10 +68,10 @@ $where";
 $summaryResult = mysqli_query($conn, $summarySQL);
 $summary = mysqli_fetch_assoc($summaryResult);
 
-$total          = intval($summary['total']);
-$resolved       = intval($summary['resolved']);
+$total = intval($summary['total']);
+$resolved = intval($summary['resolved']);
 $resolutionRate = $total > 0 ? round(($resolved / $total) * 100, 1) : 0;
-$avgResponse    = round(floatval($summary['avg_response_time']), 1);
+$avgResponse = round(floatval($summary['avg_response_time']), 1);
 
 // ── Incident type distribution ─────────────────────────────
 $typeSQL = "SELECT type, COUNT(*) as count FROM incidents i $where GROUP BY type";
@@ -88,7 +97,7 @@ $responseDistribution = [
     '0-2 mins' => intval($responseRow['0_2']),
     '2-4 mins' => intval($responseRow['2_4']),
     '4-6 mins' => intval($responseRow['4_6']),
-    '6+ mins'  => intval($responseRow['6_plus']),
+    '6+ mins' => intval($responseRow['6_plus']),
 ];
 
 // ── Peak hours ─────────────────────────────────────────────
@@ -118,14 +127,14 @@ $tableData = [];
 while ($row = mysqli_fetch_assoc($tableResult)) {
     $responseMin = $row['response_time_minutes'] ?? 0;
     $tableData[] = [
-        'id'           => $row['id'],
-        'type'         => ucfirst($row['type']),
-        'resident'     => $row['reporter'],
-        'location'     => $row['location'],
+        'id' => $row['id'],
+        'type' => ucfirst($row['type']),
+        'resident' => $row['reporter'],
+        'location' => $row['location'],
         'timeReported' => date('M d, Y g:i A', strtotime($row['date_time'])),
         'responseTime' => $responseMin ? $responseMin . 'm' : 'N/A',
-        'status'       => ucfirst($row['status']),
-        'severity'     => $row['severity_level'] ?? 'N/A',
+        'status' => ucfirst($row['status']),
+        'severity' => $row['severity_level'] ?? 'N/A',
     ];
 }
 
@@ -142,30 +151,53 @@ LIMIT 12";
 
 $trendResult = mysqli_query($conn, $trendSQL);
 $trendLabels = [];
-$trendData   = [];
-$weekIndex   = 1;
+$trendData = [];
+$weekIndex = 1;
 while ($row = mysqli_fetch_assoc($trendResult)) {
     $trendLabels[] = "Week $weekIndex";
-    $trendData[]   = intval($row['count']);
+    $trendData[] = intval($row['count']);
     $weekIndex++;
 }
+
+// Previous period comparison
+$prevDateCondition = str_replace(
+    "DATE_SUB(NOW(), INTERVAL 30 DAY)",
+    "DATE_SUB(NOW(), INTERVAL 60 DAY) AND i.date_time < DATE_SUB(NOW(), INTERVAL 30 DAY",
+    $dateCondition
+);
+
+$prevSQL = "SELECT COUNT(*) as prev_total FROM incidents i WHERE i.is_archived = 0 
+            AND i.date_time >= DATE_SUB(NOW(), INTERVAL 60 DAY) 
+            AND i.date_time < DATE_SUB(NOW(), INTERVAL 30 DAY)";
+$prevResult = mysqli_query($conn, $prevSQL);
+$prevRow = mysqli_fetch_assoc($prevResult);
+$prevTotal = intval($prevRow['prev_total']);
+
+$totalChange = $prevTotal > 0 ? round((($total - $prevTotal) / $prevTotal) * 100, 1) : 0;
+$responseChange = 0; // Calculate similarly if needed
+$resolutionChange = 0;
 
 echo json_encode([
     'success' => true,
     'summary' => [
-        'total'          => $total,
-        'resolved'       => $resolved,
-        'responding'     => intval($summary['responding']),
-        'pending'        => intval($summary['pending']),
+        'total' => $total,
+        'resolved' => $resolved,
+        'responding' => intval($summary['responding']),
+        'pending' => intval($summary['pending']),
         'resolutionRate' => $resolutionRate . '%',
-        'avgResponseTime'=> $avgResponse . 'm',
+        'avgResponseTime' => $avgResponse . 'm',
     ],
-    'typeDistribution'     => $typeDistribution,
+    'changes' => [
+        'total' => $totalChange,
+        'avgResponseTime' => $responseChange,
+        'resolutionRate' => $resolutionChange,
+    ],
+    'typeDistribution' => $typeDistribution,
     'responseDistribution' => $responseDistribution,
-    'peakHours'            => $peakHours,
-    'trendLabels'          => $trendLabels,
-    'trendData'            => $trendData,
-    'tableData'            => $tableData,
+    'peakHours' => $peakHours,
+    'trendLabels' => $trendLabels,
+    'trendData' => $trendData,
+    'tableData' => $tableData,
 ]);
 
 mysqli_close($conn);

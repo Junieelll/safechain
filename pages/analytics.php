@@ -42,7 +42,7 @@
       </div>
 
       <div class="header-actions flex gap-2">
-        <button class="py-2.5 px-6 bg-white flex gap-3 text-sm rounded-lg text-emerald-500 font-medium">
+        <button class="py-2.5 px-6 bg-white dark:bg-neutral-700 flex gap-3 text-sm rounded-lg text-emerald-500 dark:text-emerald-700 font-medium">
           <i class="uil uil-filter"></i>
           Filters
         </button>
@@ -63,7 +63,7 @@
               class="stat-icon w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-[0_4px_12px_rgba(39,194,145,0.3)] flex items-center justify-center text-white text-[22px] transition-all duration-300">
               <i class="uil uil-exclamation-triangle"></i>
             </div>
-            <div class="animate-pulse-custom flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold 
+            <div data-badge="total" class="animate-pulse-custom flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold 
          bg-gradient-to-br from-emerald-50 to-emerald-100 dark:text-emerald-500
          dark:from-emerald-950/60 dark:to-emerald-900/40 dark:text-emerald-400 dark:border dark:border-emerald-800/30">
               <i class="uil uil-arrow-up"></i>
@@ -89,7 +89,7 @@
               class="stat-icon w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-[0_4px_12px_rgba(33,150,243,0.3)] flex items-center justify-center text-white text-[22px] transition-all duration-300">
               <i class="uil uil-clock"></i>
             </div>
-            <div class="animate-pulse-custom flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold 
+            <div data-badge="response" class="animate-pulse-custom flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold 
          bg-gradient-to-br from-red-50 to-red-100 text-red-500
          dark:from-red-950/60 dark:to-red-900/40 dark:text-red-400 dark:border dark:border-red-800/30">
               <i class="uil uil-arrow-down"></i>
@@ -107,7 +107,7 @@
       </div>
 
       <!-- Card 3 -->
-      <div
+      <div 
         class="animate-scale-in-3 float-effect stat-card relative bg-white/95 dark:bg-neutral-800 backdrop-blur-md rounded-3xl p-8 border border-gray-200/80 dark:border-neutral-600 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:-translate-y-2 hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
         <div class="relative z-10">
           <div class="flex justify-between items-start mb-4">
@@ -115,7 +115,7 @@
               class="stat-icon w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-[0_4px_12px_rgba(39,194,145,0.3)] flex items-center justify-center text-white text-[22px] transition-all duration-300">
               <i class="uil uil-check-circle"></i>
             </div>
-            <div class="animate-pulse-custom flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold 
+            <div data-badge="resolution" class="animate-pulse-custom flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold 
          bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-500
          dark:from-emerald-950/60 dark:to-emerald-900/40 dark:text-emerald-400 dark:border dark:border-emerald-800/30">
               <i class="uil uil-arrow-up"></i>
