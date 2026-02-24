@@ -77,17 +77,23 @@ function updateBadge(selector, changePercent) {
   const badge = document.querySelector(selector);
   if (!badge) return;
 
+  // Hide badge if no change
+  if (changePercent === 0) {
+    badge.style.display = 'none';
+    return;
+  }
+
+  badge.style.display = 'flex';
+
   const isPositive = changePercent >= 0;
   const absVal = Math.abs(changePercent);
 
   badge.className = `animate-pulse-custom flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold
-    ${
-      isPositive
-        ? "bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-500 dark:from-emerald-950/60 dark:to-emerald-900/40 dark:text-emerald-400 dark:border dark:border-emerald-800/30"
-        : "bg-gradient-to-br from-red-50 to-red-100 text-red-500 dark:from-red-950/60 dark:to-red-900/40 dark:text-red-400 dark:border dark:border-red-800/30"
-    }`;
+    ${isPositive
+      ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-500 dark:from-emerald-950/60 dark:to-emerald-900/40 dark:text-emerald-400 dark:border dark:border-emerald-800/30'
+      : 'bg-gradient-to-br from-red-50 to-red-100 text-red-500 dark:from-red-950/60 dark:to-red-900/40 dark:text-red-400 dark:border dark:border-red-800/30'}`;
 
-  badge.innerHTML = `<i class="uil uil-arrow-${isPositive ? "up" : "down"}"></i> ${absVal}%`;
+  badge.innerHTML = `<i class="uil uil-arrow-${isPositive ? 'up' : 'down'}"></i> ${absVal}%`;
 }
 
 function updateAllCharts(data) {
