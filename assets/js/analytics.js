@@ -79,21 +79,23 @@ function updateBadge(selector, changePercent) {
 
   // Hide badge if no change
   if (changePercent === 0) {
-    badge.style.display = 'none';
+    badge.style.display = "none";
     return;
   }
 
-  badge.style.display = 'flex';
+  badge.style.display = "flex";
 
   const isPositive = changePercent >= 0;
   const absVal = Math.abs(changePercent);
 
   badge.className = `animate-pulse-custom flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold
-    ${isPositive
-      ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-500 dark:from-emerald-950/60 dark:to-emerald-900/40 dark:text-emerald-400 dark:border dark:border-emerald-800/30'
-      : 'bg-gradient-to-br from-red-50 to-red-100 text-red-500 dark:from-red-950/60 dark:to-red-900/40 dark:text-red-400 dark:border dark:border-red-800/30'}`;
+    ${
+      isPositive
+        ? "bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-500 dark:from-emerald-950/60 dark:to-emerald-900/40 dark:text-emerald-400 dark:border dark:border-emerald-800/30"
+        : "bg-gradient-to-br from-red-50 to-red-100 text-red-500 dark:from-red-950/60 dark:to-red-900/40 dark:text-red-400 dark:border dark:border-red-800/30"
+    }`;
 
-  badge.innerHTML = `<i class="uil uil-arrow-${isPositive ? 'up' : 'down'}"></i> ${absVal}%`;
+  badge.innerHTML = `<i class="uil uil-arrow-${isPositive ? "up" : "down"}"></i> ${absVal}%`;
 }
 
 function updateAllCharts(data) {
@@ -106,12 +108,24 @@ function updateAllCharts(data) {
 
   // Type distribution
   if (chartInstances.incidentTypes) {
-    chartInstances.incidentTypes.data.labels = Object.keys(
-      data.typeDistribution,
-    ).map((t) => t.charAt(0).toUpperCase() + t.slice(1));
+    const colorMap = {
+      fire: "#ef4444", // red
+      crime: "#eab308", // yellow
+      flood: "#3b82f6", // blue
+    };
+
+    const labels = Object.keys(data.typeDistribution).map(
+      (t) => t.charAt(0).toUpperCase() + t.slice(1),
+    );
+    const colors = Object.keys(data.typeDistribution).map(
+      (t) => colorMap[t.toLowerCase()] || "#8b5cf6",
+    );
+
+    chartInstances.incidentTypes.data.labels = labels;
     chartInstances.incidentTypes.data.datasets[0].data = Object.values(
       data.typeDistribution,
     );
+    chartInstances.incidentTypes.data.datasets[0].backgroundColor = colors;
     chartInstances.incidentTypes.update();
   }
 
@@ -241,7 +255,7 @@ function initializeCharts() {
       datasets: [
         {
           data: [],
-          backgroundColor: ["#8b5cf6", "#22d3ee", "#fb7185"],
+          backgroundColor: [],
           borderWidth: 0,
           hoverOffset: 10,
         },

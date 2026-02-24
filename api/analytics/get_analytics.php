@@ -78,7 +78,11 @@ $summarySQL = "SELECT
     SUM(CASE WHEN i.status = 'responding' THEN 1 ELSE 0 END) as responding,
     SUM(CASE WHEN i.status = 'pending'    THEN 1 ELSE 0 END) as pending,
     AVG(
-        (COALESCE(ir.response_time_minutes, 0) * 60) + COALESCE(ir.response_time_seconds, 0)
+        CASE
+            WHEN ir.incident_id IS NOT NULL
+            THEN (COALESCE(ir.response_time_minutes, 0) * 60) + COALESCE(ir.response_time_seconds, 0)
+            ELSE NULL
+        END
     ) as avg_response_time_seconds
 FROM incidents i
 LEFT JOIN incident_reports ir ON i.id = ir.incident_id
@@ -97,7 +101,11 @@ $prevSummarySQL = "SELECT
     COUNT(*) as prev_total,
     SUM(CASE WHEN i.status = 'resolved' THEN 1 ELSE 0 END) as prev_resolved,
     AVG(
-        (COALESCE(ir.response_time_minutes, 0) * 60) + COALESCE(ir.response_time_seconds, 0)
+        CASE
+            WHEN ir.incident_id IS NOT NULL
+            THEN (COALESCE(ir.response_time_minutes, 0) * 60) + COALESCE(ir.response_time_seconds, 0)
+            ELSE NULL
+        END
     ) as prev_avg_response_seconds
 FROM incidents i
 LEFT JOIN incident_reports ir ON i.id = ir.incident_id
