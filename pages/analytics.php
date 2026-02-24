@@ -61,7 +61,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
       <!-- Card 1 -->
       <div
-        class="animate-scale-in-1 float-effect stat-card relative bg-white/95 backdrop-blur-md rounded-3xl p-8 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:-translate-y-2 hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
+        class="animate-scale-in-1 float-effect stat-card relative bg-white/95 dark:bg-neutral-800 backdrop-blur-md rounded-3xl p-8 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:-translate-y-2 hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
         <div class="relative z-10">
           <div class="flex justify-between items-start mb-4">
             <div
@@ -86,7 +86,7 @@
 
       <!-- Card 2 -->
       <div
-        class="animate-scale-in-2 float-effect stat-card relative bg-white/95 backdrop-blur-md rounded-3xl p-8 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:-translate-y-2 hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
+        class="animate-scale-in-2 float-effect stat-card relative bg-white/95 dark:bg-neutral-800 backdrop-blur-md rounded-3xl p-8 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:-translate-y-2 hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
         <div class="relative z-10">
           <div class="flex justify-between items-start mb-4">
             <div
@@ -111,7 +111,7 @@
 
       <!-- Card 3 -->
       <div
-        class="animate-scale-in-3 float-effect stat-card relative bg-white/95 backdrop-blur-md rounded-3xl p-8 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:-translate-y-2 hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
+        class="animate-scale-in-3 float-effect stat-card relative bg-white/95 dark:bg-neutral-800 backdrop-blur-md rounded-3xl p-8 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:-translate-y-2 hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
         <div class="relative z-10">
           <div class="flex justify-between items-start mb-4">
             <div
@@ -139,7 +139,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
       <!-- Incident Trends Chart -->
       <div
-        class="chart-card lg:col-span-2 relative bg-white/95 backdrop-blur-md rounded-3xl p-6 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
+        class="chart-card lg:col-span-2 relative bg-white/95 dark:bg-neutral-800 backdrop-blur-md rounded-3xl p-6 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
         <div class="mb-4">
           <h3 class="font-semibold text-[#4B4B4B]">Incident Trends</h3>
           <p class="text-xs font-medium text-gray-500">
@@ -153,7 +153,7 @@
 
       <!-- Incident Types Chart -->
       <div
-        class="chart-card relative bg-white/95 backdrop-blur-md rounded-3xl p-6 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
+        class="chart-card relative bg-white/95 dark:bg-neutral-800 backdrop-blur-md rounded-3xl p-6 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
         <div class="mb-4">
           <h3 class="font-semibold text-[#4B4B4B]">Incident Types</h3>
           <p class="text-xs font-medium text-[#5a5a5a]">
@@ -172,7 +172,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
       <!-- Response Time Chart -->
       <div
-        class="chart-card relative bg-white/95 backdrop-blur-md rounded-3xl p-6 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
+        class="chart-card relative bg-white/95 dark:bg-neutral-800 backdrop-blur-md rounded-3xl p-6 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
         <div class="mb-4">
           <h3 class="font-semibold text-[#4B4B4B]">Response Time</h3>
           <p class="text-xs text-[#5a5a5a] font-medium">Time to respond</p>
@@ -184,7 +184,7 @@
 
       <!-- Peak Hours Chart -->
       <div
-        class="chart-card relative bg-white/95 backdrop-blur-md rounded-3xl p-6 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
+        class="chart-card relative bg-white/95 dark:bg-neutral-800 backdrop-blur-md rounded-3xl p-6 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
         <div class="mb-4">
           <h3 class="font-semibold text-[#4B4B4B]">Peak Hours</h3>
           <p class="text-xs text-[#5a5a5a] font-medium">Incidents by hour</p>
@@ -197,7 +197,7 @@
 
     <!-- Recent Emergency Incidents Table -->
     <div
-      class="relative bg-white/95 backdrop-blur-md rounded-3xl p-6 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
+      class="relative bg-white/95 dark:bg-neutral-800 backdrop-blur-md rounded-3xl p-6 border border-gray-200/80 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
       <div class="mb-6">
         <h3 class="font-semibold text-[#4B4B4B]">
           Recent Emergency Incidents

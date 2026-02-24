@@ -460,7 +460,7 @@ function renderEmergencyList() {
     <div class="space-y-4">
       ${allIncidents.map((incident) => `
         <div onclick="focusIncidentOnMap('${incident.id}', ${incident.lat}, ${incident.lng}, '${incident.type}')"
-          class="bg-[#FFFFFF] border border-neutral-300 rounded-2xl p-4 space-y-3 text-sm dark:bg-neutral-700 cursor-pointer hover:shadow-lg hover:border-emerald-400 transition-all duration-200">
+          class="bg-[#FFFFFF] border border-neutral-300 dark:border-neutral-700 rounded-2xl p-4 space-y-3 text-sm dark:bg-neutral-700 cursor-pointer hover:shadow-lg hover:border-emerald-400 transition-all duration-200">
           <div class="inline-flex items-center gap-2 ${colorClasses[incident.color]} px-3 py-2 rounded-lg">
             <i class="uil ${incident.icon} text-lg"></i>
             <span class="text-sm font-medium">${incident.type}</span>
@@ -484,11 +484,6 @@ function renderEmergencyList() {
               onclick="event.stopPropagation(); viewIncidentDetails('${incident.id}')"
               class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium py-2.5 px-3 rounded-xl transition">
               <i class="uil uil-eye"></i> View Details
-            </button>
-            <button
-              onclick="event.stopPropagation(); notifyResponders('${incident.id}')"
-              class="flex-1 bg-transparent hover:bg-emerald-200/50 border border-emerald-400 dark:border-emerald-600 text-emerald-500 text-xs font-medium py-2.5 px-3 rounded-xl transition">
-              <i class="uil uil-bell"></i> Notify Responders
             </button>
           </div>
         </div>
@@ -531,10 +526,6 @@ function viewIncidentDetails(incidentId) {
   window.location.href = `incidents/details?id=${encodeURIComponent(incidentId)}`;
 }
 
-function notifyResponders(incidentId) {
-  showToast("info", "Notify Responders feature coming soon...");
-  console.log("Notify responders for incident:", incidentId);
-}
 
 const rightPanel = document.getElementById("rightPanel");
 const rightPanelToggle = document.getElementById("rightPanelToggle");
