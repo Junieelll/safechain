@@ -112,7 +112,7 @@ function updateAllCharts(data) {
 
   // Peak hours
   if (chartInstances.peakHours) {
-    chartInstances.peakHours.data.datasets[0].data = selectedHours.map(h => data.peakHours[h] || 0);
+     chartInstances.peakHours.data.datasets[0].data = data.peakHours;
     chartInstances.peakHours.update();
   }
 }
