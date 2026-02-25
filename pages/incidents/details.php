@@ -237,15 +237,6 @@ $currentUserRole = AuthChecker::getUserRole();
                 <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300"><i
                     class="uil uil-ellipsis-h"></i></span>
               </div>
-              <!--<div class="flex flex-col gap-1.5">
-                  <span
-                    class="text-xs text-emerald-500 font-semibold uppercase tracking-wider"
-                    >Verification</span
-                  >
-                  <span class="text-sm font-semibold text-emerald-600"
-                    >✓ Verified Resident</span
-                  >
-                </div>-->
             </div>
           </div>
 

@@ -1,12 +1,9 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
     <title>Fire Incident Report</title>
     <link rel="stylesheet" href="../assets/css/report-template.css" />
-    <link rel="stylesheet" href="../assets/unicons/line.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
       /* Print-friendly page breaks */
       @media print {
@@ -20,25 +17,6 @@
     </style>
   </head>
   <body>
-    <div class="fab-container open">
-      <!-- Action buttons (shown when open) -->
-      <div class="fab-actions">
-        <button class="fab-action-btn openBtn">
-          <i class="uil uil-print"></i>
-          <span>Print</span>
-        </button>
-        <button class="fab-action-btn downloadBtn">
-          <i class="uil uil-import"></i>
-          <span>Download as PDF</span>
-        </button>
-      </div>
-
-      <!-- Main FAB button -->
-      <button class="fab-main" id="fabToggle">
-        <i class="uil uil-plus fab-icon-plus"></i>
-        <i class="uil uil-times fab-icon-close"></i>
-      </button>
-    </div>
     <div class="container">
       <div class="long-bond" id="page-1">
         <!-- Header -->
@@ -144,7 +122,9 @@
                     2-story residential rooftop partially burned. 3 families
                     affected. Faulty electrical wiring.
                   </li>
-                  <li></li>
+                  <li>
+
+                  </li>
                 </ul>
               </div>
             </div>
@@ -292,129 +272,86 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-  const mainContent = document.querySelector("#main-content");
-  const firstPage = document.querySelector("#page-1");
-  const container = document.querySelector(".container");
-  const MAX_CONTENT_HEIGHT = 700;
+        const mainContent = document.querySelector("#main-content");
+        const firstPage = document.querySelector("#page-1");
+        const container = document.querySelector(".container");
 
-  function createNewPage() {
-    const newPage = firstPage.cloneNode(true);
-    const newContent = newPage.querySelector(".content");
-    newContent.innerHTML = "";
-    newContent.style.backgroundImage = "none";
-    newPage.style.marginTop = "20px";
-    container.appendChild(newPage);
-    return newContent;
-  }
+        // Height limit for content area (adjust based on your paper size)
+        // For 11in paper with header/padding: ~700-750px
+        const MAX_CONTENT_HEIGHT = 700;
 
-  function splitContent() {
-    const allItems = Array.from(mainContent.children);
-    let pages = [[]];
-    let currentPageHeight = 0;
-    let currentPageIndex = 0;
+        function createNewPage() {
+          // Clone the entire page structure
+          const newPage = firstPage.cloneNode(true);
 
-    allItems.forEach((item) => {
-      const clone = item.cloneNode(true);
-      mainContent.appendChild(clone);
-      const itemHeight = clone.offsetHeight;
-      clone.remove();
+          // Get the content area of new page
+          const newContent = newPage.querySelector(".content");
+          newContent.innerHTML = "";
 
-      if (currentPageHeight + itemHeight > MAX_CONTENT_HEIGHT && currentPageHeight > 0) {
-        currentPageIndex++;
-        pages[currentPageIndex] = [];
-        currentPageHeight = 0;
-      }
+          // Remove background watermark from page 2+
+          newContent.style.backgroundImage = "none";
 
-      pages[currentPageIndex].push(item.cloneNode(true));
-      currentPageHeight += itemHeight;
-    });
+          // Add spacing between pages
+          newPage.style.marginTop = "20px";
 
-    mainContent.innerHTML = "";
-    if (pages[0]) pages[0].forEach((item) => mainContent.appendChild(item));
+          // Append to container
+          container.appendChild(newPage);
 
-    for (let i = 1; i < pages.length; i++) {
-      const newContent = createNewPage();
-      pages[i].forEach((item) => newContent.appendChild(item));
-    }
-  }
+          return newContent;
+        }
 
-  // ── FAB Toggle ──────────────────────────────────────────────
-  const fab = document.querySelector(".fab-container");
-  const toggle = document.getElementById("fabToggle");
-  toggle.addEventListener("click", () => fab.classList.toggle("open"));
+        function splitContent() {
+          // Get all direct children of content
+          const allItems = Array.from(mainContent.children);
 
-  // ── Open & Print ─────────────────────────────────────────────
-  document.querySelector(".openBtn").addEventListener("click", function () {
-    window.print();
-  });
+          // Create array to hold items for each page
+          let pages = [[]];
+          let currentPageHeight = 0;
+          let currentPageIndex = 0;
 
-  // ── Download as PDF ──────────────────────────────────────────
-  document.querySelector(".downloadBtn").addEventListener("click", async function () {
-    const { jsPDF } = window.jspdf;
+          allItems.forEach((item) => {
+            // Clone the item to measure it
+            const clone = item.cloneNode(true);
+            mainContent.appendChild(clone);
+            const itemHeight = clone.offsetHeight;
+            clone.remove();
 
-    // Grab all rendered bond pages
-    const pages = document.querySelectorAll(".long-bond");
+            // Check if adding this item exceeds the page height
+            if (
+              currentPageHeight + itemHeight > MAX_CONTENT_HEIGHT &&
+              currentPageHeight > 0
+            ) {
+              // Start a new page
+              currentPageIndex++;
+              pages[currentPageIndex] = [];
+              currentPageHeight = 0;
+            }
 
-    // Show loading state
-    const btn = this;
-    btn.innerHTML = '<i class="uil uil-spinner-alt"></i><span>Generating...</span>';
-    btn.disabled = true;
+            // Add item to current page
+            pages[currentPageIndex].push(item.cloneNode(true));
+            currentPageHeight += itemHeight;
+          });
 
-    // Temporarily hide FAB so it doesn't show in the PDF
-    fab.style.visibility = "hidden";
+          // Clear the original content
+          mainContent.innerHTML = "";
 
-    try {
-      // Letter size in mm: 215.9 x 279.4
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "letter",
-      });
+          // Add first page items
+          if (pages[0]) {
+            pages[0].forEach((item) => mainContent.appendChild(item));
+          }
 
-      const pageWidthMm = 215.9;
-      const pageHeightMm = 279.4;
+          // Create additional pages if needed
+          for (let i = 1; i < pages.length; i++) {
+            const newContent = createNewPage();
+            pages[i].forEach((item) => newContent.appendChild(item));
+          }
+        }
 
-      for (let i = 0; i < pages.length; i++) {
-        const canvas = await html2canvas(pages[i], {
-          scale: 2,           // higher = sharper PDF
-          useCORS: true,      // allow cross-origin images
-          logging: false,
-          backgroundColor: "#ffffff",
+        // Wait for all content to render before splitting
+        window.addEventListener("load", function () {
+          setTimeout(splitContent, 300);
         });
-
-        const imgData = canvas.toDataURL("image/jpeg", 0.95);
-
-        // Scale image to fit page width
-        const canvasWidthPx = canvas.width;
-        const canvasHeightPx = canvas.height;
-        const ratio = pageWidthMm / canvasWidthPx;
-        const imgHeightMm = canvasHeightPx * ratio;
-
-        // Add new page for each bond page after the first
-        if (i > 0) pdf.addPage("letter", "portrait");
-
-        // If content is taller than one page, it will scale to fit
-        pdf.addImage(imgData, "JPEG", 0, 0, pageWidthMm, Math.min(imgHeightMm, pageHeightMm));
-      }
-
-      pdf.save("Fire_Incident_Report.pdf");
-
-    } catch (err) {
-      console.error("PDF generation failed:", err);
-      alert("Failed to generate PDF. Please try again.");
-    } finally {
-      // Restore FAB and button
-      fab.style.visibility = "visible";
-      btn.innerHTML = '<i class="uil uil-import"></i><span>Download as PDF</span>';
-      btn.disabled = false;
-    }
-  });
-
-  // ── Init ─────────────────────────────────────────────────────
-  window.addEventListener("load", function () {
-    setTimeout(splitContent, 300);
-  });
-});
+      });
     </script>
   </body>
 </html>
