@@ -81,13 +81,10 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
 </head>
 
 <body>
-    <div id="editBanner" class="hidden" style="
-  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
-  background: #3b82f6; color: white;
-  text-align: center; padding: 8px;
-  font-size: 13px; font-family: sans-serif;">
+    <div id="editBanner">
         ✏️ Edit mode — click any text to modify it. Click <strong>Done Editing</strong> when finished.
     </div>
+    
     <!-- FAB -->
     <div class="fab-container open">
         <div class="fab-actions">
@@ -415,7 +412,7 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
 
                 // Show/hide edit hint banner
                 const banner = document.getElementById("editBanner");
-                if (banner) banner.classList.toggle("hidden", !isEditing);
+                if (banner) banner.classList.toggle("visible", isEditing);
             });
 
             window.addEventListener("load", () => setTimeout(splitContent, 300));
