@@ -27,7 +27,7 @@
   <main
     id="mainContent"
     class="transition-all duration-500 ease-in-out ml-[302px] flex-1 p-8 flex flex-col">
-    <div class="p-8">
+    <div class="">
       <!-- Header -->
       <div class="mb-8">
         <h1 class="text-bs font-semibold text-[#4b4b4b] dark:text-neutral-400">Device Management</h1>

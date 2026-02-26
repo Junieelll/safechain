@@ -465,6 +465,17 @@ function generateIncidentTypeButtons() {
 
 window.setTimePeriod = function (period) {
   filterState.timePeriod = period;
+
+  // Clear date range when a preset period is selected
+  filterState.fromDate = "";
+  filterState.toDate   = "";
+
+  // Also clear the DOM inputs
+  const fromDate = document.getElementById("fromDate");
+  const toDate   = document.getElementById("toDate");
+  if (fromDate) fromDate.value = "";
+  if (toDate)   toDate.value   = "";
+
   updateFilterButtons();
 };
 
@@ -506,8 +517,8 @@ window.toggleStatus = function (status) {
 function updateFilterButtons() {
   const fromDate = document.getElementById("fromDate");
   const toDate = document.getElementById("toDate");
-  if (fromDate) filterState.fromDate = fromDate.value;
-  if (toDate) filterState.toDate = toDate.value;
+  if (fromDate && fromDate.value) filterState.fromDate = fromDate.value;
+  if (toDate && toDate.value)     filterState.toDate   = toDate.value
 
   document.querySelectorAll(".time-period-btn").forEach((btn) => {
     const period = btn.getAttribute("data-period");
@@ -526,6 +537,17 @@ function updateFilterButtons() {
 }
 
 function applyFilters() {
+  // Always grab latest date values before applying
+  const fromDate = document.getElementById("fromDate");
+  const toDate   = document.getElementById("toDate");
+  if (fromDate) filterState.fromDate = fromDate.value;
+  if (toDate)   filterState.toDate   = toDate.value;
+
+  // If dates are set, override time period to custom
+  if (filterState.fromDate && filterState.toDate) {
+    filterState.timePeriod = "custom";
+  }
+
   fetchAnalytics(filterState);
 }
 
@@ -537,6 +559,13 @@ function resetFilters() {
     incidentTypes: ["all"],
     status: ["all"],
   };
+
+  // Clear DOM inputs too
+  const fromDate = document.getElementById("fromDate");
+  const toDate   = document.getElementById("toDate");
+  if (fromDate) fromDate.value = "";
+  if (toDate)   toDate.value   = "";
+
   fetchAnalytics(filterState);
 }
 

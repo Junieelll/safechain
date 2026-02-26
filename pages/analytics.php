@@ -42,7 +42,7 @@
       </div>
 
       <div class="header-actions flex gap-2">
-        <button class="py-2.5 px-6 bg-white dark:bg-neutral-700 flex gap-3 text-sm rounded-lg text-emerald-500 dark:text-emerald-700 font-medium">
+        <button class="py-2.5 px-6 bg-white dark:bg-neutral-800 flex gap-3 text-sm rounded-lg text-emerald-500 dark:text-white/80 font-medium">
           <i class="uil uil-filter"></i>
           Filters
         </button>

@@ -258,7 +258,7 @@ function renderDevices() {
                       device.type === "node" ? "uil-user" : "uil-map-marker"
                     }"></i>
                   </div>
-                  <div class="font-medium flex flex-col text-sm text-neutral-800 dark:text-neutral-200 min-w-0">
+                  <div class="font-medium flex flex-col text-xs text-neutral-800 dark:text-neutral-200 min-w-0">
                   <span class="text-[#64748B]">${
                     device.type === "node" ? "OWNER" : "LOCATION"
                   }</span>
@@ -277,7 +277,7 @@ function renderDevices() {
                       : "uil-signal-alt-3"
                   }"></i>
                 </div>
-                <div class="font-medium flex flex-col text-sm text-neutral-800 dark:text-neutral-200">
+                <div class="font-medium flex flex-col text-xs text-neutral-800 dark:text-neutral-200">
                 <span class="text-[#64748B]">${
                   device.type === "node" ? "STATUS" : "SIGNAL"
                 }</span>
@@ -291,13 +291,13 @@ function renderDevices() {
                 device.id
               }')" class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 h-fit bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 dark:hover:text-emerald-600 hover:text-emerald-600 hover:border-emerald-400 transition-colors">
                 <i class="uil uil-eye"></i>
-                <span class="text-sm font-medium">View</span>
+                <span class="text-xs font-medium">View</span>
               </button>
               <button onclick="deactivateDevice('${
                 device.id
               }')" class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 h-fit bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 dark:hover:text-red-600 dark:hover:border-red-600 hover:text-red-600 hover:border-red-400 transition-colors">
                 <i class="uil uil-ban"></i>
-                <span class="text-sm font-medium">Deactivate</span>
+                <span class="text-xs font-medium">Deactivate</span>
               </button>
             </div>
           </div>

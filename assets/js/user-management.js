@@ -213,7 +213,7 @@ function formatDate(dateString) {
 // Render pagination
 function renderPagination() {
   const paginationContainer = document.querySelector(
-    ".flex.items-center.justify-center.gap-2.mt-6"
+    ".flex.items-center.justify-center.gap-2.mt-6",
   );
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
@@ -224,8 +224,8 @@ function renderPagination() {
 
   let paginationHTML = `
         <button onclick="changePage(${currentPage - 1})" ${
-    currentPage === 1 ? "disabled" : ""
-  } 
+          currentPage === 1 ? "disabled" : ""
+        } 
             class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
             <i class="uil uil-angle-left text-gray-600 dark:text-gray-300"></i>
         </button>
@@ -255,8 +255,8 @@ function renderPagination() {
 
   paginationHTML += `
         <button onclick="changePage(${currentPage + 1})" ${
-    currentPage === totalPages ? "disabled" : ""
-  } 
+          currentPage === totalPages ? "disabled" : ""
+        } 
             class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
             <i class="uil uil-angle-right text-gray-600 dark:text-gray-300"></i>
         </button>
@@ -311,7 +311,7 @@ function setupEventListeners() {
     "sortDropdownMenu",
     "sortSelectedText",
     "sortDropdownIcon",
-    filterByRole
+    filterByRole,
   );
 
   // Status filter dropdown
@@ -320,7 +320,7 @@ function setupEventListeners() {
     "statusDropdownMenu",
     "statusSelectedText",
     "statusDropdownIcon",
-    filterByStatus
+    filterByStatus,
   );
 
   // Create account button
@@ -514,7 +514,26 @@ function openCreateAccountModal() {
     secondaryButton: {
       text: "Cancel",
     },
-    onPrimary: handleCreateAccount,
+    onPrimary: () => {
+      const fullName = document.getElementById("createFullName").value.trim();
+      const username = document.getElementById("createUsername").value.trim();
+      const password = document.getElementById("createPassword").value;
+
+      if (!fullName || !username || !password) {
+        showToast("error", "Please fill in all fields");
+        modalManager.setButtonLoading("createAccountModal", "primary", false);
+        return false;
+      }
+
+      if (password.length < 8) {
+        showToast("error", "Password must be at least 8 characters");
+        modalManager.setButtonLoading("createAccountModal", "primary", false);
+        return false;
+      }
+
+      handleCreateAccount();
+      return false;
+    },
   });
 
   modalManager.show("createAccountModal");
@@ -698,17 +717,6 @@ async function handleCreateAccount() {
   const role = document.getElementById("createRole").value;
   const password = document.getElementById("createPassword").value;
 
-  // Validation
-  if (!fullName || !username || !password) {
-    showToast("error", "Please fill in all fields");
-    return;
-  }
-
-  if (password.length < 8) {
-    showToast("error", "Password must be at least 8 characters");
-    return;
-  }
-
   // Check username availability one final time
   const exists = await checkIfUsernameExists(username);
   if (exists) {
@@ -844,7 +852,19 @@ function editUser(userId) {
     secondaryButton: {
       text: "Cancel",
     },
-    onPrimary: () => handleUpdateAccount(userId),
+    onPrimary: () => {
+      const fullName = document.getElementById("editFullName").value.trim();
+      const username = document.getElementById("editUsername").value.trim();
+
+      if (!fullName || !username) {
+        showToast("error", "Please fill in all fields");
+        modalManager.setButtonLoading("editAccountModal", "primary", false);
+        return false;
+      }
+
+      handleUpdateAccount(userId);
+      return false;
+    },
   });
 
   modalManager.show("editAccountModal");
@@ -978,7 +998,24 @@ function resetPassword(userId) {
     secondaryButton: {
       text: "Cancel",
     },
-    onPrimary: () => handleChangePassword(userId),
+    onPrimary: () => {
+      const newPassword = document.getElementById("newPassword").value;
+
+      if (!newPassword) {
+        showToast("error", "Please enter a new password");
+        modalManager.setButtonLoading("changePasswordModal", "primary", false);
+        return false;
+      }
+
+      if (newPassword.length < 8) {
+        showToast("error", "Password must be at least 8 characters");
+        modalManager.setButtonLoading("changePasswordModal", "primary", false);
+        return false;
+      }
+
+      handleChangePassword(userId);
+      return false;
+    },
   });
 
   modalManager.show("changePasswordModal");
@@ -986,16 +1023,6 @@ function resetPassword(userId) {
 
 async function handleChangePassword(userId) {
   const newPassword = document.getElementById("newPassword").value;
-
-  if (!newPassword) {
-    showToast("error", "Please enter a new password");
-    return;
-  }
-
-  if (newPassword.length < 8) {
-    showToast("error", "Password must be at least 8 characters");
-    return;
-  }
 
   try {
     const response = await fetch("api/user_management/change-password.php", {
@@ -1240,7 +1267,16 @@ function showSuspendModal(user) {
     secondaryButton: {
       text: "Cancel",
     },
-    onPrimary: () => confirmSuspendUser(user.userId),
+    onPrimary: () => {
+      const reason = document.getElementById("suspensionReason").value.trim();
+      if (!reason) {
+        showToast("error", "Please provide a reason for suspension");
+        modalManager.setButtonLoading("suspendModal", "primary", false); // ← reset
+        return false;
+      }
+      confirmSuspendUser(user.userId);
+      return false;
+    },
   });
 
   modalManager.show("suspendModal");
@@ -1249,11 +1285,6 @@ function showSuspendModal(user) {
 async function confirmSuspendUser(userId) {
   const duration = document.getElementById("suspensionDuration").value;
   const reason = document.getElementById("suspensionReason").value.trim();
-
-  if (!reason) {
-    showToast("error", "Please provide a reason for suspension");
-    return;
-  }
 
   try {
     const response = await fetch("api/user_management/suspend-user.php", {
