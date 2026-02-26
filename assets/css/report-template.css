@@ -374,7 +374,7 @@ body {
   background-color: #22ad81;
 }
 
-.downloadBtn {
+.downloadBtn, .editBtn {
   background-color: #fff;
   color: #767676;
   border-color: #e5e7eb;
@@ -382,4 +382,55 @@ body {
 
 .downloadBtn:hover {
   background-color: #f9fafb;
+}
+
+@media print {
+  /* Hide everything */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the container and a4 pages */
+  .container,
+  .container *,
+  .a4,
+  .a4 * {
+    visibility: visible;
+  }
+
+  /* Hide FAB and edit banner */
+  .fab-container,
+  #editBanner {
+    display: none !important;
+  }
+
+  /* Remove container background and padding */
+  .container {
+    background-color: white !important;
+    padding: 0 !important;
+    min-height: unset !important;
+  }
+
+  /* Each a4 fills exactly one printed page */
+  .a4 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 8.5in;
+    height: 11in;
+    margin: 0;
+    padding: 40px;
+    box-shadow: none;
+    page-break-after: always;
+  }
+
+  .a4:last-child {
+    page-break-after: auto;
+  }
+
+  /* Remove page margins */
+  @page {
+    margin: 0;
+    size: letter portrait;
+  }
 }
