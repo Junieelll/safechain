@@ -23,18 +23,30 @@ function startSSE() {
   if (eventSource) eventSource.close();
 
   eventSource = new EventSource(
-    `api/incident_details/sse_incident.php?incident_id=${incidentId}`
+    `api/incident_details/sse_incident.php?incident_id=${incidentId}`,
   );
 
-  eventSource.addEventListener("timeline",  (e) => renderTimeline(JSON.parse(e.data)));
-  eventSource.addEventListener("notes",     (e) => renderNotes(JSON.parse(e.data)));
-  eventSource.addEventListener("evidence",  (e) => renderEvidenceGrid(JSON.parse(e.data)));
+  eventSource.addEventListener("timeline", (e) =>
+    renderTimeline(JSON.parse(e.data)),
+  );
+  eventSource.addEventListener("notes", (e) => renderNotes(JSON.parse(e.data)));
+  eventSource.addEventListener("evidence", (e) =>
+    renderEvidenceGrid(JSON.parse(e.data)),
+  );
 
-  eventSource.addEventListener("timeline_update", (e) => appendTimelineItems(JSON.parse(e.data)));
-  eventSource.addEventListener("notes_update",    (e) => appendNoteItems(JSON.parse(e.data)));
-  eventSource.addEventListener("evidence_update", (e) => appendEvidenceItems(JSON.parse(e.data)));
+  eventSource.addEventListener("timeline_update", (e) =>
+    appendTimelineItems(JSON.parse(e.data)),
+  );
+  eventSource.addEventListener("notes_update", (e) =>
+    appendNoteItems(JSON.parse(e.data)),
+  );
+  eventSource.addEventListener("evidence_update", (e) =>
+    appendEvidenceItems(JSON.parse(e.data)),
+  );
 
-  eventSource.addEventListener("heartbeat", () => {/* alive */});
+  eventSource.addEventListener("heartbeat", () => {
+    /* alive */
+  });
 
   eventSource.onerror = () => {
     eventSource.close();
@@ -66,16 +78,15 @@ function appendTimelineItems(newItems) {
   const empty = timeline.querySelector("p");
   if (empty) empty.remove();
 
-  // Remove pulse from current last item
-  const existing = timeline.querySelectorAll(".relative.pl-8");
-  existing.forEach((el) => {
-    el.querySelector(".animate-pulse")?.classList.remove("animate-pulse");
-    if (!el.classList.contains("pb-6")) el.classList.add("pb-6");
-  });
+  // Remove pulse from current first item
+  const existing = timeline.querySelector(".relative.pl-8");
+  if (existing) {
+    existing.querySelector(".animate-pulse")?.classList.remove("animate-pulse");
+  }
 
   newItems.forEach((item) => {
     const div = document.createElement("div");
-    div.className = "relative pl-8";
+    div.className = "relative pl-8 pb-6";
     div.innerHTML = `
       <div class="absolute left-0 top-1.5 w-4 h-4 rounded-full bg-blue-500 border-4 border-blue-100 dark:border-blue-900 animate-pulse"></div>
       <div class="flex justify-between items-center mb-1">
@@ -85,8 +96,7 @@ function appendTimelineItems(newItems) {
       <div class="text-sm text-gray-500 leading-relaxed">${item.description}</div>
       <div class="text-xs text-gray-500 mt-1">By: ${item.actor}</div>
     `;
-    timeline.appendChild(div);
-    div.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    timeline.insertBefore(div, timeline.firstChild);
   });
 }
 
@@ -127,7 +137,9 @@ function appendEvidenceItems(newEvidence) {
     renderedEvidenceIds.add(ev.id); // ← track it
   });
 
-  grid.insertAdjacentHTML("beforeend", `
+  grid.insertAdjacentHTML(
+    "beforeend",
+    `
     <div onclick="uploadEvidence()"
          class="aspect-square bg-transparent border-2 border-dashed border-gray-300 dark:border-neutral-600 
                 rounded-lg flex flex-col items-center justify-center cursor-pointer 
@@ -135,7 +147,10 @@ function appendEvidenceItems(newEvidence) {
       <i class="uil uil-plus text-4xl text-gray-400"></i>
       <span class="text-xs text-gray-400 mt-1">Add</span>
     </div>
-  `);
+  `,
+  );
+
+  updateEvidenceCount(renderedEvidenceIds.size);
 }
 
 // Set admin name from session/PHP on page load
@@ -216,7 +231,7 @@ function renderEvidenceGrid(evidenceList) {
   if (!grid) return;
 
   grid.innerHTML = "";
-  renderedEvidenceIds.clear(); // ← reset on full re-render
+  renderedEvidenceIds.clear();
 
   if (evidenceList.length === 0) {
     grid.innerHTML = `
@@ -228,19 +243,27 @@ function renderEvidenceGrid(evidenceList) {
   } else {
     evidenceList.forEach((ev) => {
       grid.insertAdjacentHTML("beforeend", buildEvidenceTile(ev));
-      renderedEvidenceIds.add(ev.id); // ← track it
+      renderedEvidenceIds.add(ev.id);
     });
+
+    // Add tile only shown when evidence exists
+    grid.insertAdjacentHTML("beforeend", `
+      <div onclick="uploadEvidence()"
+           class="aspect-square bg-transparent border-2 border-dashed border-gray-300 dark:border-neutral-600 
+                  rounded-lg flex flex-col items-center justify-center cursor-pointer 
+                  hover:border-gray-400 dark:hover:border-neutral-400 transition-all">
+        <i class="uil uil-plus text-4xl text-gray-400"></i>
+        <span class="text-xs text-gray-400 mt-1">Add</span>
+      </div>
+    `);
   }
 
-  grid.insertAdjacentHTML("beforeend", `
-    <div onclick="uploadEvidence()"
-         class="aspect-square bg-transparent border-2 border-dashed border-gray-300 dark:border-neutral-600 
-                rounded-lg flex flex-col items-center justify-center cursor-pointer 
-                hover:border-gray-400 dark:hover:border-neutral-400 transition-all">
-      <i class="uil uil-plus text-4xl text-gray-400"></i>
-      <span class="text-xs text-gray-400 mt-1">Add</span>
-    </div>
-  `);
+  updateEvidenceCount(evidenceList.length);
+}
+
+function updateEvidenceCount(count) {
+  const badge = document.getElementById("evidenceCount");
+  if (badge) badge.textContent = count;
 }
 
 function buildEvidenceTile(ev) {
@@ -460,26 +483,22 @@ function renderTimeline(timelineItems) {
 
   timeline.innerHTML = timelineItems
     .map((item, index) => {
-      const isLast = index === timelineItems.length - 1;
+      const isFirst = index === 0; // first in DESC = most recent
       return `
-      <div class="relative pl-8 ${!isLast ? "pb-6" : ""}">
+      <div class="relative pl-8 ${index !== timelineItems.length - 1 ? "pb-6" : ""}">
         <div class="absolute left-0 top-1.5 w-4 h-4 rounded-full bg-blue-500 border-4 border-blue-100 dark:bg-blue-700 dark:border-blue-900 ${
-          isLast ? "animate-pulse" : ""
+          isFirst ? "animate-pulse" : ""
         }"></div>
         ${
-          !isLast
+          index !== timelineItems.length - 1
             ? '<div class="absolute left-[7px] top-5 w-0.5 h-full bg-gray-200 dark:bg-neutral-600"></div>'
             : ""
         }
         <div class="flex justify-between items-center mb-1">
-          <span class="font-semibold text-gray-900 dark:text-neutral-300 text-sm">${
-            item.title
-          }</span>
+          <span class="font-semibold text-gray-900 dark:text-neutral-300 text-sm">${item.title}</span>
           <span class="text-xs text-gray-500">${item.time}</span>
         </div>
-        <div class="text-sm text-gray-500 leading-relaxed">${
-          item.description
-        }</div>
+        <div class="text-sm text-gray-500 leading-relaxed">${item.description}</div>
         <div class="text-xs text-gray-500 mt-1">By: ${item.actor}</div>
       </div>
     `;
@@ -487,84 +506,23 @@ function renderTimeline(timelineItems) {
     .join("");
 }
 
-// Function to generate dynamic incident description
-function generateIncidentDescription(incident) {
-  const type = incident.type.toLowerCase();
-  const location = incident.location;
-  const date = incident.date_reported;
-  const time = incident.time_reported;
-  const barangay = "Gulod"; // You can make this dynamic too if you have it in the data
+function updateActionButtons(status, hasReport) {
+  const markResolvedBtn = document.getElementById("markResolvedBtn");
+  const generateReportBtn = document.getElementById("generateReportBtn");
 
-  // Time-based context
-  const hour = parseInt(time.split(":")[0]);
-  const period =
-    hour >= 6 && hour < 12
-      ? "morning"
-      : hour >= 12 && hour < 18
-        ? "afternoon"
-        : hour >= 18 && hour < 21
-          ? "evening"
-          : "night";
-
-  // Day context
-  const reportDate = new Date(date);
-  const today = new Date();
-  const isToday = reportDate.toDateString() === today.toDateString();
-  const dateContext = isToday ? "today" : `on ${date}`;
-
-  // Description templates based on incident type
-  const descriptions = {
-    fire: [
-      `Fire emergency reported ${dateContext} at ${time} in ${location}, Barangay ${barangay}. `,
-      `Incident occurred during ${period} hours. `,
-      `Smoke and flames visible from the area. `,
-      `Immediate response required to prevent spread to nearby structures. `,
-      `Residents in the vicinity have been alerted and evacuation procedures initiated. `,
-      `Fire department has been notified for immediate deployment. `,
-      `Initial assessment indicates potential structural damage. `,
-      `No casualties confirmed at the time of reporting.`,
-    ],
-    flood: [
-      `Flood emergency reported ${dateContext} at ${time} in ${location}, Barangay ${barangay}. `,
-      `Water levels rising during ${period} hours. `,
-      `Multiple households affected by flooding in the immediate area. `,
-      `Road access may be limited due to water accumulation. `,
-      `Residents advised to move to higher ground and secure valuables. `,
-      `Local authorities monitoring water levels closely. `,
-      `Emergency response teams preparing evacuation support if needed. `,
-      `Weather conditions being assessed for potential worsening.`,
-    ],
-    crime: [
-      `Crime incident reported ${dateContext} at ${time} in ${location}, Barangay ${barangay}. `,
-      `Incident occurred during ${period} hours. `,
-      `Immediate police response requested for the area. `,
-      `Scene is being secured to preserve evidence. `,
-      `Witnesses present and providing initial statements. `,
-      `Additional security measures being implemented in the vicinity. `,
-      `Investigation unit has been dispatched to the location. `,
-      `Residents in the area advised to remain vigilant and report any suspicious activity.`,
-    ],
-  };
-
-  // Get the appropriate description array
-  const descArray = descriptions[type] || descriptions.fire;
-
-  // Randomly select 4-6 sentences for variety
-  const numSentences = Math.floor(Math.random() * 3) + 4; // 4-6 sentences
-  const selectedSentences = [];
-
-  // Always include first sentence (main context)
-  selectedSentences.push(descArray[0]);
-
-  // Randomly select from remaining sentences
-  const remainingSentences = descArray.slice(1);
-  const shuffled = remainingSentences.sort(() => Math.random() - 0.5);
-
-  for (let i = 0; i < Math.min(numSentences - 1, shuffled.length); i++) {
-    selectedSentences.push(shuffled[i]);
+  // Hide "Mark as Resolved" if already resolved
+  if (status === "resolved") {
+    markResolvedBtn.classList.add("hidden");
+  } else {
+    markResolvedBtn.classList.remove("hidden");
   }
 
-  return selectedSentences.join("");
+  // Hide "Generate Report" if no report exists yet
+  if (!hasReport) {
+    generateReportBtn.classList.add("hidden");
+  } else {
+    generateReportBtn.classList.remove("hidden");
+  }
 }
 
 async function getAddressFromCoordinates(lat, lng) {
@@ -609,9 +567,6 @@ async function populateIncidentDetails(incident) {
       incident.type,
     )}`;
 
-  // Update status badge
-  updateStatusBadge(incident.status);
-
   // Update incident details
   document.querySelectorAll(
     ".grid.grid-cols-1.md\\:grid-cols-2.gap-5",
@@ -630,12 +585,20 @@ async function populateIncidentDetails(incident) {
     </div>
   `;
 
+  updateStatusBadge(incident.status);
+  updateActionButtons(incident.status, !!incident.report_description);
+
+  // Hide description label + box if no report
+  const descriptionSection = document.getElementById("descriptionSection");
   const descriptionBox = document.querySelector(
     ".bg-gray-50.dark\\:bg-neutral-700.border-l-4.border-blue-500",
   );
-  if (descriptionBox) {
-    const generatedDescription = generateIncidentDescription(incident);
-    descriptionBox.textContent = generatedDescription;
+
+  if (incident.report_description) {
+    descriptionBox.textContent = incident.report_description;
+    descriptionSection?.classList.remove("hidden");
+  } else {
+    descriptionSection?.classList.add("hidden");
   }
 
   const geocodedAddress =
@@ -1325,7 +1288,9 @@ async function uploadSelectedFiles() {
 function handleFileSelection(event) {
   const files = Array.from(event.target.files);
   files.forEach((file) => {
-    if (!selectedFiles.find((f) => f.name === file.name && f.size === file.size)) {
+    if (
+      !selectedFiles.find((f) => f.name === file.name && f.size === file.size)
+    ) {
       selectedFiles.push(file);
     }
   });
@@ -1338,21 +1303,32 @@ function updateFilesList() {
   if (!filesList) return;
 
   if (selectedFiles.length === 0) {
-    filesList.innerHTML = '<p class="text-center text-sm text-gray-500 dark:text-gray-400 py-4">No files selected</p>';
+    filesList.innerHTML =
+      '<p class="text-center text-sm text-gray-500 dark:text-gray-400 py-4">No files selected</p>';
     return;
   }
 
-  filesList.innerHTML = selectedFiles.map((file, index) => {
-    const size = file.size > 1024 * 1024
-      ? (file.size / (1024 * 1024)).toFixed(2) + " MB"
-      : (file.size / 1024).toFixed(1) + " KB";
+  filesList.innerHTML = selectedFiles
+    .map((file, index) => {
+      const size =
+        file.size > 1024 * 1024
+          ? (file.size / (1024 * 1024)).toFixed(2) + " MB"
+          : (file.size / 1024).toFixed(1) + " KB";
 
-    let iconClass = "uil-image", iconColor = "text-purple-600";
-    if (file.type.startsWith("video/"))       { iconClass = "uil-video";         iconColor = "text-blue-600"; }
-    else if (file.type === "application/pdf") { iconClass = "uil-file-alt";      iconColor = "text-red-600"; }
-    else if (file.type.includes("word"))      { iconClass = "uil-file-edit-alt"; iconColor = "text-blue-700"; }
+      let iconClass = "uil-image",
+        iconColor = "text-purple-600";
+      if (file.type.startsWith("video/")) {
+        iconClass = "uil-video";
+        iconColor = "text-blue-600";
+      } else if (file.type === "application/pdf") {
+        iconClass = "uil-file-alt";
+        iconColor = "text-red-600";
+      } else if (file.type.includes("word")) {
+        iconClass = "uil-file-edit-alt";
+        iconColor = "text-blue-700";
+      }
 
-    return `
+      return `
       <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-neutral-700 rounded-lg group">
         <i class="uil ${iconClass} text-2xl ${iconColor} flex-shrink-0"></i>
         <div class="flex-1 min-w-0">
@@ -1365,7 +1341,8 @@ function updateFilesList() {
         </button>
       </div>
     `;
-  }).join("");
+    })
+    .join("");
 }
 
 function removeFile(index) {

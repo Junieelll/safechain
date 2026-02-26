@@ -20,7 +20,7 @@ try {
             created_at
         FROM incident_timeline
         WHERE incident_id = '$incidentId'
-        ORDER BY created_at ASC
+        ORDER BY created_at DESC
     ";
     
     $result = mysqli_query($conn, $query);

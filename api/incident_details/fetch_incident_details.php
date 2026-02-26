@@ -30,10 +30,13 @@ try {
             r.resident_id as reporter_user_id,
             r.contact as reporter_contact,
             r.address as reporter_address,
-            r.registered_date
+            r.registered_date,
+            ir.description as report_description
         FROM incidents i
         LEFT JOIN residents r ON i.reporter = r.name
+        LEFT JOIN incident_reports ir ON ir.incident_id = i.id
         WHERE i.id = '$incidentId' AND i.is_archived = 0
+        LIMIT 1
     ";
 
     $result = mysqli_query($conn, $query);

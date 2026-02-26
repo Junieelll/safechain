@@ -115,13 +115,9 @@ $currentUserRole = AuthChecker::getUserRole();
               </div>
             </div>
 
-            <div>
-              <span
-                class="block text-xs text-gray-500 dark:text-neutral-300 font-semibold uppercase tracking-wider mb-2.5">Description</span>
-              <div
-                class="bg-gray-50 dark:bg-neutral-700 dark:border-blue-800 border-l-4 border-blue-500 p-4 rounded-lg text-xs leading-relaxed text-gray-600 dark:text-neutral-400">
-                Loading...
-              </div>
+            <div id="descriptionSection">
+              <span class="block text-xs text-gray-500 dark:text-neutral-300 font-semibold uppercase tracking-wider mb-2.5">Description</span>
+              <div id="descriptionBox" class="bg-gray-50 dark:bg-neutral-700 border-l-4 border-blue-500 p-4 mb-5 rounded-lg text-sm text-gray-600 dark:text-neutral-400 leading-relaxed"></div>
             </div>
           </div>
 
@@ -282,6 +278,7 @@ $currentUserRole = AuthChecker::getUserRole();
         <!-- Right Column (1/3) -->
         <div class="space-y-7">
           <!-- Actions Card -->
+          <!-- Actions Card -->
           <div class="bg-white dark:bg-neutral-800 rounded-3xl p-7">
             <div class="flex justify-between items-center pb-4 mb-5 border-b-2 border-gray-100 dark:border-neutral-600">
               <h2 class="text-base font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-2.5">
@@ -291,18 +288,21 @@ $currentUserRole = AuthChecker::getUserRole();
             </div>
 
             <div class="space-y-2.5">
-
-              <button onclick="updateStatus()"
+              <button id="updateStatusBtn" onclick="updateStatus()"
                 class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-xs font-medium hover:bg-blue-600 hover:-translate-y-0.5 hover:shadow-lg transition-all">
-                <i class="uil uil-pen text-lg"></i> Update Status</button>
-              <button onclick="markAsResolved()"
-                class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white rounded-xl text-xs font-medium hover:bg-emerald-600 hover:-translate-y-0.5 hover:shadow-lg transition-all">
-                <i class="uil uil-check-circle text-lg"></i> Mark as Resolved </button>
-              <button onclick="generateReport()"
-                class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-white dark:bg-neutral-600 dark:hover:bg-neutral-700 dark:border-neutral-700 dark:text-neutral-300 text-gray-500 border-2 border-gray-200 rounded-xl text-xs font-medium hover:bg-gray-50 hover:-translate-y-0.5 hover:border-gray-300 transition-all">
-                <i class="uil uil-file-download text-lg"></i> Generate Report </button>
-            </div>
+                <i class="uil uil-pen text-lg"></i> Update Status
+              </button>
 
+              <button id="markResolvedBtn" onclick="markAsResolved()"
+                class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white rounded-xl text-xs font-medium hover:bg-emerald-600 hover:-translate-y-0.5 hover:shadow-lg transition-all">
+                <i class="uil uil-check-circle text-lg"></i> Mark as Resolved
+              </button>
+
+              <button id="generateReportBtn" onclick="generateReport()"
+                class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-white dark:bg-neutral-600 dark:hover:bg-neutral-700 dark:border-neutral-700 dark:text-neutral-300 text-gray-500 border-2 border-gray-200 rounded-xl text-xs font-medium hover:bg-gray-50 hover:-translate-y-0.5 hover:border-gray-300 transition-all">
+                <i class="uil uil-file-download text-lg"></i> Generate Report
+              </button>
+            </div>
           </div>
 
           <!-- Timeline Card -->
