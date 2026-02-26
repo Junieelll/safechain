@@ -49,7 +49,7 @@ $currentUserRole = AuthChecker::getUserRole();
       <!-- Header -->
       <div class="mb-8">
         <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-neutral-400 mb-4">
-          <a href="admin/incidents"
+          <a href="incident"
             class="text-blue-500 hover:text-blue-700 transition-colors font-medium">Incidents</a>
           <span>
             <i class="uil uil-angle-right"></i>

@@ -93,7 +93,7 @@ if (!AuthChecker::isLoggedIn()) {
                             id="filterFlood"
                             title="Flood Incidents"
                             data-filter="flood">
-                            <i class="uil uil-cloud-showers-heavy"></i>
+                            <i class="uil uil-water"></i>
                         </button>
                     </div>
 

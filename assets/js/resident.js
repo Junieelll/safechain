@@ -115,7 +115,7 @@ function showLoadingSkeleton() {
             </div>
           </td>
         </tr>
-      `
+      `,
       )
       .join("");
 
@@ -189,19 +189,19 @@ function updateStats() {
   }).length;
 
   // Calculate time since last registration with dynamic units
-  let timeSinceText = '0h';
+  let timeSinceText = "0h";
   if (residentsData.length > 0) {
     const sortedByDate = [...residentsData].sort(
-      (a, b) => b.registeredDate - a.registeredDate
+      (a, b) => b.registeredDate - a.registeredDate,
     );
     const lastRegistration = sortedByDate[0].registeredDate;
     const millisecondsSince = new Date() - lastRegistration;
-    
+
     const hours = Math.floor(millisecondsSince / (1000 * 60 * 60));
     const days = Math.floor(millisecondsSince / (1000 * 60 * 60 * 24));
     const months = Math.floor(days / 30);
     const years = Math.floor(days / 365);
-    
+
     if (years > 0) {
       timeSinceText = `${years}y`;
     } else if (months > 0) {
@@ -248,6 +248,15 @@ function filterAndSortResidents() {
       filteredResidents.sort((a, b) => b.name.localeCompare(a.name));
       break;
   }
+}
+
+function valueOrBadge(value) {
+  if (!value || value.trim() === "") {
+    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-neutral-700 text-gray-400 dark:text-gray-500 text-xs font-medium italic">
+      <i class="uil uil-minus-circle text-sm"></i> Not set
+    </span>`;
+  }
+  return value;
 }
 
 // Render table
@@ -306,17 +315,11 @@ function renderTable() {
         <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${
           resident.id
         }</td>
-        <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${
-          resident.address
-        }</td>
-        <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${
-          resident.contact
-        }</td>
-        <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${
-          resident.deviceId
-        }</td>
+        <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${valueOrBadge(resident.address)}</td>
+<td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${valueOrBadge(resident.contact)}</td>
+<td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${valueOrBadge(resident.deviceId)}</td>
         <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${formatDate(
-          resident.registeredDate
+          resident.registeredDate,
         )}</td>
         <td class="px-6 py-4">
           <div class="flex items-center gap-2">
@@ -347,7 +350,7 @@ function renderTable() {
 function renderPagination() {
   const totalPages = Math.ceil(filteredResidents.length / itemsPerPage);
   const paginationContainer = document.querySelector(
-    ".flex.items-center.justify-center.gap-2.mt-6"
+    ".flex.items-center.justify-center.gap-2.mt-6",
   );
 
   if (totalPages === 0) {
@@ -494,7 +497,7 @@ sortDropdownItems.forEach((item) => {
     sortSelectedText.textContent = text;
 
     sortDropdownItems.forEach((i) =>
-      i.classList.remove(...activeDropdownClasses)
+      i.classList.remove(...activeDropdownClasses),
     );
     e.target.classList.add(...activeDropdownClasses);
 
@@ -771,22 +774,22 @@ async function saveResidentChanges() {
   const deviceId = document.getElementById("editDeviceId").value.trim();
 
   try {
-    const response = await fetch('api/residents/update_resident.php', {
-      method: 'POST',
+    const response = await fetch("api/residents/update_resident.php", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         id: id,
         name: name,
         address: address,
         contact: contact,
-        deviceId: deviceId
-      })
+        deviceId: deviceId,
+      }),
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       // Refresh data from database
       await fetchResidents();
@@ -796,7 +799,7 @@ async function saveResidentChanges() {
       showToast("error", "Failed to update resident: " + result.error);
     }
   } catch (error) {
-    console.error('Update error:', error);
+    console.error("Update error:", error);
     showToast("error", "Failed to update resident. Please try again.");
   }
 }
@@ -843,30 +846,34 @@ async function confirmArchiveResident() {
   if (!id) return;
 
   try {
-    const response = await fetch('api/residents/archive_resident.php', {
-      method: 'POST',
+    const response = await fetch("api/residents/archive_resident.php", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ id: id })
+      body: JSON.stringify({ id: id }),
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
-      const residentName = residentsData.find(r => r.id === id)?.name || 'Resident';
-      
+      const residentName =
+        residentsData.find((r) => r.id === id)?.name || "Resident";
+
       // Refresh data from database
       await fetchResidents();
       currentPage = 1;
       updateStats();
       renderTable();
-      showToast("success", `${residentName} has been moved to archive successfully!`);
+      showToast(
+        "success",
+        `${residentName} has been moved to archive successfully!`,
+      );
     } else {
       showToast("error", "Failed to archive resident: " + result.error);
     }
   } catch (error) {
-    console.error('Archive error:', error);
+    console.error("Archive error:", error);
     showToast("error", "Failed to archive resident. Please try again.");
   }
 
@@ -913,5 +920,4 @@ window.addEventListener("DOMContentLoaded", () => {
   updateStats();
 
   showLoadingSkeleton();
-
 });
