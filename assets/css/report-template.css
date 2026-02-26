@@ -51,8 +51,8 @@ body {
 }
 
 .a4 {
-  width: 8.5in;
-  height: 11in;
+  width: 210mm;
+  height: 297mm;
   background-color: var(--bg-light);
   padding: 40px;
   display: flex;
@@ -105,35 +105,35 @@ body {
   flex-shrink: 0;
 }
 
-.content{
-    width: 70%;
-    flex: 1;
-    border-top: 3px solid #000;
-    padding: 30px;
-    overflow-y: auto;
-    position: relative;
-    font-family: 'Times New Roman', Times, serif;
+.content {
+  width: 70%;
+  flex: 1;
+  border-top: 3px solid #000;
+  padding: 30px;
+  overflow-y: auto;
+  position: relative;
+  font-family: "Times New Roman", Times, serif;
 }
 
-.content::before{
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url('../img/qc-logo.jpg');
-    background-repeat: no-repeat;
-    background-position: center 150px;
-    background-size: 400px; /* Adjust size as needed */
-    opacity: 0.1; /* Adjust opacity (0.05 to 0.2 works well) */
-    z-index: 0;
-    pointer-events: none;
+.content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("../img/qc-logo.jpg");
+  background-repeat: no-repeat;
+  background-position: center 150px;
+  background-size: 400px; /* Adjust size as needed */
+  opacity: 0.1; /* Adjust opacity (0.05 to 0.2 works well) */
+  z-index: 0;
+  pointer-events: none;
 }
 
-.content > *{
-    position: relative;
-    z-index: 1;
+.content > * {
+  position: relative;
+  z-index: 1;
 }
 
 .barangay-captain {
@@ -238,15 +238,15 @@ body {
 }
 
 .long-bond {
-    page-break-after: always;
+  page-break-after: always;
 }
 
 .long-bond:last-child {
-    page-break-after: auto;
+  page-break-after: auto;
 }
 
 .section-title {
-    page-break-after: avoid; /* Prevent titles from being orphaned */
+  page-break-after: avoid; /* Prevent titles from being orphaned */
 }
 
 .fab-container {
@@ -272,7 +272,10 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 16px rgba(39, 194, 145, 0.4);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
   position: relative;
   flex-shrink: 0;
 }
@@ -287,7 +290,9 @@ body {
   font-size: 22px;
   color: #fff;
   position: absolute;
-  transition: opacity 0.25s ease, transform 0.3s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.3s ease;
 }
 
 /* Plus icon visible by default (closed state) */
@@ -338,7 +343,10 @@ body {
   /* Animation base state (closed) */
   opacity: 0;
   transform: translateY(12px) scale(0.92);
-  transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.2s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    background-color 0.2s ease;
 }
 
 .fab-action-btn i {
@@ -374,7 +382,8 @@ body {
   background-color: #22ad81;
 }
 
-.downloadBtn, .editBtn {
+.downloadBtn,
+.editBtn {
   background-color: #fff;
   color: #767676;
   border-color: #e5e7eb;
@@ -382,6 +391,11 @@ body {
 
 .downloadBtn:hover {
   background-color: #f9fafb;
+}
+
+@page {
+  margin: 0;
+  size: A4 portrait;
 }
 
 @media print {
@@ -416,8 +430,8 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    width: 8.5in;
-    height: 11in;
+    width: 210mm;
+    height: 297mm;
     margin: 0;
     padding: 40px;
     box-shadow: none;

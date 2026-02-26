@@ -340,10 +340,10 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                     const pdf = new jsPDF({
                         orientation: "portrait",
                         unit: "mm",
-                        format: "letter"
+                        format: "a4"
                     });
-                    const pageWidthMm = 215.9;
-                    const pageHeightMm = 279.4;
+                    const pageWidthMm = 210;
+                    const pageHeightMm = 297;
 
                     for (let i = 0; i < pages.length; i++) {
                         const canvas = await html2canvas(pages[i], {
