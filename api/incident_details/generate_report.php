@@ -81,7 +81,13 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
 </head>
 
 <body>
-
+    <div id="editBanner" class="hidden" style="
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: #3b82f6; color: white;
+  text-align: center; padding: 8px;
+  font-size: 13px; font-family: sans-serif;">
+        ✏️ Edit mode — click any text to modify it. Click <strong>Done Editing</strong> when finished.
+    </div>
     <!-- FAB -->
     <div class="fab-container open">
         <div class="fab-actions">
@@ -347,7 +353,7 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
 
                     for (let i = 0; i < pages.length; i++) {
                         const canvas = await html2canvas(pages[i], {
-                            scale: 2,
+                            scale: 4,
                             useCORS: true,
                             logging: false,
                             backgroundColor: "#ffffff",
@@ -358,7 +364,7 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                         const imgHeightMm = canvas.height * ratio;
 
                         if (i > 0) pdf.addPage("letter", "portrait");
-                        pdf.addImage(imgData, "JPEG", 0, 0, pageWidthMm, Math.min(imgHeightMm, pageHeightMm));
+                        pdf.addImage(imgData, "PNG", 0, 0, pageWidthMm, Math.min(imgHeightMm, pageHeightMm));
                     }
 
                     pdf.save(`IncidentReport_<?= $incident['id'] ?>.pdf`);
