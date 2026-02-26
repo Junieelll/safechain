@@ -34,6 +34,7 @@ try {
         throw new Exception('Failed to save file');
     }
 
+    // Insert evidence record
     $stmt = $conn->prepare("
         INSERT INTO incident_evidence (incident_id, file_name, file_type, file_path, uploaded_by)
         VALUES (?, ?, ?, ?, ?)
@@ -43,6 +44,19 @@ try {
     $new_id = $conn->insert_id;
     $stmt->close();
 
+    // Add timeline entry for evidence upload
+    $timelineTitle       = 'Evidence Uploaded';
+    $timelineDescription = "File \"{$file_name}\" was uploaded as evidence.";
+
+    $tlStmt = $conn->prepare("
+        INSERT INTO incident_timeline (incident_id, title, description, actor)
+        VALUES (?, ?, ?, ?)
+    ");
+    $tlStmt->bind_param('ssss', $incident_id, $timelineTitle, $timelineDescription, $uploaded_by);
+    $tlStmt->execute();
+    $tlStmt->close();
+
+    // Fetch the inserted evidence row to return
     $row = $conn->query("SELECT * FROM incident_evidence WHERE id = $new_id")->fetch_assoc();
 
     echo json_encode([
@@ -56,6 +70,8 @@ try {
             'uploaded_at' => $row['uploaded_at'],
         ]
     ]);
+
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
+?>
