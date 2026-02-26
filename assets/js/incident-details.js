@@ -1361,74 +1361,47 @@ function generateReport() {
     subtitle: "Export incident details as PDF",
     body: `
       <div class="space-y-3">
-        <p class="text-sm text-gray-600">This will generate a printable PDF using the Barangay report template.</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          This will generate a printable PDF using the Barangay report template.
+        </p>
         <div class="space-y-2">
-          <label class="block text-xs font-semibold">Action</label>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Action</label>
           <div class="flex gap-2">
-            <button id="openReportBtn" class="w-1/2 px-4 py-2 bg-blue-500 text-white rounded-lg text-xs">Open & Print</button>
-            <button id="downloadReportBtn" class="w-1/2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs">Download PDF</button>
+            <button id="openReportBtn"
+              class="w-1/2 px-4 py-2 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600 transition-all">
+              Open & Print
+            </button>
+            <button id="downloadReportBtn"
+              class="w-1/2 px-4 py-2 bg-white dark:bg-neutral-700 dark:text-neutral-300 border border-gray-200 dark:border-neutral-600 rounded-lg text-xs hover:bg-gray-50 transition-all">
+              Download PDF
+            </button>
           </div>
         </div>
       </div>
     `,
-    primaryButton: {
-      text: "Close",
-    },
-    secondaryButton: {
-      text: "Cancel",
-    },
+    primaryButton: { text: "Close" },
+    secondaryButton: { text: "Cancel" },
     onPrimary: () => modalManager.close("reportModal"),
   });
 
   modalManager.show("reportModal");
 
-  // attach handlers after modal opens
   setTimeout(() => {
-    const openBtn = document.getElementById("openReportBtn");
-    const downloadBtn = document.getElementById("downloadReportBtn");
+    const reportUrl = `api/incident_details/generate_report.php?id=${encodeURIComponent(incidentId)}&admin_name=${encodeURIComponent(currentAdminName)}`;
 
-    if (openBtn) {
-      openBtn.addEventListener("click", () => {
-        const url = `api/incident_details/generate_report.php?id=${encodeURIComponent(incidentId)}&admin_name=${encodeURIComponent(currentAdminName)}`;
-        window.open(url, "_blank");
-        addTimelineItem(
-          "Report Generated",
-          `Report opened: #EMG-${incidentId}`,
-        );
-        showToast("success", "Report opened in a new tab");
-        modalManager.close("reportModal");
-      });
-    }
+    // Open & Print — opens the report page, user prints from there
+    document.getElementById("openReportBtn")?.addEventListener("click", () => {
+      window.open(reportUrl, "_blank");
+      modalManager.close("reportModal");
+      showToast("success", "Report opened in a new tab");
+    });
 
-    if (downloadBtn) {
-      downloadBtn.addEventListener("click", async () => {
-        try {
-          showToast("info", "Preparing PDF...");
-          const resp = await fetch(
-            `api/incident_details/generate_report.php?id=${encodeURIComponent(incidentId)}&download=1&admin_name=${encodeURIComponent(currentAdminName)}`,
-          );
-          if (!resp.ok) throw new Error("Failed to generate PDF");
-          const blob = await resp.blob();
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `IncidentReport_${incidentId}.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
-          addTimelineItem(
-            "Report Generated",
-            `Report downloaded: #EMG-${incidentId}`,
-          );
-          showToast("success", "Report downloaded");
-          modalManager.close("reportModal");
-        } catch (err) {
-          console.error(err);
-          showToast("error", "Failed to generate report");
-        }
-      });
-    }
+    // Download PDF — opens in hidden iframe, clicks the download button automatically
+    document.getElementById("downloadReportBtn")?.addEventListener("click", () => {
+      window.open(reportUrl + "&autodownload=1", "_blank");
+      modalManager.close("reportModal");
+      showToast("info", "PDF download will start in the new tab");
+    });
   }, 50);
 }
 
