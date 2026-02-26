@@ -231,216 +231,90 @@ $avatar_color = getUserColor($user_id);
         }
 
         // Render announcements
-function renderAnnouncements(announcements) {
-    const feed = document.getElementById('announcementsFeed');
+        function renderAnnouncements(announcements) {
+            const feed = document.getElementById('announcementsFeed');
 
-    if (announcements.length === 0) {
-        feed.innerHTML = `
-            <div class="text-center py-16 text-gray-400">
-                <i class="uil uil-megaphone text-5xl mb-4 opacity-40"></i>
-                <h3 class="text-xl font-semibold text-gray-600 mb-2">No announcements yet</h3>
-                <p class="text-sm">Be the first to share something with the community!</p>
-            </div>
-        `;
-        return;
-    }
+            if (announcements.length === 0) {
+                feed.innerHTML = `
+                    <div class="text-center py-16 text-gray-400">
+                        <i class="uil uil-megaphone text-5xl mb-4 opacity-40"></i>
+                        <h3 class="text-xl font-semibold text-gray-600 mb-2">No announcements yet</h3>
+                        <p class="text-sm">Be the first to share something with the community!</p>
+                    </div>
+                `;
+                return;
+            }
 
-    feed.innerHTML = announcements.map(announcement => {
-        const authorColor = getUserColor(announcement.user_id || 'USR-2025-001');
-        const isAuthor = announcement.user_id === CURRENT_USER_ID;
-
-        return `
-        <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 shadow-sm">
-            <div class="flex gap-3 mb-4">
-                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(announcement.author_name)}&background=${authorColor}&color=fff&size=128" 
-                     alt="Avatar" class="w-10 h-10 rounded-full object-cover flex-shrink-0">
-                <div class="flex-1">
-                    <div class="font-semibold text-[15px] text-gray-900 dark:text-gray-200">${announcement.author_name}</div>
-                    <div class="text-[13px] text-gray-500 dark:text-gray-300">${formatTime(announcement.created_at)}</div>
-                </div>
-                ${isAuthor ? `
-                    <div class="relative">
-                        <button onclick="toggleDropdown(${announcement.id})" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors">
-                            <i class="uil uil-ellipsis-v text-xl"></i>
-                        </button>
-                        <div id="dropdown-${announcement.id}" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-10">
-                            <button onclick="editAnnouncement(${announcement.id})" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-950/20 flex items-center gap-2">
-                                <i class="uil uil-edit text-lg"></i>
-                                <span>Edit</span>
-                            </button>
-                            <button onclick="deleteAnnouncement(${announcement.id})" class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2">
-                                <i class="uil uil-trash-alt text-lg"></i>
-                                <span>Delete</span>
-                            </button>
+            feed.innerHTML = announcements.map(announcement => {
+                // Generate color based on author's user_id
+                const authorColor = getUserColor(announcement.user_id || 'USR-2025-001');
+                
+                // Check if current user is the author
+                const isAuthor = announcement.user_id === CURRENT_USER_ID;
+                
+                return `
+                <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 shadow-sm">
+                    <div class="flex gap-3 mb-4">
+                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(announcement.author_name)}&background=${authorColor}&color=fff&size=128" 
+                             alt="Avatar" class="w-10 h-10 rounded-full object-cover flex-shrink-0">
+                        <div class="flex-1">
+                            <div class="font-semibold text-[15px] text-gray-900 dark:text-gray-200">${announcement.author_name}</div>
+                            <div class="text-[13px] text-gray-500 dark:text-gray-300">${formatTime(announcement.created_at)}</div>
+                        </div>
+                        ${isAuthor ? `
+                            <div class="relative">
+                                <button onclick="toggleDropdown(${announcement.id})" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors">
+                                    <i class="uil uil-ellipsis-v text-xl"></i>
+                                </button>
+                                <div id="dropdown-${announcement.id}" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-10">
+                                    <button onclick="editAnnouncement(${announcement.id})" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-950/20 flex items-center gap-2">
+                                        <i class="uil uil-edit text-lg"></i>
+                                        <span>Edit</span>
+                                    </button>
+                                    <button onclick="deleteAnnouncement(${announcement.id})" class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2">
+                                        <i class="uil uil-trash-alt text-lg"></i>
+                                        <span>Delete</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="text-gray-700 dark:text-gray-200 leading-relaxed text-[15px] whitespace-pre-wrap break-words">${announcement.content}</div>
+                        
+                        ${announcement.media && announcement.media.length > 0 ? `
+                            <div class="mt-4 grid ${announcement.media.length === 1 ? 'grid-cols-1' : announcement.media.length === 2 ? 'grid-cols-2' : announcement.media.length === 3 ? 'grid-cols-3' : 'grid-cols-2'} gap-2">
+                                ${announcement.media.map((item, index) => `
+                                    <div class="rounded-lg overflow-hidden ${announcement.media.length === 3 && index === 0 ? 'col-span-3' : ''}">
+                                        ${item.type === 'video' ? `
+                                            <video src="${BASE_URL}${item.src}" controls class="w-full block"></video>
+                                        ` : `
+                                            <img src="${BASE_URL}${item.src}" alt="Announcement media" class="w-full block object-cover ${announcement.media.length > 1 ? 'h-48' : ''}">
+                                        `}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        
+                        ${announcement.link ? `
+                            <a href="${announcement.link}" target="_blank" class="mt-4 flex items-center gap-2.5 bg-emerald-50 dark:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-600 rounded-lg px-4 py-3.5 no-underline hover:bg-emerald-100 dark:hover:bg-emerald-800 transition-colors">
+                                <i class="uil uil-link-alt text-emerald-500 text-lg"></i>
+                                <div class="text-emerald-600 text-sm break-all">${announcement.link}</div>
+                            </a>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="flex gap-4 pt-3.5 border-t border-gray-100 dark:border-gray-700">
+                        <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-300 text-[13px]">
+                            <i class="uil uil-eye text-base"></i>
+                            ${formatNumber(announcement.views)} views
                         </div>
                     </div>
-                ` : ''}
-            </div>
-            
-            <div class="mb-4">
-                <div class="text-gray-700 dark:text-gray-200 leading-relaxed text-[15px] whitespace-pre-wrap break-words">${announcement.content}</div>
-                
-                ${announcement.media && announcement.media.length > 0 ? renderMediaGrid(announcement.media, announcement.id) : ''}
-                
-                ${announcement.link ? `
-                    <a href="${announcement.link}" target="_blank" class="mt-4 flex items-center gap-2.5 bg-emerald-50 dark:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-600 rounded-lg px-4 py-3.5 no-underline hover:bg-emerald-100 dark:hover:bg-emerald-800 transition-colors">
-                        <i class="uil uil-link-alt text-emerald-500 text-lg"></i>
-                        <div class="text-emerald-600 text-sm break-all">${announcement.link}</div>
-                    </a>
-                ` : ''}
-            </div>
-            
-            <div class="flex gap-4 pt-3.5 border-t border-gray-100 dark:border-gray-700">
-                <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-300 text-[13px]">
-                    <i class="uil uil-eye text-base"></i>
-                    ${formatNumber(announcement.views)} views
                 </div>
-            </div>
-        </div>
-        `;
-    }).join('');
-}
-        
-        function renderMediaGrid(media, announcementId) {
-    const count = media.length;
-    const maxVisible = 5;
-    const visibleMedia = media.slice(0, maxVisible);
-    const remaining = count - maxVisible;
-
-    let gridClass = '';
-    let itemClasses = [];
-
-    if (count === 1) {
-        gridClass = 'grid-cols-1';
-        itemClasses = ['col-span-1 h-72'];
-    } else if (count === 2) {
-        gridClass = 'grid-cols-2';
-        itemClasses = ['h-56', 'h-56'];
-    } else if (count === 3) {
-        gridClass = 'grid-cols-2';
-        itemClasses = ['col-span-2 h-56', 'h-48', 'h-48'];
-    } else if (count === 4) {
-        gridClass = 'grid-cols-2';
-        itemClasses = ['h-48', 'h-48', 'h-48', 'h-48'];
-    } else {
-        // 5+: first image spans 2 cols, rest fill row
-        gridClass = 'grid-cols-2';
-        itemClasses = ['col-span-2 h-56', 'h-44', 'h-44', 'h-44', 'h-44'];
-    }
-
-    const items = visibleMedia.map((item, index) => {
-        const isLast = index === visibleMedia.length - 1 && remaining > 0;
-        const heightClass = itemClasses[index] || 'h-44';
-
-        return `
-            <div class="relative rounded-xl overflow-hidden cursor-pointer ${heightClass} ${itemClasses[index]?.includes('col-span') ? itemClasses[index].split(' ')[0] : ''}"
-                 onclick="openLightbox(${announcementId}, ${index})">
-                ${item.type === 'video' ? `
-                    <video src="${BASE_URL}${item.src}" class="w-full h-full object-cover"></video>
-                    <div class="absolute inset-0 flex items-center justify-center bg-black/20">
-                        <div class="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
-                            <i class="uil uil-play text-gray-800 text-xl ml-0.5"></i>
-                        </div>
-                    </div>
-                ` : `
-                    <img src="${BASE_URL}${item.src}" alt="Media" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105">
-                `}
-                ${isLast ? `
-                    <div class="absolute inset-0 bg-black/60 flex items-center justify-center rounded-xl">
-                        <span class="text-white text-2xl font-bold">+${remaining}</span>
-                    </div>
-                ` : ''}
-                <div class="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-200 rounded-xl"></div>
-            </div>
-        `;
-    }).join('');
-
-    return `
-        <div class="mt-3 grid ${gridClass} gap-1.5" data-announcement-id="${announcementId}" data-media='${JSON.stringify(media)}'>
-            ${items}
-        </div>
-    `;
-}
-
-// Lightbox state
-let lightboxMedia = [];
-let lightboxIndex = 0;
-
-function openLightbox(announcementId, startIndex) {
-    const grid = document.querySelector(`[data-announcement-id="${announcementId}"]`);
-    lightboxMedia = JSON.parse(grid.dataset.media);
-    lightboxIndex = startIndex;
-
-    // Create lightbox if not exists
-    if (!document.getElementById('lightboxModal')) {
-        const lb = document.createElement('div');
-        lb.id = 'lightboxModal';
-        lb.className = 'fixed inset-0 z-50 bg-black/95 flex items-center justify-center';
-        lb.innerHTML = `
-            <button onclick="closeLightbox()" class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors z-10">
-                <i class="uil uil-times text-2xl"></i>
-            </button>
-            <div class="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-sm font-medium" id="lightboxCounter"></div>
-            <button onclick="lightboxPrev()" class="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-all z-10" id="lightboxPrevBtn">
-                <i class="uil uil-angle-left text-2xl"></i>
-            </button>
-            <div class="max-w-4xl max-h-[85vh] w-full px-16 flex items-center justify-center" id="lightboxContent"></div>
-            <button onclick="lightboxNext()" class="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-all z-10" id="lightboxNextBtn">
-                <i class="uil uil-angle-right text-2xl"></i>
-            </button>
-        `;
-        lb.addEventListener('click', (e) => { if (e.target === lb) closeLightbox(); });
-        document.body.appendChild(lb);
-    }
-
-    updateLightbox();
-    document.getElementById('lightboxModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-
-    // Keyboard navigation
-    document.addEventListener('keydown', lightboxKeyHandler);
-}
-
-function updateLightbox() {
-    const item = lightboxMedia[lightboxIndex];
-    const content = document.getElementById('lightboxContent');
-    const counter = document.getElementById('lightboxCounter');
-    const prevBtn = document.getElementById('lightboxPrevBtn');
-    const nextBtn = document.getElementById('lightboxNextBtn');
-
-    counter.textContent = `${lightboxIndex + 1} / ${lightboxMedia.length}`;
-    prevBtn.style.opacity = lightboxIndex === 0 ? '0.3' : '1';
-    nextBtn.style.opacity = lightboxIndex === lightboxMedia.length - 1 ? '0.3' : '1';
-
-    content.style.opacity = '0';
-    setTimeout(() => {
-        content.innerHTML = item.type === 'video'
-            ? `<video src="${BASE_URL}${item.src}" controls autoplay class="max-w-full max-h-[80vh] rounded-xl shadow-2xl"></video>`
-            : `<img src="${BASE_URL}${item.src}" alt="Media" class="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl">`;
-        content.style.opacity = '1';
-        content.style.transition = 'opacity 0.2s ease';
-    }, 150);
-}
-
-function lightboxPrev() {
-    if (lightboxIndex > 0) { lightboxIndex--; updateLightbox(); }
-}
-
-function lightboxNext() {
-    if (lightboxIndex < lightboxMedia.length - 1) { lightboxIndex++; updateLightbox(); }
-}
-
-function lightboxKeyHandler(e) {
-    if (e.key === 'ArrowLeft') lightboxPrev();
-    if (e.key === 'ArrowRight') lightboxNext();
-    if (e.key === 'Escape') closeLightbox();
-}
-
-function closeLightbox() {
-    document.getElementById('lightboxModal').classList.add('hidden');
-    document.body.style.overflow = '';
-    document.removeEventListener('keydown', lightboxKeyHandler);
-}
+            `;
+            }).join('');
+        }
 
         // Media Modal functions
         function openMediaModal(type = 'image') {
