@@ -13,16 +13,17 @@ if (!isset($_GET['incident_id'])) {
 $incident_id = mysqli_real_escape_string($conn, $_GET['incident_id']);
 
 $lastTimelineId = 0;
-$lastNoteId = 0;
+$lastNoteId     = 0;
 $lastEvidenceId = 0;
 
-function query($conn, $sql) {
+function query($conn, $sql)
+{
     $result = mysqli_query($conn, $sql);
     return $result ? mysqli_fetch_all($result, MYSQLI_ASSOC) : [];
 }
 
-// ← Add this
-function format_evidence(array $row): array {
+function format_evidence(array $row): array
+{
     return [
         'id'          => (int) $row['id'],
         'incident_id' => $row['incident_id'],
@@ -35,17 +36,74 @@ function format_evidence(array $row): array {
     ];
 }
 
-function send(string $event, mixed $data): void {
+function timelineQuery($conn, $incident_id, $afterId = null)
+{
+    $where = "incident_id = '$incident_id'";
+    $order = "DESC";
+
+    if ($afterId !== null) {
+        $where .= " AND id > $afterId";
+        $order  = "ASC"; // new items come in ascending so appendTimelineItems prepends correctly
+    }
+
+    return query($conn, "
+        SELECT 
+            id,
+            incident_id,
+            title,
+            description,
+            actor,
+            created_at,
+            DATE_FORMAT(created_at, '%h:%i %p') as time,
+            DATE_FORMAT(created_at, '%M %e, %Y') as date_only,
+            DATE(created_at) as raw_date
+        FROM incident_timeline
+        WHERE $where
+        ORDER BY created_at $order
+    ");
+}
+
+function notesQuery($conn, $incident_id, $afterId = null)
+{
+    $where = "incident_id = '$incident_id'";
+
+    if ($afterId !== null) {
+        $where .= " AND id > $afterId";
+    }
+
+    return query($conn, "
+        SELECT
+            id,
+            incident_id,
+            admin_name,
+            note,
+            created_at,
+            DATE_FORMAT(created_at, '%h:%i %p') as time,
+            DATE_FORMAT(created_at, '%M %e, %Y') as date_only,
+            DATE(created_at) as raw_date
+        FROM incident_notes
+        WHERE $where
+        ORDER BY created_at DESC
+    ");
+}
+
+function send(string $event, mixed $data): void
+{
     echo "event: {$event}\n";
     echo "data: " . json_encode($data) . "\n\n";
     ob_flush();
     flush();
 }
 
-// Initial load — wrap evidence with format_evidence
-$timeline = query($conn, "SELECT * FROM incident_timeline WHERE incident_id = '$incident_id' ORDER BY created_at ASC");
-$notes    = query($conn, "SELECT * FROM incident_notes WHERE incident_id = '$incident_id' ORDER BY created_at ASC");
-$evidence = array_map('format_evidence', query($conn, "SELECT * FROM incident_evidence WHERE incident_id = '$incident_id' ORDER BY uploaded_at DESC"));
+// ── Initial load ──────────────────────────────────────────────
+$timeline = timelineQuery($conn, $incident_id);
+$notes    = notesQuery($conn, $incident_id);
+$evidence = array_map('format_evidence', query(
+    $conn,
+    "SELECT * FROM incident_evidence 
+     WHERE incident_id = '$incident_id' 
+     ORDER BY uploaded_at DESC"
+));
 
 if (!empty($timeline)) $lastTimelineId = max(array_column($timeline, 'id'));
 if (!empty($notes))    $lastNoteId     = max(array_column($notes, 'id'));
@@ -55,15 +113,20 @@ send('timeline', $timeline);
 send('notes',    $notes);
 send('evidence', $evidence);
 
+// ── Polling loop ──────────────────────────────────────────────
 while (true) {
     if (connection_aborted()) break;
 
     mysqli_ping($conn);
 
-    $newTimeline = query($conn, "SELECT * FROM incident_timeline WHERE incident_id = '$incident_id' AND id > $lastTimelineId ORDER BY created_at ASC");
-    $newNotes    = query($conn, "SELECT * FROM incident_notes    WHERE incident_id = '$incident_id' AND id > $lastNoteId    ORDER BY created_at ASC");
-    // ← wrap with format_evidence
-    $newEvidence = array_map('format_evidence', query($conn, "SELECT * FROM incident_evidence WHERE incident_id = '$incident_id' AND id > $lastEvidenceId ORDER BY uploaded_at ASC"));
+    $newTimeline = timelineQuery($conn, $incident_id, $lastTimelineId);
+    $newNotes    = notesQuery($conn, $incident_id, $lastNoteId);
+    $newEvidence = array_map('format_evidence', query(
+        $conn,
+        "SELECT * FROM incident_evidence 
+         WHERE incident_id = '$incident_id' AND id > $lastEvidenceId 
+         ORDER BY uploaded_at ASC"
+    ));
 
     if (!empty($newTimeline)) {
         $lastTimelineId = max(array_column($newTimeline, 'id'));

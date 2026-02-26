@@ -430,9 +430,13 @@ async function fetchIncidentNotes() {
   }
 }
 
-// Render notes
+// Track rendered note IDs (same pattern as evidence)
+const renderedNoteIds = new Set();
+
 function renderNotes(notes) {
   const remarksList = document.getElementById("remarksList");
+  remarksList.innerHTML = "";
+  renderedNoteIds.clear();
 
   if (notes.length === 0) {
     remarksList.innerHTML =
@@ -440,19 +444,44 @@ function renderNotes(notes) {
     return;
   }
 
-  remarksList.innerHTML = notes
-    .map(
-      (note) => `
-    <div class="bg-gray-50 dark:bg-neutral-700 rounded-lg p-3">
+  notes.forEach((note) => {
+    const div = document.createElement("div");
+    div.className = "bg-gray-50 dark:bg-neutral-700 rounded-lg p-3";
+    div.innerHTML = `
       <div class="flex justify-between items-center mb-1.5">
         <span class="font-semibold text-sm text-gray-900 dark:text-neutral-300">${note.admin_name}</span>
-        <span class="text-xs text-gray-500 dark:text-neutral-300">${note.time}</span>
+        <span class="text-xs text-gray-500 dark:text-neutral-300">${note.time ?? note.created_at}</span>
       </div>
       <div class="text-xs text-gray-600 dark:text-neutral-400 leading-relaxed">${note.note}</div>
-    </div>
-  `,
-    )
-    .join("");
+    `;
+    remarksList.appendChild(div);
+    renderedNoteIds.add(note.id);
+  });
+}
+
+// appendNoteItems — prepend instead of append
+function appendNoteItems(newNotes) {
+  const list = document.getElementById("remarksList");
+  const empty = list.querySelector("p");
+  if (empty) empty.remove();
+
+  const toAdd = newNotes.filter((note) => !renderedNoteIds.has(note.id));
+  if (toAdd.length === 0) return;
+
+  toAdd.forEach((note) => {
+    const div = document.createElement("div");
+    div.className = "bg-gray-50 dark:bg-neutral-700 rounded-lg p-3";
+    div.innerHTML = `
+      <div class="flex justify-between items-center mb-1.5">
+        <span class="font-semibold text-sm text-gray-900 dark:text-neutral-300">${note.admin_name}</span>
+        <span class="text-xs text-gray-500 dark:text-neutral-300">${note.time ?? note.created_at}</span>
+      </div>
+      <div class="text-xs text-gray-600 dark:text-neutral-400 leading-relaxed">${note.note}</div>
+    `;
+    // ← prepend so newest is at top
+    list.insertBefore(div, list.firstChild);
+    renderedNoteIds.add(note.id);
+  });
 }
 
 // Fetch incident timeline
@@ -1432,8 +1461,8 @@ async function addRemark() {
       document.getElementById("newRemark").value = "";
       showToast("success", "Admin note added successfully");
       // Refresh notes and timeline
-      fetchIncidentNotes();
-      fetchIncidentTimeline();
+      //fetchIncidentNotes();
+      //fetchIncidentTimeline();
     } else {
       showToast("error", "Failed to add note: " + result.error);
     }
