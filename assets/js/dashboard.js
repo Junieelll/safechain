@@ -532,7 +532,7 @@ const rightPanelToggle = document.getElementById("rightPanelToggle");
 const incidentContent = document.getElementById("incidentContent");
 let isRightPanelCollapsed = false;
 
-var map = L.map("map").setView([14.7158532, 121.0403842], 16);
+var map = L.map("map", { maxZoom: 21 }).setView([14.7158532, 121.0403842], 16);
 
 const isOnline = navigator.onLine;
 
@@ -545,6 +545,8 @@ const darkTileUrl = isOnline
   : "assets/tiles/street-v2-dark/{z}/{x}/{y}.png";
 
 const lightLayer = L.tileLayer(lightTileUrl, {
+     maxZoom: 21,
+  maxNativeZoom: 21,
   attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
 }).on("tileerror", function (error, tile) {
   const matches = tile.tile.src.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
@@ -555,6 +557,8 @@ const lightLayer = L.tileLayer(lightTileUrl, {
 });
 
 const darkLayer = L.tileLayer(darkTileUrl, {
+     maxZoom: 21,
+  maxNativeZoom: 21,
   attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
 }).on("tileerror", function (error, tile) {
   const matches = tile.tile.src.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
