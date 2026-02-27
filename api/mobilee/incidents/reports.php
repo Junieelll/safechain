@@ -111,6 +111,11 @@ function handle_create(mysqli $conn, array $user): void
     $follow_up_required = (int) ($body['follow_up_required'] ?? 0);
     $follow_up_notes = ($body['follow_up_notes'] ?? null);
     $recommendations = ($body['recommendations'] ?? null);
+    $type_specific_data = isset($body['type_specific_data']) && !empty($body['type_specific_data'])
+    ? (is_string($body['type_specific_data']) 
+        ? $body['type_specific_data']           // already JSON string
+        : json_encode($body['type_specific_data'])) // array/object
+    : null;
 
     // ── Insert ─────────────────────────────────────────────────────────────
     $stmt = $conn->prepare('
@@ -122,8 +127,8 @@ function handle_create(mysqli $conn, array $user): void
             resolution_time_minutes, resolution_time_seconds,
             response_team, actions_taken,
             resolution_status, summary,
-            follow_up_required, follow_up_notes, recommendations
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            follow_up_required, follow_up_notes, recommendations, type_specific_data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ');
 
     if (!$stmt) {
@@ -133,7 +138,7 @@ function handle_create(mysqli $conn, array $user): void
 
     // 21 params: s s s s i i i i s d i i i i s s s s i s s
     $stmt->bind_param(
-        'sssssiiiisdiiiisssiiss',
+        'sssssiiiisdiiiissssisss',
         $incident_id,
         $submitted_by,
         $submitted_by_id,
@@ -155,7 +160,8 @@ function handle_create(mysqli $conn, array $user): void
         $summary,
         $follow_up_required,
         $follow_up_notes,
-        $recommendations
+        $recommendations,
+        $type_specific_data
     );
 
     if (!$stmt->execute()) {

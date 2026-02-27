@@ -37,6 +37,7 @@ $query = "
         ir.recommendations,
         ir.follow_up_notes,
         ir.submitted_by,
+        ir.type_specific_data,
         DATE_FORMAT(ir.created_at, '%M %e, %Y') as report_date
     FROM incidents i
     LEFT JOIN incident_reports ir ON ir.incident_id = i.id
@@ -56,10 +57,22 @@ if (!$incident) {
 // Decode JSON fields
 $actionsTaken = json_decode($incident['actions_taken'] ?? '[]', true) ?: [];
 $recommendations = $incident['recommendations'] ?? '';
+$typeData = json_decode($incident['type_specific_data'] ?? '{}', true) ?: [];
+
+// Helper to get type_specific value with fallback
+function td(array $data, string $key, string $fallback = 'N/A'): string
+{
+    $val = $data[$key] ?? null;
+    if ($val === null || $val === '')
+        return $fallback;
+    if (is_bool($val))
+        return $val ? 'Yes' : 'No';
+    return ucwords(str_replace('_', ' ', (string) $val));
+}
 
 // Type-specific labels
 $typeLabels = [
-    'fire'  => 'FIRE INCIDENT',
+    'fire' => 'FIRE INCIDENT',
     'flood' => 'FLOOD INCIDENT',
     'crime' => 'CRIME INCIDENT',
 ];
@@ -84,7 +97,7 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
     <div id="editBanner">
         ✏️ Edit mode — click any text to modify it. Click <strong>Done Editing</strong> when finished.
     </div>
-    
+
     <!-- FAB -->
     <div class="fab-container open">
         <div class="fab-actions">
@@ -135,16 +148,20 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                         <span class="position">Punong Barangay</span>
                     </div>
                     <div class="officials-section-title">Barangay Kagawad</div>
-                    <div class="official-item"><span class="official-name">LOVEL V. ALINAJE</span><span class="position">BIGLANG-AWA</span></div>
+                    <div class="official-item"><span class="official-name">LOVEL V. ALINAJE</span><span
+                            class="position">BIGLANG-AWA</span></div>
                     <div class="official-item"><span class="official-name">MARLON S. SORIANO</span></div>
                     <div class="official-item"><span class="official-name">SHERILL B. AGLE</span></div>
                     <div class="official-item"><span class="official-name">PERCIVAL M. CASTELLFORT</span></div>
                     <div class="official-item"><span class="official-name">EDGAR P. BABALOT</span></div>
                     <div class="official-item"><span class="official-name">NONITO D. GONZALES</span></div>
                     <div class="official-item"><span class="official-name">GLENDEL B. CLEMENTE</span></div>
-                    <div class="official-item"><span class="official-name">ALJOHN JAYZEL E. CLEMENTE, JMA</span><span class="position">SK Chairperson</span></div>
-                    <div class="official-item"><span class="official-name line-height-0">MILA B. NARIO</span><span class="position">Barangay Secretary</span></div>
-                    <div class="official-item"><span class="official-name line-height-0">LUNINGNING R. ARATAS</span><span class="position">Barangay Treasurer</span></div>
+                    <div class="official-item"><span class="official-name">ALJOHN JAYZEL E. CLEMENTE, JMA</span><span
+                            class="position">SK Chairperson</span></div>
+                    <div class="official-item"><span class="official-name line-height-0">MILA B. NARIO</span><span
+                            class="position">Barangay Secretary</span></div>
+                    <div class="official-item"><span class="official-name line-height-0">LUNINGNING R.
+                            ARATAS</span><span class="position">Barangay Treasurer</span></div>
                 </aside>
 
                 <!-- Report Content -->
@@ -155,7 +172,8 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                         <span>BARANGAY DISASTER RISK REDUCTION AND MANAGEMENT</span>
                         <span>COUNCIL (BDRRMC)</span>
                     </div>
-                    <div class="report-subtitle">PREPARED BY: <?= htmlspecialchars($incident['submitted_by'] ?? $adminName) ?></div>
+                    <div class="report-subtitle">PREPARED BY:
+                        <?= htmlspecialchars($incident['submitted_by'] ?? $adminName) ?></div>
                     <div class="report-subtitle">APPROVED BY: Ka. Marlon Soriano</div>
 
                     <!-- I. INCIDENT OVERVIEW -->
@@ -165,7 +183,8 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                             Incident ID: <strong><?= htmlspecialchars($incident['id']) ?></strong>
                         </div>
                         <div class="list-item">
-                            Date Reported: <?= htmlspecialchars($incident['date_reported']) ?> at <?= htmlspecialchars($incident['time_reported']) ?>
+                            Date Reported: <?= htmlspecialchars($incident['date_reported']) ?> at
+                            <?= htmlspecialchars($incident['time_reported']) ?>
                         </div>
                         <div class="list-item">
                             Location: <?= htmlspecialchars($incident['location']) ?>
@@ -187,40 +206,103 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                     <!-- II. INCIDENT DESCRIPTION -->
                     <div class="section-title">II. INCIDENT DESCRIPTION</div>
                     <div class="section-content">
-                        <div class="list-item"><?= nl2br(htmlspecialchars($incident['description'] ?? 'No description available.')) ?></div>
+                        <div class="list-item">
+                            <?= nl2br(htmlspecialchars($incident['description'] ?? 'No description available.')) ?>
+                        </div>
                     </div>
 
                     <!-- III. TYPE-SPECIFIC SECTION -->
                     <?php if ($incident['type'] === 'fire'): ?>
                         <div class="section-title">III. FIRE INCIDENT DETAILS</div>
                         <div class="section-content">
-                            <div class="list-item">- Property Damage: <?= ucfirst(htmlspecialchars($incident['property_damage'] ?? 'N/A')) ?></div>
-                            <div class="list-item">- Estimated Cost of Damage: ₱<?= number_format($incident['estimated_cost'] ?? 0, 2) ?></div>
+                            <div class="list-item">- Cause of Fire: <?= td($typeData, 'fire_cause') ?></div>
+                            <?php if (!empty($typeData['fire_cause_other'])): ?>
+                                <div class="list-item">&nbsp;&nbsp;&nbsp;(Specified:
+                                    <?= htmlspecialchars($typeData['fire_cause_other']) ?>)</div>
+                            <?php endif; ?>
+                            <div class="list-item">- Fire Origin / Room:
+                                <?= htmlspecialchars($typeData['fire_origin'] ?? 'N/A') ?></div>
+                            <div class="list-item">- Structure Type: <?= td($typeData, 'structure_type') ?>
+                                <?php if (!empty($typeData['structure_type_other'])): ?>
+                                    (<?= htmlspecialchars($typeData['structure_type_other']) ?>)
+                                <?php endif; ?>
+                            </div>
+                            <div class="list-item">- Number of Structures Affected:
+                                <?= htmlspecialchars($typeData['structures_affected'] ?? 'N/A') ?></div>
+                            <div class="list-item">- Fire Spread Rate: <?= td($typeData, 'fire_spread_rate') ?></div>
+                            <div class="list-item">- Hazmat Involved:
+                                <?= isset($typeData['hazmat_involved']) ? ($typeData['hazmat_involved'] ? 'Yes' : 'No') : 'N/A' ?>
+                            </div>
+                            <div class="list-item">- Power Disconnected:
+                                <?= isset($typeData['power_disconnected']) ? ($typeData['power_disconnected'] ? 'Yes' : 'No') : 'N/A' ?>
+                            </div>
+                            <div class="list-item">- Property Damage:
+                                <?= ucfirst(htmlspecialchars($incident['property_damage'] ?? 'N/A')) ?></div>
+                            <div class="list-item">- Estimated Cost of Damage:
+                                ₱<?= number_format($incident['estimated_cost'] ?? 0, 2) ?></div>
                             <div class="list-item">- Casualties: <?= intval($incident['casualties']) ?></div>
                             <div class="list-item">- Injuries: <?= intval($incident['injuries']) ?></div>
+                            <div class="list-item">- Persons Rescued: <?= intval($incident['rescued']) ?></div>
                             <div class="list-item">- Families Evacuated: <?= intval($incident['evacuated']) ?></div>
-                            <div class="list-item">- Response Time: <?= intval($incident['response_time_minutes']) ?> minutes</div>
+                            <div class="list-item">- Response Time: <?= intval($incident['response_time_minutes']) ?>
+                                minutes</div>
                         </div>
 
                     <?php elseif ($incident['type'] === 'flood'): ?>
                         <div class="section-title">III. FLOOD INCIDENT DETAILS</div>
                         <div class="section-content">
-                            <div class="list-item">- Affected Families: <?= intval($incident['evacuated']) ?></div>
+                            <div class="list-item">- Flood Source: <?= td($typeData, 'flood_source') ?></div>
+                            <div class="list-item">- Water Depth:
+                                <?= htmlspecialchars($typeData['water_depth_meters'] ?? 'N/A') ?> meters</div>
+                            <div class="list-item">- Affected Area:
+                                <?= htmlspecialchars($typeData['affected_area_sqm'] ?? 'N/A') ?> sqm</div>
+                            <div class="list-item">- Number of Households Affected:
+                                <?= htmlspecialchars($typeData['households_affected'] ?? 'N/A') ?></div>
+                            <div class="list-item">- Flood Level Trend: <?= td($typeData, 'flood_trend') ?></div>
+                            <div class="list-item">- Road Accessibility: <?= td($typeData, 'road_accessibility') ?></div>
+                            <div class="list-item">- Formal Evacuation Conducted:
+                                <?= isset($typeData['evacuation_conducted']) ? ($typeData['evacuation_conducted'] ? 'Yes' : 'No') : 'N/A' ?>
+                            </div>
                             <div class="list-item">- Persons Rescued: <?= intval($incident['rescued']) ?></div>
+                            <div class="list-item">- Families Evacuated: <?= intval($incident['evacuated']) ?></div>
                             <div class="list-item">- Injuries: <?= intval($incident['injuries']) ?></div>
-                            <div class="list-item">- Property Damage: <?= ucfirst(htmlspecialchars($incident['property_damage'] ?? 'N/A')) ?></div>
-                            <div class="list-item">- Estimated Cost of Damage: ₱<?= number_format($incident['estimated_cost'] ?? 0, 2) ?></div>
-                            <div class="list-item">- Response Time: <?= intval($incident['response_time_minutes']) ?> minutes</div>
+                            <div class="list-item">- Property Damage:
+                                <?= ucfirst(htmlspecialchars($incident['property_damage'] ?? 'N/A')) ?></div>
+                            <div class="list-item">- Estimated Cost of Damage:
+                                ₱<?= number_format($incident['estimated_cost'] ?? 0, 2) ?></div>
+                            <div class="list-item">- Response Time: <?= intval($incident['response_time_minutes']) ?>
+                                minutes</div>
                         </div>
 
                     <?php elseif ($incident['type'] === 'crime'): ?>
                         <div class="section-title">III. CRIME INCIDENT DETAILS</div>
                         <div class="section-content">
+                            <div class="list-item">- Crime Category: <?= td($typeData, 'crime_category') ?>
+                                <?php if (!empty($typeData['crime_category_other'])): ?>
+                                    (<?= htmlspecialchars($typeData['crime_category_other']) ?>)
+                                <?php endif; ?>
+                            </div>
+                            <div class="list-item">- Modus Operandi: <?= td($typeData, 'modus_operandi') ?>
+                                <?php if (!empty($typeData['modus_operandi_other'])): ?>
+                                    (<?= htmlspecialchars($typeData['modus_operandi_other']) ?>)
+                                <?php endif; ?>
+                            </div>
+                            <div class="list-item">- Number of Suspects:
+                                <?= htmlspecialchars($typeData['suspect_count'] ?? 'N/A') ?></div>
+                            <div class="list-item">- Suspect Description:
+                                <?= htmlspecialchars($typeData['suspect_description'] ?? 'N/A') ?></div>
+                            <div class="list-item">- Suspect Status: <?= td($typeData, 'suspect_status') ?></div>
+                            <div class="list-item">- Number of Victims:
+                                <?= htmlspecialchars($typeData['victim_count'] ?? 'N/A') ?></div>
+                            <div class="list-item">- Referred to Authorities:
+                                <?= td($typeData, 'referred_to_authorities') ?></div>
                             <div class="list-item">- Casualties: <?= intval($incident['casualties']) ?></div>
                             <div class="list-item">- Injuries: <?= intval($incident['injuries']) ?></div>
-                            <div class="list-item">- Persons Rescued/Assisted: <?= intval($incident['rescued']) ?></div>
-                            <div class="list-item">- Response Time: <?= intval($incident['response_time_minutes']) ?> minutes</div>
-                            <div class="list-item">- Resolution Status: <?= ucwords(str_replace('_', ' ', $incident['resolution_status'] ?? 'N/A')) ?></div>
+                            <div class="list-item">- Persons Assisted / Rescued: <?= intval($incident['rescued']) ?></div>
+                            <div class="list-item">- Response Time: <?= intval($incident['response_time_minutes']) ?>
+                                minutes</div>
+                            <div class="list-item">- Resolution Status:
+                                <?= ucwords(str_replace('_', ' ', $incident['resolution_status'] ?? 'N/A')) ?></div>
                         </div>
                     <?php endif; ?>
 
@@ -239,7 +321,8 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                     <!-- V. SUMMARY -->
                     <div class="section-title">V. SUMMARY</div>
                     <div class="section-content">
-                        <div class="list-item"><?= nl2br(htmlspecialchars($incident['summary'] ?? 'No summary available.')) ?></div>
+                        <div class="list-item">
+                            <?= nl2br(htmlspecialchars($incident['summary'] ?? 'No summary available.')) ?></div>
                     </div>
 
                     <!-- VI. RECOMMENDATIONS -->
@@ -268,7 +351,7 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
     </div><!-- .container -->
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             const mainContent = document.querySelector("#main-content");
             const firstPage = document.querySelector("#page-1");
             const container = document.querySelector(".container");
@@ -328,7 +411,7 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
             });
 
             // Download PDF
-            document.querySelector(".downloadBtn").addEventListener("click", async function() {
+            document.querySelector(".downloadBtn").addEventListener("click", async function () {
                 const {
                     jsPDF
                 } = window.jspdf;
@@ -386,7 +469,7 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                 ".section-title",
             ];
 
-            document.querySelector(".editBtn").addEventListener("click", function() {
+            document.querySelector(".editBtn").addEventListener("click", function () {
                 isEditing = !isEditing;
 
                 // Toggle contenteditable on all editable elements across all pages
