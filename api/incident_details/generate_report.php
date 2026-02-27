@@ -173,7 +173,8 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                         <span>COUNCIL (BDRRMC)</span>
                     </div>
                     <div class="report-subtitle">PREPARED BY:
-                        <?= htmlspecialchars($incident['submitted_by'] ?? $adminName) ?></div>
+                        <?= htmlspecialchars($incident['submitted_by'] ?? $adminName) ?>
+                    </div>
                     <div class="report-subtitle">APPROVED BY: Ka. Marlon Soriano</div>
 
                     <!-- I. INCIDENT OVERVIEW -->
@@ -218,17 +219,20 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                             <div class="list-item">- Cause of Fire: <?= td($typeData, 'fire_cause') ?></div>
                             <?php if (!empty($typeData['fire_cause_other'])): ?>
                                 <div class="list-item">&nbsp;&nbsp;&nbsp;(Specified:
-                                    <?= htmlspecialchars($typeData['fire_cause_other']) ?>)</div>
+                                    <?= htmlspecialchars($typeData['fire_cause_other']) ?>)
+                                </div>
                             <?php endif; ?>
                             <div class="list-item">- Fire Origin / Room:
-                                <?= htmlspecialchars($typeData['fire_origin'] ?? 'N/A') ?></div>
+                                <?= htmlspecialchars($typeData['fire_origin'] ?? 'N/A') ?>
+                            </div>
                             <div class="list-item">- Structure Type: <?= td($typeData, 'structure_type') ?>
                                 <?php if (!empty($typeData['structure_type_other'])): ?>
                                     (<?= htmlspecialchars($typeData['structure_type_other']) ?>)
                                 <?php endif; ?>
                             </div>
                             <div class="list-item">- Number of Structures Affected:
-                                <?= htmlspecialchars($typeData['structures_affected'] ?? 'N/A') ?></div>
+                                <?= htmlspecialchars($typeData['structures_affected'] ?? 'N/A') ?>
+                            </div>
                             <div class="list-item">- Fire Spread Rate: <?= td($typeData, 'fire_spread_rate') ?></div>
                             <div class="list-item">- Hazmat Involved:
                                 <?= isset($typeData['hazmat_involved']) ? ($typeData['hazmat_involved'] ? 'Yes' : 'No') : 'N/A' ?>
@@ -237,7 +241,8 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                                 <?= isset($typeData['power_disconnected']) ? ($typeData['power_disconnected'] ? 'Yes' : 'No') : 'N/A' ?>
                             </div>
                             <div class="list-item">- Property Damage:
-                                <?= ucfirst(htmlspecialchars($incident['property_damage'] ?? 'N/A')) ?></div>
+                                <?= ucfirst(htmlspecialchars($incident['property_damage'] ?? 'N/A')) ?>
+                            </div>
                             <div class="list-item">- Estimated Cost of Damage:
                                 ₱<?= number_format($incident['estimated_cost'] ?? 0, 2) ?></div>
                             <div class="list-item">- Casualties: <?= intval($incident['casualties']) ?></div>
@@ -253,11 +258,14 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                         <div class="section-content">
                             <div class="list-item">- Flood Source: <?= td($typeData, 'flood_source') ?></div>
                             <div class="list-item">- Water Depth:
-                                <?= htmlspecialchars($typeData['water_depth_meters'] ?? 'N/A') ?> meters</div>
+                                <?= htmlspecialchars($typeData['water_depth_meters'] ?? 'N/A') ?> meters
+                            </div>
                             <div class="list-item">- Affected Area:
-                                <?= htmlspecialchars($typeData['affected_area_sqm'] ?? 'N/A') ?> sqm</div>
+                                <?= htmlspecialchars($typeData['affected_area_sqm'] ?? 'N/A') ?> sqm
+                            </div>
                             <div class="list-item">- Number of Households Affected:
-                                <?= htmlspecialchars($typeData['households_affected'] ?? 'N/A') ?></div>
+                                <?= htmlspecialchars($typeData['households_affected'] ?? 'N/A') ?>
+                            </div>
                             <div class="list-item">- Flood Level Trend: <?= td($typeData, 'flood_trend') ?></div>
                             <div class="list-item">- Road Accessibility: <?= td($typeData, 'road_accessibility') ?></div>
                             <div class="list-item">- Formal Evacuation Conducted:
@@ -267,7 +275,8 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                             <div class="list-item">- Families Evacuated: <?= intval($incident['evacuated']) ?></div>
                             <div class="list-item">- Injuries: <?= intval($incident['injuries']) ?></div>
                             <div class="list-item">- Property Damage:
-                                <?= ucfirst(htmlspecialchars($incident['property_damage'] ?? 'N/A')) ?></div>
+                                <?= ucfirst(htmlspecialchars($incident['property_damage'] ?? 'N/A')) ?>
+                            </div>
                             <div class="list-item">- Estimated Cost of Damage:
                                 ₱<?= number_format($incident['estimated_cost'] ?? 0, 2) ?></div>
                             <div class="list-item">- Response Time: <?= intval($incident['response_time_minutes']) ?>
@@ -288,21 +297,26 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                                 <?php endif; ?>
                             </div>
                             <div class="list-item">- Number of Suspects:
-                                <?= htmlspecialchars($typeData['suspect_count'] ?? 'N/A') ?></div>
+                                <?= htmlspecialchars($typeData['suspect_count'] ?? 'N/A') ?>
+                            </div>
                             <div class="list-item">- Suspect Description:
-                                <?= htmlspecialchars($typeData['suspect_description'] ?? 'N/A') ?></div>
+                                <?= htmlspecialchars($typeData['suspect_description'] ?? 'N/A') ?>
+                            </div>
                             <div class="list-item">- Suspect Status: <?= td($typeData, 'suspect_status') ?></div>
                             <div class="list-item">- Number of Victims:
-                                <?= htmlspecialchars($typeData['victim_count'] ?? 'N/A') ?></div>
+                                <?= htmlspecialchars($typeData['victim_count'] ?? 'N/A') ?>
+                            </div>
                             <div class="list-item">- Referred to Authorities:
-                                <?= td($typeData, 'referred_to_authorities') ?></div>
+                                <?= td($typeData, 'referred_to_authorities') ?>
+                            </div>
                             <div class="list-item">- Casualties: <?= intval($incident['casualties']) ?></div>
                             <div class="list-item">- Injuries: <?= intval($incident['injuries']) ?></div>
                             <div class="list-item">- Persons Assisted / Rescued: <?= intval($incident['rescued']) ?></div>
                             <div class="list-item">- Response Time: <?= intval($incident['response_time_minutes']) ?>
                                 minutes</div>
                             <div class="list-item">- Resolution Status:
-                                <?= ucwords(str_replace('_', ' ', $incident['resolution_status'] ?? 'N/A')) ?></div>
+                                <?= ucwords(str_replace('_', ' ', $incident['resolution_status'] ?? 'N/A')) ?>
+                            </div>
                         </div>
                     <?php endif; ?>
 
@@ -322,7 +336,8 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                     <div class="section-title">V. SUMMARY</div>
                     <div class="section-content">
                         <div class="list-item">
-                            <?= nl2br(htmlspecialchars($incident['summary'] ?? 'No summary available.')) ?></div>
+                            <?= nl2br(htmlspecialchars($incident['summary'] ?? 'No summary available.')) ?>
+                        </div>
                     </div>
 
                     <!-- VI. RECOMMENDATIONS -->
@@ -407,14 +422,13 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
             // Print
             document.querySelector(".openBtn").addEventListener("click", () => {
                 if (isEditing) document.querySelector(".editBtn").click();
-                window.print();
+                // Wait for any pending splits to complete before printing
+                setTimeout(() => window.print(), 400);
             });
 
             // Download PDF
             document.querySelector(".downloadBtn").addEventListener("click", async function () {
-                const {
-                    jsPDF
-                } = window.jspdf;
+                const { jsPDF } = window.jspdf;
                 const pages = document.querySelectorAll(".a4");
                 const btn = this;
 
@@ -428,23 +442,40 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                         unit: "mm",
                         format: "a4"
                     });
-                    const pageWidthMm = 210;
-                    const pageHeightMm = 297;
+
+                    const A4_WIDTH_MM = 210;
+                    const A4_HEIGHT_MM = 297;
 
                     for (let i = 0; i < pages.length; i++) {
-                        const canvas = await html2canvas(pages[i], {
+                        const page = pages[i];
+
+                        // Force the page to render at exact A4 pixel dimensions
+                        const originalStyle = page.getAttribute("style") || "";
+                        page.style.width = "794px";   // 210mm at 96dpi
+                        page.style.height = "1123px"; // 297mm at 96dpi
+                        page.style.position = "fixed";
+                        page.style.top = "0";
+                        page.style.left = "0";
+                        page.style.zIndex = "-9999";
+
+                        const canvas = await html2canvas(page, {
                             scale: 4,
                             useCORS: true,
                             logging: false,
                             backgroundColor: "#ffffff",
+                            width: 794,
+                            height: 1123,
+                            windowWidth: 794,
+                            windowHeight: 1123,
                         });
 
-                        const imgData = canvas.toDataURL("image/jpeg", 0.95);
-                        const ratio = pageWidthMm / canvas.width;
-                        const imgHeightMm = canvas.height * ratio;
+                        // Restore original style
+                        page.setAttribute("style", originalStyle);
 
-                        if (i > 0) pdf.addPage("letter", "portrait");
-                        pdf.addImage(imgData, "PNG", 0, 0, pageWidthMm, Math.min(imgHeightMm, pageHeightMm));
+                        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+
+                        if (i > 0) pdf.addPage("a4", "portrait");
+                        pdf.addImage(imgData, "JPEG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
                     }
 
                     pdf.save(`IncidentReport_<?= $incident['id'] ?>.pdf`);
