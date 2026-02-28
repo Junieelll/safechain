@@ -113,18 +113,25 @@ while ($incident = mysqli_fetch_assoc($result)) {
     $allIncidents[] = $formattedIncident;
 }
 
-// Get historical incidents for dynamic heatmap (last 30 days)
+// Get heatmap data with severity from incident_reports
 $heatmapQuery = "SELECT 
-    type, 
-    latitude, 
-    longitude, 
-    DATEDIFF(NOW(), date_time) as days_ago
-FROM incidents 
-WHERE latitude IS NOT NULL 
-  AND longitude IS NOT NULL 
-  AND is_archived = 0
-  AND date_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-ORDER BY date_time DESC
+    i.type, 
+    i.latitude, 
+    i.longitude,
+    i.status,
+    DATEDIFF(NOW(), i.date_time) as days_ago,
+    ir.severity_level,
+    ir.casualties,
+    ir.injuries
+FROM incidents i
+LEFT JOIN incident_reports ir ON ir.incident_id = i.id
+WHERE i.latitude IS NOT NULL 
+  AND i.longitude IS NOT NULL
+  AND i.latitude != 0
+  AND i.longitude != 0
+  AND i.is_archived = 0
+  AND i.date_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+ORDER BY i.date_time DESC
 LIMIT 500";
 
 $heatResult = mysqli_query($conn, $heatmapQuery);
@@ -136,18 +143,31 @@ $heatmapData = [
 
 if ($heatResult) {
     while ($heat = mysqli_fetch_assoc($heatResult)) {
-        // Calculate intensity based on age
-        // Recent (0-7 days) = 1.0, Medium (8-21 days) = 0.7, Old (22-30 days) = 0.5
         $daysAgo = intval($heat['days_ago']);
-        
-        if ($daysAgo <= 7) {
-            $intensity = 1.0;
-        } elseif ($daysAgo <= 21) {
-            $intensity = 0.7;
+
+        // If incident has a report, use severity_level for intensity
+        if (!empty($heat['severity_level'])) {
+            switch ($heat['severity_level']) {
+                case 'critical': $intensity = 1.0; break;
+                case 'major':    $intensity = 0.85; break;
+                case 'moderate': $intensity = 0.65; break;
+                case 'minor':    $intensity = 0.45; break;
+                default:         $intensity = 0.5;
+            }
         } else {
-            $intensity = 0.5;
+            // No report yet (pending/responding) — use type-based default
+            switch ($heat['type']) {
+                case 'fire':  $intensity = 0.6; break;
+                case 'crime': $intensity = 0.5; break;
+                case 'flood': $intensity = 0.5; break;
+                default:      $intensity = 0.4;
+            }
         }
-        
+
+        // Apply age decay — older incidents fade (min 20% of original)
+        $decayFactor = max(0.2, 1.0 - ($daysAgo / 30) * 0.8);
+        $intensity = round($intensity * $decayFactor, 3);
+
         $heatmapData[$heat['type']][] = [
             'lat' => floatval($heat['latitude']),
             'lng' => floatval($heat['longitude']),

@@ -175,15 +175,25 @@ function generateHeatmapData(type) {
   return heatData;
 }
 
+function getZoomAdjustedConfig(type) {
+  const zoom = map.getZoom();
+  const config = { ...heatmapConfigs[type] };
+
+  // Base radius at zoom 16, scales down as you zoom in
+  const baseRadius = { fire: 40, crime: 35, flood: 45 };
+  config.radius = Math.round(baseRadius[type] * Math.pow(2, zoom - 16) * 0.5);
+  config.radius = Math.max(8, Math.min(80, config.radius));
+
+  return config;
+}
+
 function updateAllHeatmaps() {
   ["fire", "crime", "flood"].forEach((type) => {
-    if (heatmapLayers[type]) {
-      map.removeLayer(heatmapLayers[type]);
-    }
+    if (heatmapLayers[type]) map.removeLayer(heatmapLayers[type]);
 
     if (heatmapVisible[type]) {
       const heatData = generateHeatmapData(type);
-      heatmapLayers[type] = L.heatLayer(heatData, heatmapConfigs[type]).addTo(map);
+      heatmapLayers[type] = L.heatLayer(heatData, getZoomAdjustedConfig(type)).addTo(map);
     }
   });
 }
@@ -533,6 +543,8 @@ const incidentContent = document.getElementById("incidentContent");
 let isRightPanelCollapsed = false;
 
 var map = L.map("map", { maxZoom: 21 }).setView([14.7158532, 121.0403842], 16);
+
+map.on('zoomend', updateAllHeatmaps);
 
 const isOnline = navigator.onLine;
 
