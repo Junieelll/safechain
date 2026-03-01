@@ -21,8 +21,8 @@ function getFCMAccessToken(): string
 function getRolesForIncidentType(string $type): array
 {
     return match ($type) {
-        'fire'  => ['firefighter', 'admin'],
-        'flood' => ['bhert',       'admin'],
+        'fire'  => ['firefighter', 'bhert', 'admin'],
+        'flood' => ['bhert', 'firefighter', 'admin'],
         'crime' => ['bpso',        'admin'],
         default => ['admin'],
     };
@@ -64,7 +64,7 @@ function sendFCMToAllResponders(mysqli $conn, array $incident): void
             'message' => [
                 'token' => $row['token'],
                 'notification' => [
-                    'title' => '🚨 New Incident Reported',
+                    'title' => 'New Incident Reported',
                     'body'  => "A {$incident['type']} emergency at {$incident['location']}.",
                 ],
                 'data' => [
