@@ -61,7 +61,7 @@ $avatar_color = getUserColor($user_id);
 
     <main id="mainContent" class="transition-all duration-500 ease-in-out ml-[302px] flex-1 p-8">
         <div class="w-full">
-            <div class="max-w-[950px] mx-auto">
+            <div class="max-w-[750px] mx-auto">
                 <!-- Header -->
                 <div class="mb-8">
                     <h1 class="text-2xl font-semibold text-gray-900 mb-1 dark:text-gray-200">Announcements</h1>
@@ -251,7 +251,7 @@ $avatar_color = getUserColor($user_id);
                 
                 // Check if current user is the author
                 const isAuthor = announcement.user_id === CURRENT_USER_ID;
-                
+
                 scRegisterMedia(String(announcement.id), announcement.media || []);
                 
                 return `
