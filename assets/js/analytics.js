@@ -18,8 +18,6 @@ let exportConfig = {
     summary: true,
     incidents: true,
     charts: false,
-    deviceLogs: false,
-    residents: false,
   },
 };
 
@@ -637,20 +635,6 @@ function showExportModal() {
                 label: "Chart Data",
                 desc: "Trend analysis and distribution data",
                 icon: "uil-chart-pie",
-                checked: false,
-              },
-              {
-                key: "deviceLogs",
-                label: "Device Activity Logs",
-                desc: "IoT device triggers and sensor data",
-                icon: "uil-server",
-                checked: false,
-              },
-              {
-                key: "residents",
-                label: "Resident Information",
-                desc: "Contact details and incident history",
-                icon: "uil-users-alt",
                 checked: false,
               },
             ]
