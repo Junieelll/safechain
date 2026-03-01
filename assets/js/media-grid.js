@@ -150,7 +150,7 @@ function buildMediaGrid(media, postId) {
     ".sc-media-tile__play-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:48px;color:rgba(255,255,255,.85);text-shadow:0 2px 12px rgba(0,0,0,.7);}",
 
     /* +N more overlay */
-    ".sc-media-tile__overflow{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;font-weight:600;letter-spacing:-.5px;pointer-events:none;}",
+    ".sc-media-tile__overflow{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:500;letter-spacing:-.5px;pointer-events:none;}",
 
     /* ── Lightbox backdrop ── */
     "#scLightbox{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.96);display:none;flex-direction:column;align-items:center;justify-content:center;}",
@@ -213,9 +213,9 @@ function _scInjectLightbox() {
     '<div class="sc-lb-bar">' +
     '<span class="sc-lb-counter" id="scLbCounter">1 / 1</span>' +
     '<div class="sc-lb-actions">' +
-    '<button class="sc-lb-btn" onclick="scLightboxZoom(-0.25)" title="Zoom out (-)"<i class="uil uil-search-plus"></i></button>' +
-    '<button class="sc-lb-btn" onclick="scLightboxZoom(+0.25)" title="Zoom in (+)">&#43;</button>' +
-    '<button class="sc-lb-btn" onclick="scLightboxZoom(0,true)" title="Reset zoom (0)" style="font-size:11px;letter-spacing:-.5px">1:1</button>' +
+    '<button class="sc-lb-btn" onclick="scLightboxZoom(-0.25)" title="Zoom out (-)"><i class="uil uil-search-minus" style="pointer-events:none"></i></button>' +
+'<button class="sc-lb-btn" onclick="scLightboxZoom(+0.25)" title="Zoom in (+)"><i class="uil uil-search-plus" style="pointer-events:none"></i></button>' +
+    '<button class="sc-lb-btn" onclick="scLightboxZoom(0,true)" title="Reset zoom (0)" style="font-size:11px;letter-spacing:-.5px">Reset</button>' +
     '<button class="sc-lb-btn" onclick="scLightboxClose()" title="Close (Esc)">&#10005;</button>' +
     "</div>" +
     "</div>" +
