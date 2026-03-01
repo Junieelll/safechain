@@ -904,21 +904,110 @@ function downloadCSV(data) {
   downloadFile(csv, "text/csv", "csv");
 }
 
-function downloadPDF(data) {
-  let content = "SafeChain Analytics Report\n\n";
-  content += `Generated: ${data.metadata.exportDateFormatted}\n`;
-  content += `Timeline: ${data.metadata.timeline}\n`;
-  content += `Total Records: ${data.metadata.recordCount}\n\n`;
+async function downloadPDF(data) {
+  const meta      = data.metadata || {};
+  const summary   = data.summary  || {};
+  const incidents = data.incidents || [];
+  const charts    = data.charts   || {};
 
-  if (data.summary) {
-    content += "SUMMARY STATISTICS\n";
-    content += `Total Incidents: ${data.summary.total}\n`;
-    content += `Average Response Time: ${data.summary.avgResponseTime}\n`;
-    content += `Resolution Rate: ${data.summary.resolutionRate}\n\n`;
+  const timelineLabel = {
+    last7days:  "Last 7 Days",
+    last30days: "Last 30 Days",
+    last90days: "Last 90 Days",
+    custom: `${meta.fromDate || ""} to ${meta.toDate || ""}`,
+  }[meta.timeline] || meta.timeline || "Selected Period";
+
+  let sectionNum = 1;
+  const roman = ["I","II","III","IV","V","VI","VII","VIII"];
+  const sec = (title) => `<div class="section-title">${roman[(sectionNum++) - 1]}. ${title}</div>`;
+
+  let contentHTML = `
+    <div class="report-title">
+      <span>ANALYTICS REPORT AND SUMMARY</span>
+      <span>BARANGAY DISASTER RISK REDUCTION AND MANAGEMENT</span>
+      <span>COUNCIL (BDRRMC)</span>
+    </div>
+    <div class="report-subtitle">PREPARED BY: SafeChain Analytics System</div>
+    <div class="report-subtitle">REPORT DATE: ${meta.exportDateFormatted || new Date().toLocaleDateString()}</div>
+    <div class="report-subtitle">PERIOD: ${timelineLabel} &nbsp;|&nbsp; Total Records: ${meta.recordCount ?? "N/A"}</div>
+
+    ${sec("EXECUTIVE SUMMARY")}
+    <div class="section-content indent">
+      <div class="list-item">Total Incidents: <strong>${summary.total ?? "N/A"}</strong></div>
+      <div class="list-item">Average Response Time: <strong>${summary.avgResponseTime ?? "N/A"}</strong></div>
+      <div class="list-item">Resolution Rate: <strong>${summary.resolutionRate ?? "N/A"}</strong></div>
+      <div class="list-item">Resolved: ${summary.resolved ?? 0}</div>
+      <div class="list-item">Responding: ${summary.responding ?? 0}</div>
+      <div class="list-item">Pending: ${summary.pending ?? 0}</div>
+    </div>
+  `;
+
+  if (charts.typeDistribution && Object.keys(charts.typeDistribution).length) {
+    contentHTML += `
+      ${sec("INCIDENT TYPE DISTRIBUTION")}
+      <div class="section-content indent">
+        ${Object.entries(charts.typeDistribution)
+          .map(([type, count]) => `<div class="list-item">${capitalize(type)}: <strong>${count} incident(s)</strong></div>`)
+          .join("")}
+      </div>
+    `;
   }
 
-  content += "Note: For full PDF with charts, integrate jsPDF library.\n";
-  downloadFile(content, "application/pdf", "pdf");
+  if (charts.responseDistribution && Object.keys(charts.responseDistribution).length) {
+    contentHTML += `
+      ${sec("RESPONSE TIME DISTRIBUTION")}
+      <div class="section-content indent">
+        ${Object.entries(charts.responseDistribution)
+          .map(([range, count]) => `<div class="list-item">${range}: <strong>${count} incident(s)</strong></div>`)
+          .join("")}
+      </div>
+    `;
+  }
+
+  if (incidents.length) {
+    contentHTML += `
+      ${sec("INCIDENT DETAILS")}
+      <div class="section-content indent">
+        ${incidents.map((inc, i) => `
+          <div class="list-item">${i + 1}. <strong>${esc(inc.id)}</strong> — ${esc(inc.type)}</div>
+          <div class="list-item">&nbsp;&nbsp;&nbsp;Resident: ${esc(inc.resident)}</div>
+          <div class="list-item">&nbsp;&nbsp;&nbsp;Location: ${esc(inc.location)}</div>
+          <div class="list-item">&nbsp;&nbsp;&nbsp;Time Reported: ${esc(inc.timeReported)} &nbsp;|&nbsp; Response Time: ${esc(inc.responseTime)}</div>
+          <div class="list-item">&nbsp;&nbsp;&nbsp;Status: ${esc(inc.status)}</div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  contentHTML += `
+    <div class="section-title" style="margin-top:20px;text-align:center;">
+      REPORT CLOSED — ${meta.exportDateFormatted || new Date().toLocaleDateString()}
+    </div>
+  `;
+
+  sessionStorage.setItem("analyticsReportContent", contentHTML);
+  sessionStorage.setItem("analyticsReportFilename", `SafeChain_Analytics_${new Date().toISOString().split("T")[0]}`);
+
+  const win = window.open(
+    "templates/analytics-report-template.php?autodownload=1",
+    "_blank"
+  );
+
+  if (!win) {
+    showToast("warning", "Popup was blocked — please allow popups and try again.");
+  }
+}
+
+function capitalize(str) {
+  return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
+}
+
+function esc(str) {
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function downloadFile(content, mimeType, extension) {
