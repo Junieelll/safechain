@@ -778,6 +778,7 @@ $avatar_color = getUserColor($user_id);
             }
         }
     </script>
+    <script src="assets/js/media-grid.js"></script>
     <script src="assets/js/sidebar.js"></script>
     <script src="assets/js/toast.js"></script>
     <script src="assets/js/modal.js"></script>
