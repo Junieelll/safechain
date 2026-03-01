@@ -247,7 +247,9 @@ function renderEvidenceGrid(evidenceList) {
     });
 
     // Add tile only shown when evidence exists
-    grid.insertAdjacentHTML("beforeend", `
+    grid.insertAdjacentHTML(
+      "beforeend",
+      `
       <div onclick="uploadEvidence()"
            class="aspect-square bg-transparent border-2 border-dashed border-gray-300 dark:border-neutral-600 
                   rounded-lg flex flex-col items-center justify-center cursor-pointer 
@@ -255,7 +257,8 @@ function renderEvidenceGrid(evidenceList) {
         <i class="uil uil-plus text-4xl text-gray-400"></i>
         <span class="text-xs text-gray-400 mt-1">Add</span>
       </div>
-    `);
+    `,
+    );
   }
 
   updateEvidenceCount(evidenceList.length);
@@ -557,26 +560,22 @@ function updateActionButtons(status, hasReport) {
 async function getAddressFromCoordinates(lat, lng) {
   try {
     const response = await fetch(
-      `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=c07f8cdbfe9b47559bebb248afe454f0`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+      { headers: { "User-Agent": "SafeChain/1.0" } },
     );
     const data = await response.json();
+    const a = data.address ?? {};
 
-    const props = data.features[0].properties;
+    console.log("Nominatim address:", a); // remove after confirming
 
-    const address = [
-      props.housenumber,
-      props.street,
-      props.suburb || props.district,
-      props.city,
-    ]
-      .filter(Boolean)
-      .join(", ");
-
-    console.log("Accurate address:", address);
-    return address;
+    return {
+      street: a.road ?? a.pedestrian ?? a.path ?? "N/A",
+      barangay: a.suburb ?? a.village ?? a.neighbourhood ?? a.quarter ?? "N/A",
+      city: a.city ?? a.town ?? a.municipality ?? "N/A",
+    };
   } catch (err) {
     console.error(err);
-    return "Address not found";
+    return { street: "N/A", barangay: "N/A", city: "N/A" };
   }
 }
 
@@ -636,14 +635,22 @@ async function populateIncidentDetails(incident) {
       : "N/A";
 
   // Update location details (keep static for now, but you can make this dynamic too)
-  const locationGrid = document.querySelectorAll(
-    ".grid.grid-cols-1.md\\:grid-cols-2.gap-5",
-  )[1];
-  locationGrid.querySelector("span.text-sm.font-semibold").textContent =
-    geocodedAddress;
+  if (incident.lat && incident.lng) {
+    const { street, barangay, city } = await getAddressFromCoordinates(
+      incident.lat,
+      incident.lng,
+    );
+    document.getElementById("locationAddress").textContent = street;
+    document.getElementById("locationBarangay").textContent = barangay;
+    document.getElementById("locationCity").textContent = city;
+  } else {
+    document.getElementById("locationAddress").textContent = "N/A";
+    document.getElementById("locationBarangay").textContent = "N/A";
+    document.getElementById("locationCity").textContent = "N/A";
+  }
 
   document.getElementById("coordinates").textContent =
-    `${incident.lat}, ${incident.lng}`;
+    incident.lat && incident.lng ? `${incident.lat}, ${incident.lng}` : "N/A";
 
   // Update reporter details
   if (incident.reporter_name) {
@@ -811,7 +818,7 @@ let routingControl = null;
 let directionsActive = false;
 let selectedFiles = [];
 
-const map = L.map("incidentMap").setView(incidentLocation, 16);
+const map = L.map("incidentMap", { maxZoom: 21 }).setView(incidentLocation, 16);
 
 const isOnline = navigator.onLine;
 
@@ -826,6 +833,8 @@ const darkTileUrl = isOnline
 
 // Create tile layers with error fallback
 const lightLayer = L.tileLayer(lightTileUrl, {
+  maxZoom: 21,
+  maxNativeZoom: 21,
   attribution:
     '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
 }).on("tileerror", function (error, tile) {
@@ -839,6 +848,8 @@ const lightLayer = L.tileLayer(lightTileUrl, {
 });
 
 const darkLayer = L.tileLayer(darkTileUrl, {
+  maxZoom: 21,
+  maxNativeZoom: 21,
   attribution:
     '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
 }).on("tileerror", function (error, tile) {
@@ -1426,11 +1437,13 @@ function generateReport() {
     });
 
     // Download PDF — opens in hidden iframe, clicks the download button automatically
-    document.getElementById("downloadReportBtn")?.addEventListener("click", () => {
-      window.open(reportUrl + "&autodownload=1", "_blank");
-      modalManager.close("reportModal");
-      showToast("info", "PDF download will start in the new tab");
-    });
+    document
+      .getElementById("downloadReportBtn")
+      ?.addEventListener("click", () => {
+        window.open(reportUrl + "&autodownload=1", "_blank");
+        modalManager.close("reportModal");
+        showToast("info", "PDF download will start in the new tab");
+      });
   }, 50);
 }
 

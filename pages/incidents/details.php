@@ -49,8 +49,7 @@ $currentUserRole = AuthChecker::getUserRole();
       <!-- Header -->
       <div class="mb-8">
         <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-neutral-400 mb-4">
-          <a href="incident"
-            class="text-blue-500 hover:text-blue-700 transition-colors font-medium">Incidents</a>
+          <a href="incident" class="text-blue-500 hover:text-blue-700 transition-colors font-medium">Incidents</a>
           <span>
             <i class="uil uil-angle-right"></i>
           </span>
@@ -116,8 +115,11 @@ $currentUserRole = AuthChecker::getUserRole();
             </div>
 
             <div id="descriptionSection">
-              <span class="block text-xs text-gray-500 dark:text-neutral-300 font-semibold uppercase tracking-wider mb-2.5">Description</span>
-              <div id="descriptionBox" class="bg-gray-50 dark:bg-neutral-700 border-l-4 border-blue-500 p-4 mb-5 rounded-lg text-sm text-gray-600 dark:text-neutral-400 leading-relaxed"></div>
+              <span
+                class="block text-xs text-gray-500 dark:text-neutral-300 font-semibold uppercase tracking-wider mb-2.5">Description</span>
+              <div id="descriptionBox"
+                class="bg-gray-50 dark:bg-neutral-700 border-l-4 border-blue-500 p-4 mb-5 rounded-lg text-sm text-gray-600 dark:text-neutral-400 leading-relaxed">
+              </div>
             </div>
           </div>
 
@@ -134,24 +136,22 @@ $currentUserRole = AuthChecker::getUserRole();
               <div class="flex flex-col gap-1.5">
                 <span
                   class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">Address</span>
-                <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300"><i
-                    class="uil uil-ellipsis-h"></i></span>
+                <span id="locationAddress" class="text-sm font-semibold text-gray-900 dark:text-neutral-300">—</span>
               </div>
               <div class="flex flex-col gap-1.5">
                 <span
                   class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">Barangay</span>
-                <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300">Gulod</span>
+                <span id="locationBarangay" class="text-sm font-semibold text-gray-900 dark:text-neutral-300">—</span>
               </div>
               <div class="flex flex-col gap-1.5">
                 <span
                   class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">City</span>
-                <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300">Quezon City, Metro Manila</span>
+                <span id="locationCity" class="text-sm font-semibold text-gray-900 dark:text-neutral-300">—</span>
               </div>
               <div class="flex flex-col gap-1.5">
                 <span
                   class="text-xs text-gray-500 dark:text-neutral-400 font-semibold uppercase tracking-wider">Coordinates</span>
-                <span class="text-sm font-semibold text-gray-900 dark:text-neutral-300" id="coordinates"><i
-                    class="uil uil-ellipsis-h"></i></span>
+                <span id="coordinates" class="text-sm font-semibold text-gray-900 dark:text-neutral-300">—</span>
               </div>
             </div>
 

@@ -3,12 +3,12 @@ let incidentsData = [];
 // Fetch incidents from database
 async function fetchIncidents() {
   try {
-    const response = await fetch('api/incidents/fetch_incidents.php'); // Update path if needed
+    const response = await fetch('api/incidents/fetch_incidents.php');
     const result = await response.json();
     
     if (result.success) {
       incidentsData = result.data;
-      updateWidgetCounts();
+      updateWidgetCounts(result.stats); // ← pass stats
       renderTable();
     } else {
       console.error('Error fetching incidents:', result.error);
@@ -18,6 +18,32 @@ async function fetchIncidents() {
     console.error('Fetch error:', error);
     showError('Failed to connect to server');
   }
+}
+
+function updateWidgetCounts(stats) {
+  // If stats not available yet (e.g. initial call before fetch), skip
+  if (!stats) return;
+
+  document.getElementById("incidentCount").textContent = stats.total;
+  document.getElementById("activeCount").textContent = stats.responding;
+  document.getElementById("resolvedCount").textContent = stats.resolved;
+  document.getElementById("pendingCount").textContent = stats.pending;
+
+  // Total incidents % change vs last month
+  const totalChange = stats.total_change;
+  const isUp = totalChange >= 0;
+  const totalSubtitle = document.querySelector(".card:nth-child(1) .subtitle");
+  totalSubtitle.innerHTML = `
+    <i class="uil uil-arrow-${isUp ? 'up' : 'down'}"></i>
+    ${Math.abs(totalChange)}% from last month
+  `;
+  totalSubtitle.className = `subtitle text-[10px] md:text-xs flex items-center ${isUp ? 'text-red-400' : 'text-emerald-400'}`;
+
+  // Resolution rate
+  const resolutionSubtitle = document.querySelector(".card:nth-child(3) .subtitle");
+  resolutionSubtitle.innerHTML = `
+    <i class="uil uil-arrow-up"></i> ${stats.resolution_rate}% resolution rate
+  `;
 }
 
 // Show error message in table
@@ -720,37 +746,6 @@ startDate.addEventListener("change", () => {
   endDate.min = startDate.value;
 });
 
-function updateWidgetCounts() {
-  const totalIncidents = incidentsData.length;
-  const activeIncidents = incidentsData.filter(
-    (i) => i.status === "responding"
-  ).length;
-  const resolvedIncidents = incidentsData.filter(
-    (i) => i.status === "resolved"
-  ).length;
-  const pendingIncidents = incidentsData.filter(
-    (i) => i.status === "pending"
-  ).length;
-
-  // Calculate resolution rate
-  const resolutionRate =
-    totalIncidents > 0
-      ? Math.round((resolvedIncidents / totalIncidents) * 100)
-      : 0;
-
-  // Update the DOM
-  document.getElementById("incidentCount").textContent = totalIncidents;
-  document.getElementById("activeCount").textContent = activeIncidents;
-  document.getElementById("resolvedCount").textContent = resolvedIncidents;
-  document.getElementById("pendingCount").textContent = pendingIncidents;
-
-  // Update resolution rate
-  const resolutionRateElement = document.querySelector(
-    ".card:nth-child(3) .subtitle"
-  );
-  resolutionRateElement.innerHTML = `<i class="uil uil-arrow-up"></i> ${resolutionRate}% resolution rate`;
-}
-
 // Archive Modal Functions
 function archiveIncident(id) {
   const incident = incidentsData.find((i) => i.id === id);
@@ -807,7 +802,6 @@ async function confirmArchiveIncident() {
       // Refresh the incidents data from database
       await fetchIncidents();
       currentPage = 1;
-      updateWidgetCounts();
       renderTable();
       showToast(
         "success",
@@ -856,7 +850,6 @@ async function refreshIncidents() {
     
     currentPage = 1;
     
-    updateWidgetCounts();
     renderTable();
     
   } catch (error) {
@@ -874,7 +867,6 @@ async function refreshIncidents() {
 window.addEventListener("DOMContentLoaded", () => {
   initPageAnimations();
 
-  updateWidgetCounts();
   updateClearFilterButton();
 
   showLoadingSkeleton();

@@ -57,6 +57,28 @@ if ($data['type'] === 'INCIDENT') {
 }
 
 /**
+ * Reverse geocode lat/lng to street, barangay, city using Nominatim
+ */
+function reverseGeocode($lat, $lng): string {
+    $url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng";
+    $opts = ['http' => ['header' => "User-Agent: SafeChain/1.0\r\n"]];
+    $response = @file_get_contents($url, false, stream_context_create($opts));
+
+    if ($response) {
+        $data = json_decode($response, true);
+        $a = $data['address'] ?? [];
+        $parts = array_filter([
+            $a['road'] ?? $a['pedestrian'] ?? $a['path'] ?? null,
+            $a['suburb'] ?? $a['village'] ?? $a['neighbourhood'] ?? $a['quarter'] ?? null,
+            $a['city'] ?? $a['town'] ?? $a['municipality'] ?? null,
+        ]);
+        return implode(', ', $parts) ?: "$lat, $lng";
+    }
+
+    return "$lat, $lng"; // fallback to coords if API fails
+}
+
+/**
  * Create new incident
  */
 function handleNewIncident($conn, $data, $resident)
@@ -86,7 +108,11 @@ function handleNewIncident($conn, $data, $resident)
     // Prepare data
     $lat = floatval($data['lat']);
     $lng = floatval($data['lng']);
-    $location = mysqli_real_escape_string($conn, $resident['address']);
+
+    // ← Reverse geocode once on creation instead of using resident address
+    $geocodedAddress = reverseGeocode($lat, $lng);
+    $location = mysqli_real_escape_string($conn, $geocodedAddress);
+
     $reporter_id = mysqli_real_escape_string($conn, $resident['resident_id']);
     $reporter_name = mysqli_real_escape_string($conn, $resident['name']);
     $device_id = mysqli_real_escape_string($conn, $data['device_id']);
@@ -98,21 +124,21 @@ function handleNewIncident($conn, $data, $resident)
               ('$incidentId', '$type', '$location', '$reporter_name', '$reporter_id', '$device_id', NOW(), 'pending', 0, $lat, $lng)";
 
     if (mysqli_query($conn, $query)) {
-        // Log to PHP error log
         error_log(sprintf(
-            "[SafeChain] New %s: %s by %s (%s) at (%.6f, %.6f)",
+            "[SafeChain] New %s: %s by %s (%s) at (%.6f, %.6f) - %s",
             strtoupper($type),
             $incidentId,
             $resident['name'],
             $reporter_id,
             $lat,
-            $lng
+            $lng,
+            $geocodedAddress
         ));
 
         sendFCMToAllResponders($conn, [
             'id' => $incidentId,
             'type' => $type,
-            'location' => $resident['address'],
+            'location' => $geocodedAddress,
         ]);
 
         echo json_encode([
@@ -125,7 +151,7 @@ function handleNewIncident($conn, $data, $resident)
             'location' => [
                 'lat' => $lat,
                 'lng' => $lng,
-                'address' => $resident['address']
+                'address' => $geocodedAddress
             ],
             'timestamp' => date('Y-m-d H:i:s')
         ]);
@@ -139,10 +165,10 @@ function handleNewIncident($conn, $data, $resident)
 
 /**
  * Update GPS location for existing incident
+ * Only updates lat/lng — location string stays as the initial geocoded address
  */
 function handleGPSUpdate($conn, $data, $resident)
 {
-    // Find active incident using reporter_id
     $reporter_id = mysqli_real_escape_string($conn, $resident['resident_id']);
     $device_id = mysqli_real_escape_string($conn, $data['device_id']);
 
@@ -162,16 +188,11 @@ function handleGPSUpdate($conn, $data, $resident)
 
         $lat = floatval($data['lat']);
         $lng = floatval($data['lng']);
-        $location = mysqli_real_escape_string(
-            $conn,
-            sprintf("%.6f°N, %.6f°E - %s", $lat, $lng, $resident['address'])
-        );
 
-        // Update incident with new location
+        // ← Only update coordinates, not the location string
         $updateQuery = "UPDATE incidents SET 
                         latitude = $lat, 
                         longitude = $lng,
-                        location = '$location',
                         updated_at = NOW()
                         WHERE id = '$incident_id'";
 
