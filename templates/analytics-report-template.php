@@ -1,7 +1,6 @@
 <?php
-session_start();
-require_once '../../config/conn.php';
-require_once '../../includes/auth_helper.php';
+require_once '../config/conn.php';
+require_once '../includes/auth_helper.php';
 
 AuthChecker::requireAuth('/auth/login.php');
 ?>
