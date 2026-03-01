@@ -252,6 +252,8 @@ $avatar_color = getUserColor($user_id);
                 // Check if current user is the author
                 const isAuthor = announcement.user_id === CURRENT_USER_ID;
                 
+                scRegisterMedia(String(announcement.id), announcement.media || []);
+                
                 return `
                 <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 shadow-sm">
                     <div class="flex gap-3 mb-4">
@@ -283,19 +285,7 @@ $avatar_color = getUserColor($user_id);
                     <div class="mb-4">
                         <div class="text-gray-700 dark:text-gray-200 leading-relaxed text-[15px] whitespace-pre-wrap break-words">${announcement.content}</div>
                         
-                        ${announcement.media && announcement.media.length > 0 ? `
-                            <div class="mt-4 grid ${announcement.media.length === 1 ? 'grid-cols-1' : announcement.media.length === 2 ? 'grid-cols-2' : announcement.media.length === 3 ? 'grid-cols-3' : 'grid-cols-2'} gap-2">
-                                ${announcement.media.map((item, index) => `
-                                    <div class="rounded-lg overflow-hidden ${announcement.media.length === 3 && index === 0 ? 'col-span-3' : ''}">
-                                        ${item.type === 'video' ? `
-                                            <video src="${BASE_URL}${item.src}" controls class="w-full block"></video>
-                                        ` : `
-                                            <img src="${BASE_URL}${item.src}" alt="Announcement media" class="w-full block object-cover ${announcement.media.length > 1 ? 'h-48' : ''}">
-                                        `}
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
+                        ${announcement.media?.length > 0 ? buildMediaGrid(announcement.media, String(announcement.id)) : ''}
                         
                         ${announcement.link ? `
                             <a href="${announcement.link}" target="_blank" class="mt-4 flex items-center gap-2.5 bg-emerald-50 dark:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-600 rounded-lg px-4 py-3.5 no-underline hover:bg-emerald-100 dark:hover:bg-emerald-800 transition-colors">
