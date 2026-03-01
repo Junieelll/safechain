@@ -212,13 +212,14 @@ function handle_update_status(mysqli $conn, string $id, array $user): void
 
     $now            = date('Y-m-d H:i:s');
     $responder_name = $user['name'] ?? $user['username'] ?? 'Unknown';
+    $responder_id   = $user['id'] ?? '';
 
     if ($status === 'responding' && $incident['status'] === 'pending') {
         // Responder is accepting the incident — record who took it
         $stmt = $conn->prepare(
             'UPDATE incidents SET status=?, dispatched_to=?, dispatched_at=?, dispatched_by=?, updated_at=? WHERE id=?'
         );
-        $stmt->bind_param('ssssss', $status, $responder_name, $now, $responder_name, $now, $id);
+        $stmt->bind_param('ssssss', $status, $responder_id, $now, $responder_name, $now, $id);
     } else {
         $stmt = $conn->prepare('UPDATE incidents SET status=?, updated_at=? WHERE id=?');
         $stmt->bind_param('sss', $status, $now, $id);
