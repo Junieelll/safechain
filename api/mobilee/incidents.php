@@ -12,21 +12,21 @@ setCorsHeaders();
 
 // ─── Authenticate ──────────────────────────────────────────────────────────
 // Reads JWT from Authorization header, returns user array or exits with 401
-$user          = mobile_authenticate();
-$role          = strtolower($user['role'] ?? '');
+$user = mobile_authenticate();
+$role = strtolower($user['role'] ?? '');
 $allowed_types = get_allowed_types($role);
 
 // ─── Route ─────────────────────────────────────────────────────────────────
-$method      = $_SERVER['REQUEST_METHOD'];
+$method = $_SERVER['REQUEST_METHOD'];
 $incident_id = $_GET['id'] ?? null;
 
 match ($method) {
-    'GET'  => $incident_id
-                ? handle_get_single($conn, $incident_id, $allowed_types)
-                : handle_get_list($conn, $allowed_types),
-    'PUT'  => $incident_id
-                ? handle_update_status($conn, $incident_id, $user)
-                : ResponseHelper::error('Incident ID is required', 400),
+    'GET' => $incident_id
+    ? handle_get_single($conn, $incident_id, $allowed_types)
+    : handle_get_list($conn, $allowed_types),
+    'PUT' => $incident_id
+    ? handle_update_status($conn, $incident_id, $user)
+    : ResponseHelper::error('Incident ID is required', 400),
     'POST' => handle_create($conn, $user),
     default => ResponseHelper::error('Method not allowed', 405),
 };
@@ -37,34 +37,34 @@ match ($method) {
 function get_allowed_types(string $role): array
 {
     return match ($role) {
-        'bpso'        => ['crime'],
-        'bhert'       => ['flood'],
+        'bpso' => ['crime'],
+        'bhert' => ['flood'],
         'firefighter' => ['fire'],
-        'admin'       => ['fire', 'flood', 'crime'],
-        default       => [],
+        'admin' => ['fire', 'flood', 'crime'],
+        default => [],
     };
 }
 
 function format_incident(array $row): array
 {
     return [
-        'id'            => $row['id'],
-        'type'          => $row['type'],
-        'location'      => $row['location'],
-        'latitude'      => $row['latitude']  !== null ? (float) $row['latitude']  : null,
-        'longitude'     => $row['longitude'] !== null ? (float) $row['longitude'] : null,
-        'device_id'     => $row['device_id'],
-        'reporter'      => $row['reporter'],
-        'reporter_id'   => $row['reporter_id'],
-        'date_time'     => $row['date_time'],
-        'status'        => $row['status'],
+        'id' => $row['id'],
+        'type' => $row['type'],
+        'location' => $row['location'],
+        'latitude' => $row['latitude'] !== null ? (float) $row['latitude'] : null,
+        'longitude' => $row['longitude'] !== null ? (float) $row['longitude'] : null,
+        'device_id' => $row['device_id'],
+        'reporter' => $row['reporter'],
+        'reporter_id' => $row['reporter_id'],
+        'date_time' => $row['date_time'],
+        'status' => $row['status'],
         'dispatched_to' => $row['dispatched_to'],
         'dispatched_at' => $row['dispatched_at'],
         'dispatched_by' => $row['dispatched_by'],
-        'is_archived'   => (bool) $row['is_archived'],
-        'archived_at'   => $row['archived_at'],
-        'created_at'    => $row['created_at'],
-        'updated_at'    => $row['updated_at'],
+        'is_archived' => (bool) $row['is_archived'],
+        'archived_at' => $row['archived_at'],
+        'created_at' => $row['created_at'],
+        'updated_at' => $row['updated_at'],
     ];
 }
 
@@ -82,43 +82,47 @@ function handle_get_list(mysqli $conn, array $allowed_types): void
     }
 
     $status = $_GET['status'] ?? null;
-    $type   = $_GET['type']   ?? null;
-    $page   = max(1, (int) ($_GET['page']  ?? 1));
-    $limit  = min(100, max(1, (int) ($_GET['limit'] ?? 20)));
+    $type = $_GET['type'] ?? null;
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $limit = min(100, max(1, (int) ($_GET['limit'] ?? 20)));
     $offset = ($page - 1) * $limit;
 
     // Build WHERE
     $conditions = ['is_archived = 0'];
-    $params     = [];
-    $types      = '';
+    $params = [];
+    $types = '';
 
     // Role-based type filter
     $placeholders = implode(',', array_fill(0, count($allowed_types), '?'));
     $conditions[] = "type IN ($placeholders)";
-    foreach ($allowed_types as $t) { $params[] = $t; $types .= 's'; }
+    foreach ($allowed_types as $t) {
+        $params[] = $t;
+        $types .= 's';
+    }
 
     // Optional status filter
     $valid_statuses = ['pending', 'responding', 'resolved'];
     if ($status && in_array($status, $valid_statuses, true)) {
         $conditions[] = 'status = ?';
-        $params[]     = $status;
-        $types       .= 's';
+        $params[] = $status;
+        $types .= 's';
     }
 
     // Optional type filter (within allowed)
     if ($type && in_array($type, $allowed_types, true)) {
         $conditions[] = 'type = ?';
-        $params[]     = $type;
-        $types       .= 's';
+        $params[] = $type;
+        $types .= 's';
     }
 
     $where = 'WHERE ' . implode(' AND ', $conditions);
 
     // Count total
     $count_stmt = $conn->prepare("SELECT COUNT(*) AS total FROM incidents $where");
-    if (!empty($params)) $count_stmt->bind_param($types, ...$params);
+    if (!empty($params))
+        $count_stmt->bind_param($types, ...$params);
     $count_stmt->execute();
-    $total       = (int) $count_stmt->get_result()->fetch_assoc()['total'];
+    $total = (int) $count_stmt->get_result()->fetch_assoc()['total'];
     $total_pages = (int) ceil($total / $limit);
     $count_stmt->close();
 
@@ -126,12 +130,12 @@ function handle_get_list(mysqli $conn, array $allowed_types): void
     $stmt = $conn->prepare("SELECT * FROM incidents $where ORDER BY created_at DESC LIMIT ? OFFSET ?");
     $params[] = $limit;
     $params[] = $offset;
-    $types   .= 'ii';
+    $types .= 'ii';
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
 
     $incidents = [];
-    $result    = $stmt->get_result();
+    $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
         $incidents[] = format_incident($row);
     }
@@ -139,12 +143,12 @@ function handle_get_list(mysqli $conn, array $allowed_types): void
 
     // Match PaginatedResponse shape expected by React Native
     ResponseHelper::success([
-        'data'       => $incidents,
+        'data' => $incidents,
         'pagination' => [
             'current_page' => $page,
-            'total_pages'  => $total_pages,
-            'per_page'     => $limit,
-            'total'        => $total,
+            'total_pages' => $total_pages,
+            'per_page' => $limit,
+            'total' => $total,
         ],
     ], 'Incidents fetched successfully');
 }
@@ -178,7 +182,7 @@ function handle_get_single(mysqli $conn, string $id, array $allowed_types): void
 // ═══════════════════════════════════════════════════════════════════════════
 function handle_update_status(mysqli $conn, string $id, array $user): void
 {
-    $body   = json_decode(file_get_contents('php://input'), true) ?? [];
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $status = trim($body['status'] ?? '');
 
     $valid_statuses = ['pending', 'responding', 'resolved'];
@@ -192,38 +196,19 @@ function handle_update_status(mysqli $conn, string $id, array $user): void
     // ── Use client timestamp if provided (offline sync accuracy) ──────────
     // Client sends ISO 8601 e.g. "2025-02-18T10:35:00.000Z"
     // Validate and convert to MySQL datetime, fall back to server time
-    $now = date('Y-m-d H:i:s'); // server fallback
+    $now = date('Y-m-d H:i:s'); // fallback
 
     if (!empty($body['updated_at'])) {
-        $parsed = DateTime::createFromFormat(
-            DateTime::ATOM,            // ISO 8601 / RFC 3339
-            $body['updated_at'],
-            new DateTimeZone('UTC')
-        );
-
-        // Also try without milliseconds (JS sometimes omits them)
-        if (!$parsed) {
-            $parsed = DateTime::createFromFormat(
-                'Y-m-d\TH:i:s\Z',
-                $body['updated_at'],
-                new DateTimeZone('UTC')
-            );
-        }
+        // Client now sends Manila time directly e.g. "2025-01-01 15:00:00"
+        $parsed = DateTime::createFromFormat('Y-m-d H:i:s', $body['updated_at']);
 
         if ($parsed) {
-            // Convert to your server/DB timezone if needed — adjust as appropriate
-            $parsed->setTimezone(new DateTimeZone('Asia/Manila'));
-            $candidate = $parsed->format('Y-m-d H:i:s');
-
-            // Sanity check: reject timestamps more than 24 hrs in the future
-            // or more than 7 days in the past (stale offline operation)
             $candidateTs = $parsed->getTimestamp();
-            $nowTs       = time();
+            $nowTs = time();
 
             if ($candidateTs <= ($nowTs + 86400) && $candidateTs >= ($nowTs - 604800)) {
-                $now = $candidate;
+                $now = $parsed->format('Y-m-d H:i:s');
             }
-            // If out of range, silently fall back to server time
         }
     }
 
@@ -234,12 +219,13 @@ function handle_update_status(mysqli $conn, string $id, array $user): void
     $incident = $stmt->get_result()->fetch_assoc();
     $stmt->close();
 
-    if (!$incident) ResponseHelper::notFound('Incident not found');
+    if (!$incident)
+        ResponseHelper::notFound('Incident not found');
 
     // Prevent backwards status changes
-    $order   = ['pending' => 0, 'responding' => 1, 'resolved' => 2];
+    $order = ['pending' => 0, 'responding' => 1, 'resolved' => 2];
     $current = $order[$incident['status']] ?? 0;
-    $new     = $order[$status]             ?? 0;
+    $new = $order[$status] ?? 0;
 
     if ($new < $current) {
         ResponseHelper::error(
@@ -249,7 +235,7 @@ function handle_update_status(mysqli $conn, string $id, array $user): void
     }
 
     $responder_name = $user['name'] ?? $user['username'] ?? 'Unknown';
-    $responder_id   = $user['id'] ?? '';
+    $responder_id = $user['id'] ?? '';
 
     if ($status === 'responding' && $incident['status'] === 'pending') {
         // $now used for both dispatched_at and updated_at — same accurate time
@@ -306,22 +292,22 @@ function handle_create(mysqli $conn, array $user): void
     }
 
     // Generate ID e.g. INC-20250218-0001
-    $date_part  = date('Ymd');
-    $cnt_stmt   = $conn->prepare("SELECT COUNT(*) AS cnt FROM incidents WHERE DATE(created_at) = CURDATE()");
+    $date_part = date('Ymd');
+    $cnt_stmt = $conn->prepare("SELECT COUNT(*) AS cnt FROM incidents WHERE DATE(created_at) = CURDATE()");
     $cnt_stmt->execute();
-    $cnt    = (int) $cnt_stmt->get_result()->fetch_assoc()['cnt'] + 1;
+    $cnt = (int) $cnt_stmt->get_result()->fetch_assoc()['cnt'] + 1;
     $cnt_stmt->close();
     $new_id = 'INC-' . $date_part . '-' . str_pad($cnt, 4, '0', STR_PAD_LEFT);
 
-    $type        = $body['type'];
-    $location    = $body['location'];
-    $latitude    = isset($body['latitude'])  ? (float) $body['latitude']  : null;
-    $longitude   = isset($body['longitude']) ? (float) $body['longitude'] : null;
-    $device_id   = $body['device_id']   ?? null;
-    $reporter    = $body['reporter'];
-    $reporter_id = $user['id']          ?? null;
-    $date_time   = $body['date_time'];
-    $status      = 'pending';
+    $type = $body['type'];
+    $location = $body['location'];
+    $latitude = isset($body['latitude']) ? (float) $body['latitude'] : null;
+    $longitude = isset($body['longitude']) ? (float) $body['longitude'] : null;
+    $device_id = $body['device_id'] ?? null;
+    $reporter = $body['reporter'];
+    $reporter_id = $user['id'] ?? null;
+    $date_time = $body['date_time'];
+    $status = 'pending';
 
     $stmt = $conn->prepare(
         'INSERT INTO incidents (id,type,location,latitude,longitude,device_id,reporter,reporter_id,date_time,status)
@@ -329,8 +315,16 @@ function handle_create(mysqli $conn, array $user): void
     );
     $stmt->bind_param(
         'sssddsssss',
-        $new_id, $type, $location, $latitude, $longitude,
-        $device_id, $reporter, $reporter_id, $date_time, $status
+        $new_id,
+        $type,
+        $location,
+        $latitude,
+        $longitude,
+        $device_id,
+        $reporter,
+        $reporter_id,
+        $date_time,
+        $status
     );
 
     if (!$stmt->execute()) {
