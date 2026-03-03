@@ -11,6 +11,7 @@ try {
             address,
             contact,
             device_id AS deviceId,
+            profile_picture_url,
             registered_date AS registeredDate
         FROM residents
         WHERE is_archived = 0
@@ -25,8 +26,16 @@ try {
 
     $residents = [];
     while ($row = mysqli_fetch_assoc($result)) {
-        $residents[] = $row;
-    }
+    $residents[] = [
+        'id'             => $row['id'],
+        'name'           => $row['name'],
+        'address'        => $row['address'],
+        'contact'        => $row['contact'],
+        'deviceId'       => $row['deviceId'],
+        'profilePicture' => $row['profile_picture_url'], // ← map it here
+        'registeredDate' => $row['registeredDate'],
+    ];
+}
 
     echo json_encode([
         'success' => true,

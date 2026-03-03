@@ -2,7 +2,7 @@
 let allUsers = [];
 let filteredUsers = [];
 let currentPage = 1;
-const usersPerPage = 10;
+const usersPerPage = 5;
 
 // ✅ active filters
 let activeSearch = "";
@@ -33,123 +33,166 @@ async function fetchUsers() {
   }
 }
 
+const userTableBody = document.querySelector("tbody");
+userTableBody.style.transition = "opacity 0.3s ease-in-out, transform 0.3s ease-in-out";
+
+function showUserLoadingSkeleton() {
+  userTableBody.style.opacity = "0";
+
+  setTimeout(() => {
+    userTableBody.innerHTML = Array(usersPerPage)
+      .fill(0)
+      .map(() => `
+        <tr>
+          <td class="px-6 py-4">
+            <div class="h-3 w-16 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700/50 animate-pulse"></div>
+              <div class="h-3 w-24 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse"></div>
+            </div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="h-6 w-20 bg-gray-200 dark:bg-gray-700/50 rounded-full animate-pulse"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="h-3 w-28 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="h-3 w-20 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="h-3 w-20 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse"></div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-2">
+              <div class="h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700/50 animate-pulse"></div>
+              <div class="h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700/50 animate-pulse"></div>
+              <div class="h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700/50 animate-pulse"></div>
+              <div class="h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700/50 animate-pulse"></div>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+
+    userTableBody.style.opacity = "1";
+  }, 100);
+}
+
 // Render users in table
 function renderUsers() {
-  const tbody = document.querySelector("tbody");
-  tbody.innerHTML = "";
+  // Fade out
+  userTableBody.style.opacity = "0";
 
-  const startIndex = (currentPage - 1) * usersPerPage;
-  const endIndex = startIndex + usersPerPage;
-  const usersToDisplay = filteredUsers.slice(startIndex, endIndex);
+  // Show skeleton
+  setTimeout(() => {
+    showUserLoadingSkeleton();
+  }, 300);
 
-  if (usersToDisplay.length === 0) {
-    tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="px-6 py-16 text-center">
-                    <div class="flex flex-col items-center justify-center gap-4">
-                        <div class="w-20 h-20 rounded-full bg-gray-100 dark:bg-neutral-700 flex items-center justify-center">
-                            <i class="uil uil-user-times text-4xl text-gray-400 dark:text-gray-500"></i>
-                        </div>
-                        <div class="space-y-1">
-                            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">No users found</h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Get started by creating your first user account</p>
-                        </div>
-                        <button onclick="openCreateAccountModal()" class="mt-2 py-2.5 px-5 flex gap-2 items-center font-medium bg-emerald-500 text-white text-sm rounded-xl hover:bg-emerald-600 transition-all ease-in-out duration-200 focus:ring-4 focus:ring-emerald-100">
-                            <i class="uil uil-user-plus text-lg"></i>
-                            Create Account
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    return;
-  }
+  setTimeout(() => {
+    const startIndex = (currentPage - 1) * usersPerPage;
+    const endIndex = startIndex + usersPerPage;
+    const usersToDisplay = filteredUsers.slice(startIndex, endIndex);
 
-  usersToDisplay.forEach((user) => {
-    const row = createUserRow(user);
-    tbody.innerHTML += row;
-  });
+    if (usersToDisplay.length === 0) {
+      userTableBody.innerHTML = `
+        <tr>
+          <td colspan="7" class="px-6 py-16 text-center">
+            <div class="flex flex-col items-center justify-center gap-4">
+              <div class="w-20 h-20 rounded-full bg-gray-100 dark:bg-neutral-700 flex items-center justify-center">
+                <i class="uil uil-user-times text-4xl text-gray-400 dark:text-gray-500"></i>
+              </div>
+              <div class="space-y-1">
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">No users found</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Get started by creating your first user account</p>
+              </div>
+              <button onclick="openCreateAccountModal()" class="mt-2 py-2.5 px-5 flex gap-2 items-center font-medium bg-emerald-500 text-white text-sm rounded-xl hover:bg-emerald-600 transition-all ease-in-out duration-200 focus:ring-4 focus:ring-emerald-100">
+                <i class="uil uil-user-plus text-lg"></i>
+                Create Account
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+      userTableBody.style.opacity = "1";
+      renderPagination();
+      return;
+    }
+
+    userTableBody.innerHTML = usersToDisplay
+      .map((user, index) => createUserRow(user, index))
+      .join("");
+
+    // Fade in
+    userTableBody.style.opacity = "1";
+    renderPagination();
+  }, 800);
 }
 
 // Create user row HTML
-function createUserRow(user) {
+function createUserRow(user, index = 0) {
   const initials = getInitials(user.name);
   const roleConfig = getRoleConfig(user.role);
   const lastLogin = user.lastLogin ? formatDate(user.lastLogin) : "Never";
   const createdAt = formatDate(user.createdAt);
 
+  const avatarHtml = user.profilePicture
+    ? `<img src="${user.profilePicture}" class="w-10 h-10 rounded-full object-cover shrink-0" alt="${user.name}" />`
+    : `<div class="w-10 h-10 rounded-full shrink-0 bg-[linear-gradient(141.34deg,#27C291_4.44%,#20A577_95.56%)] flex items-center justify-center text-white font-semibold text-sm">${initials}</div>`;
+
   return `
-        <tr class="hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition">
-            <td class="px-6 py-4">
-                <span class="text-sm font-medium text-emerald-500 dark:text-emerald-400">${
-                  user.userId
-                }</span>
-            </td>
-            <td class="px-6 py-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full shrink-0 bg-[linear-gradient(141.34deg,#27C291_4.44%,#20A577_95.56%)] flex items-center justify-center text-white font-semibold text-sm">
-                        ${initials}
-                    </div>
-                    <span class="text-sm font-medium text-gray-900 dark:text-gray-100">${
-                      user.name
-                    }</span>
-                </div>
-            </td>
-            <td class="px-6 py-4">
-                <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-                  roleConfig.bgColor
-                } ${roleConfig.textColor} ${roleConfig.borderColor} border-2">
-                    <i class="${roleConfig.icon}"></i>
-                    ${roleConfig.label}
-                </span>
-            </td>
-            <td class="px-6 py-4">
-                <span class="text-sm text-gray-600 dark:text-gray-300">${
-                  user.username
-                }</span>
-            </td>
-            <td class="px-6 py-4">
-                <span class="text-sm text-gray-600 dark:text-gray-300">${lastLogin}</span>
-            </td>
-            <td class="px-6 py-4">
-                <span class="text-sm text-gray-600 dark:text-gray-300">${createdAt}</span>
-            </td>
-            <td class="px-6 py-4">
-                <div class="flex items-center gap-2">
-                    <button onclick="editUser('${
-                      user.userId
-                    }')" class="p-2 hover:-translate-y-1 bg-blue-100 dark:bg-blue-900/20 rounded-lg w-8 h-8 flex items-center justify-center transition" title="Edit">
-                        <i class="uil uil-edit text-lg text-blue-600 dark:text-blue-300"></i>
-                    </button>
-                    <button onclick="resetPassword('${
-                      user.userId
-                    }')" class="p-2 hover:-translate-y-1 bg-purple-100 dark:bg-purple-900/20 rounded-lg w-8 h-8 flex items-center justify-center transition" title="Reset Password">
-                        <i class="uil uil-key-skeleton text-lg text-purple-600 dark:text-purple-300"></i>
-                    </button>
-                    <button onclick="toggleUserStatus('${
-                      user.userId
-                    }')" class="p-2 hover:-translate-y-1 ${
-                      user.status === "suspended"
-                        ? "bg-emerald-100 dark:bg-emerald-900/20"
-                        : "bg-orange-100 dark:bg-orange-900/20"
-                    } rounded-lg w-8 h-8 flex items-center justify-center transition" title="${
-                      user.status === "suspended" ? "Unsuspend" : "Suspend"
-                    }">
-                        <i class="uil ${
-                          user.status === "suspended"
-                            ? "uil-sync text-emerald-600 dark:text-emerald-300"
-                            : "uil-ban text-orange-600 dark:text-orange-300"
-                        } text-lg"></i>
-                    </button>
-                    <button onclick="deleteUser('${
-                      user.userId
-                    }')" class="p-2 hover:-translate-y-1 bg-red-100 dark:bg-red-900/20 rounded-lg w-8 h-8 flex items-center justify-center transition" title="Delete">
-                        <i class="uil uil-trash text-lg text-red-600 dark:text-red-400"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `;
+    <tr class="hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition item-enter" style="animation-delay: ${index * 0.05}s">
+      <td class="px-6 py-4">
+        <span class="text-sm font-medium text-emerald-500 dark:text-emerald-400">${user.userId}</span>
+      </td>
+      <td class="px-6 py-4">
+        <div class="flex items-center gap-3">
+          ${avatarHtml}
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100">${user.name}</span>
+        </div>
+      </td>
+      <td class="px-6 py-4">
+        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${roleConfig.bgColor} ${roleConfig.textColor} ${roleConfig.borderColor} border-2">
+          <i class="${roleConfig.icon}"></i>
+          ${roleConfig.label}
+        </span>
+      </td>
+      <td class="px-6 py-4">
+        <span class="text-sm text-gray-600 dark:text-gray-300">${user.username}</span>
+      </td>
+      <td class="px-6 py-4">
+        <span class="text-sm text-gray-600 dark:text-gray-300">${lastLogin}</span>
+      </td>
+      <td class="px-6 py-4">
+        <span class="text-sm text-gray-600 dark:text-gray-300">${createdAt}</span>
+      </td>
+      <td class="px-6 py-4">
+        <div class="flex items-center gap-2">
+          <button onclick="editUser('${user.userId}')" class="p-2 hover:-translate-y-1 bg-blue-100 dark:bg-blue-900/20 rounded-lg w-8 h-8 flex items-center justify-center transition" title="Edit">
+            <i class="uil uil-edit text-lg text-blue-600 dark:text-blue-300"></i>
+          </button>
+          <button onclick="resetPassword('${user.userId}')" class="p-2 hover:-translate-y-1 bg-purple-100 dark:bg-purple-900/20 rounded-lg w-8 h-8 flex items-center justify-center transition" title="Reset Password">
+            <i class="uil uil-key-skeleton text-lg text-purple-600 dark:text-purple-300"></i>
+          </button>
+          <button onclick="toggleUserStatus('${user.userId}')" class="p-2 hover:-translate-y-1 ${
+            user.status === "suspended"
+              ? "bg-emerald-100 dark:bg-emerald-900/20"
+              : "bg-orange-100 dark:bg-orange-900/20"
+          } rounded-lg w-8 h-8 flex items-center justify-center transition" title="${user.status === "suspended" ? "Unsuspend" : "Suspend"}">
+            <i class="uil ${
+              user.status === "suspended"
+                ? "uil-sync text-emerald-600 dark:text-emerald-300"
+                : "uil-ban text-orange-600 dark:text-orange-300"
+            } text-lg"></i>
+          </button>
+          <button onclick="deleteUser('${user.userId}')" class="p-2 hover:-translate-y-1 bg-red-100 dark:bg-red-900/20 rounded-lg w-8 h-8 flex items-center justify-center transition" title="Delete">
+            <i class="uil uil-trash text-lg text-red-600 dark:text-red-400"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `;
 }
 
 function getRoleConfig(role) {
@@ -223,44 +266,83 @@ function renderPagination() {
   }
 
   let paginationHTML = `
-        <button onclick="changePage(${currentPage - 1})" ${
-          currentPage === 1 ? "disabled" : ""
-        } 
-            class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
-            <i class="uil uil-angle-left text-gray-600 dark:text-gray-300"></i>
+    <button onclick="changePage(${currentPage - 1})"
+      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-neutral-700 dark:hover:bg-emerald-900/60 text-gray-600 hover:bg-emerald-50 hover:text-emerald-500 transition ${
+        currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
+      }"
+      ${currentPage === 1 ? "disabled" : ""}>
+      <i class="uil uil-angle-left text-xl"></i>
+    </button>
+    <div class="bg-[#F1F5F9] dark:bg-neutral-700 rounded-full p-1 flex items-center gap-1">
+  `;
+
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) {
+      paginationHTML += `
+        <button onclick="changePage(${i})"
+          class="w-8 h-8 flex items-center justify-center rounded-full ${
+            currentPage === i
+              ? "bg-emerald-500 text-white"
+              : "hover:bg-white dark:hover:bg-emerald-900/60 text-neutral-600 dark:text-neutral-400 dark:hover:text-emerald-500"
+          } text-sm font-medium transition">
+          ${i}
         </button>
+      `;
+    }
+  } else {
+    // First page
+    paginationHTML += `
+      <button onclick="changePage(1)"
+        class="w-8 h-8 flex items-center justify-center rounded-full ${
+          currentPage === 1 ? "bg-emerald-500 text-white" : "hover:bg-white dark:hover:bg-emerald-900/60 text-neutral-600 dark:text-neutral-400 dark:hover:text-emerald-500"
+        } text-sm font-medium transition">
+        1
+      </button>
     `;
 
-  for (let i = 1; i <= totalPages; i++) {
-    if (
-      i === 1 ||
-      i === totalPages ||
-      (i >= currentPage - 1 && i <= currentPage + 1)
-    ) {
-      const isActive = i === currentPage;
-      paginationHTML += `
-                <button onclick="changePage(${i})" 
-                    class="w-9 h-9 flex items-center justify-center rounded-lg ${
-                      isActive
-                        ? "bg-emerald-500 text-white"
-                        : "border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700"
-                    } transition">
-                    ${i}
-                </button>
-            `;
-    } else if (i === currentPage - 2 || i === currentPage + 2) {
-      paginationHTML += `<span class="text-gray-500">...</span>`;
+    if (currentPage > 3) {
+      paginationHTML += `<span class="px-2 text-gray-500 dark:text-gray-400">...</span>`;
     }
+
+    const startPage = Math.max(2, currentPage - 1);
+    const endPage   = Math.min(totalPages - 1, currentPage + 1);
+
+    for (let i = startPage; i <= endPage; i++) {
+      paginationHTML += `
+        <button onclick="changePage(${i})"
+          class="w-8 h-8 flex items-center justify-center rounded-full ${
+            currentPage === i ? "bg-emerald-500 text-white" : "hover:bg-white dark:hover:bg-emerald-900/60 text-neutral-600 dark:text-neutral-400 dark:hover:text-emerald-500"
+          } text-sm font-medium transition">
+          ${i}
+        </button>
+      `;
+    }
+
+    if (currentPage < totalPages - 2) {
+      paginationHTML += `<span class="px-2 text-gray-500 dark:text-gray-400">...</span>`;
+    }
+
+    // Last page
+    paginationHTML += `
+      <button onclick="changePage(${totalPages})"
+        class="w-8 h-8 flex items-center justify-center rounded-full ${
+          currentPage === totalPages ? "bg-emerald-500 text-white" : "hover:bg-white dark:hover:bg-emerald-900/60 text-neutral-600 dark:text-neutral-400 dark:hover:text-emerald-500"
+        } text-sm font-medium transition">
+        ${totalPages}
+      </button>
+    `;
   }
 
   paginationHTML += `
-        <button onclick="changePage(${currentPage + 1})" ${
-          currentPage === totalPages ? "disabled" : ""
-        } 
-            class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
-            <i class="uil uil-angle-right text-gray-600 dark:text-gray-300"></i>
-        </button>
-    `;
+    </div>
+    <button onclick="changePage(${currentPage + 1})"
+      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-neutral-700 dark:hover:bg-emerald-900/60 text-gray-600 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 transition ${
+        currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""
+      }"
+      ${currentPage === totalPages ? "disabled" : ""}>
+      <i class="uil uil-angle-right text-xl"></i>
+    </button>
+  `;
 
   paginationContainer.innerHTML = paginationHTML;
 }
@@ -752,88 +834,127 @@ function editUser(userId) {
   const user = allUsers.find((u) => u.userId === userId);
   if (!user) return;
 
+  const initials = getInitials(user.name);
+  const roleConfig = getRoleConfig(user.role);
+
   const editAccountBody = `
-        <div class="space-y-4">
-            <!-- Full Name -->
-            <div>
-                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    FULL NAME
-                </label>
-                <input
-                    type="text"
-                    id="editFullName"
-                    value="${user.name}"
-                    placeholder="Enter Full Name"
-                    class="w-full px-4 py-3 bg-[#f5f4f9] dark:bg-neutral-700 rounded-lg text-sm 
-                           border-2 border-transparent focus:border-emerald-400 dark:focus:border-emerald-500
-                           focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/60
-                           text-gray-900 dark:text-gray-100
-                           transition"
-                />
+    <div class="space-y-0">
+
+      <!-- Profile Card Header -->
+      <div class="relative rounded-2xl overflow-hidden mb-5" style="background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 50%, #60a5fa 100%)">
+        <!-- Decorative circles -->
+        <div class="absolute top-[-20px] right-[-20px] w-36 h-36 rounded-full bg-white/10"></div>
+        <div class="absolute bottom-[-30px] left-[-10px] w-28 h-28 rounded-full bg-white/10"></div>
+
+        <div class="relative z-10 flex flex-col items-center pt-8 pb-5 px-6">
+          <!-- Avatar Upload -->
+          <div class="relative group mb-3">
+            <div id="userAvatarContainer" class="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden flex items-center justify-center bg-blue-700 text-white font-bold text-2xl cursor-pointer">
+              ${
+                user.profilePicture
+                  ? `<img id="userAvatarPreview" src="${user.profilePicture}" class="w-full h-full object-cover" />`
+                  : `<span id="userAvatarInitials">${initials}</span>`
+              }
             </div>
 
-           <!-- Username -->
-            <div>
-                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    USERNAME
-                </label>
-                <div class="relative">
-                    <input
-                        type="text"
-                        placeholder="@sample.username"
-                        id="editUsername"
-                        value="${user.username}"
-                        oninput="checkUsernameAvailability('editUsername')"
-                        onkeydown="handleUsernameKeydown(event)"
-                        onpaste="handleUsernamePaste(event)"
-                        class="w-full px-4 py-3 pr-24 bg-[#f5f4f9] dark:bg-neutral-700 rounded-lg text-sm 
-                              border-2 border-transparent focus:border-emerald-400 dark:focus:border-emerald-500
-                              focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/60
-                              text-gray-900 dark:text-gray-100
-                              transition"
-                    />
-                    <div id="editUsernameStatus" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
-                        <!-- Status icons will appear here -->
-                    </div>
-                </div>
-                <p id="editUsernameHelp" class="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                    <i class="uil uil-info-circle"></i>
-                    Username will be validated on change
-                </p>
-            </div>
+            <!-- Camera overlay -->
+            <label for="userProfilePicInput" class="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer">
+              <div class="text-center">
+                <i class="uil uil-camera text-white text-2xl block"></i>
+                <span class="text-white text-[10px] font-medium">Change</span>
+              </div>
+            </label>
+            <input type="file" id="userProfilePicInput" accept="image/*" class="hidden" onchange="previewUserProfilePic(event)" />
 
-            <!-- Select Role -->
-            <div>
-                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    SELECT ROLE
-                </label>
-                <div class="relative">
-                    <select
-                        id="editRole"
-                        class="w-full px-4 py-3 bg-[#f5f4f9] dark:bg-neutral-700 rounded-lg text-sm 
-                               border-2 border-transparent focus:border-emerald-400 dark:focus:border-emerald-500
-                               focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/60
-                               text-gray-900 dark:text-gray-100
-                               appearance-none cursor-pointer transition"
-                    >
-                        <option value="admin" ${
-                          user.role === "admin" ? "selected" : ""
-                        }>Admin</option>
-                        <option value="bpso" ${
-                          user.role === "bpso" ? "selected" : ""
-                        }>BPSO</option>
-                        <option value="bhert" ${
-                          user.role === "bhert" ? "selected" : ""
-                        }>BHERT</option>
-                        <option value="firefighter" ${
-                          user.role === "firefighter" ? "selected" : ""
-                        }>Firefighter</option>
-                    </select>
-                    <i class="uil uil-angle-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"></i>
-                </div>
-            </div>
+            <!-- Remove button -->
+            <button onclick="removeUserProfilePic('${initials}')" id="removeUserPhotoBtn"
+              class="${user.profilePicture ? 'flex' : 'hidden'} absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full items-center justify-center shadow-md transition-colors"
+              title="Remove photo">
+              <i class="uil uil-times text-white text-xs"></i>
+            </button>
+          </div>
+
+          <!-- Name & Role preview -->
+          <h3 id="userNamePreview" class="text-white font-bold text-base tracking-wide">${user.name}</h3>
+          <span class="mt-1 px-3 py-0.5 bg-white/20 text-white text-xs rounded-full">${roleConfig.label}</span>
         </div>
-    `;
+      </div>
+
+      <!-- Form Fields -->
+      <div class="space-y-4">
+        <!-- Full Name -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+            Full Name
+          </label>
+          <input
+            type="text"
+            id="editFullName"
+            value="${user.name}"
+            placeholder="Enter Full Name"
+            oninput="document.getElementById('userNamePreview').textContent = this.value || 'Full Name'"
+            class="w-full px-4 py-2.5 bg-gray-100 dark:bg-neutral-700 border-2 border-transparent
+                   focus:border-blue-400 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-neutral-600
+                   focus:outline-none focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50
+                   rounded-xl text-sm text-gray-800 dark:text-gray-100 transition-all duration-200 placeholder:text-gray-400"
+          />
+        </div>
+
+        <!-- Username -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+            Username
+          </label>
+          <div class="relative">
+            <input
+              type="text"
+              id="editUsername"
+              value="${user.username}"
+              placeholder="@sample.username"
+              oninput="checkUsernameAvailability('editUsername')"
+              onkeydown="handleUsernameKeydown(event)"
+              onpaste="handleUsernamePaste(event)"
+              class="w-full px-4 py-2.5 pr-10 bg-gray-100 dark:bg-neutral-700 border-2 border-transparent
+                     focus:border-blue-400 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-neutral-600
+                     focus:outline-none focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50
+                     rounded-xl text-sm text-gray-800 dark:text-gray-100 transition-all duration-200"
+            />
+            <div id="editUsernameStatus" class="absolute right-3 top-1/2 -translate-y-1/2 hidden"></div>
+          </div>
+          <p id="editUsernameHelp" class="mt-1.5 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+            <i class="uil uil-info-circle"></i>
+            Username will be validated on change
+          </p>
+        </div>
+
+        <!-- Role -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+            Role
+          </label>
+          <div class="relative">
+            <select
+              id="editRole"
+              class="w-full px-4 py-2.5 bg-gray-100 dark:bg-neutral-700 border-2 border-transparent
+                     focus:border-blue-400 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-neutral-600
+                     focus:outline-none focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50
+                     rounded-xl text-sm text-gray-800 dark:text-gray-100 appearance-none cursor-pointer transition-all duration-200"
+            >
+              <option value="admin"       ${user.role === "admin"       ? "selected" : ""}>Admin</option>
+              <option value="bpso"        ${user.role === "bpso"        ? "selected" : ""}>BPSO</option>
+              <option value="bhert"       ${user.role === "bhert"       ? "selected" : ""}>BHERT</option>
+              <option value="firefighter" ${user.role === "firefighter" ? "selected" : ""}>Firefighter</option>
+            </select>
+            <i class="uil uil-angle-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Reset state
+  window.userProfilePicFile = null;
+  window.removeUserPhoto = false;
 
   modalManager.create({
     id: "editAccountModal",
@@ -841,17 +962,14 @@ function editUser(userId) {
     iconColor: "text-blue-600 dark:text-blue-400",
     iconBg: "bg-blue-50 dark:bg-blue-900/20",
     title: "Edit Account",
-    subtitle: "Edit account information for this user",
+    subtitle: "Update account information for this user",
     body: editAccountBody,
     primaryButton: {
       text: "Update Account",
       icon: "uil-check",
-      class:
-        "bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700",
+      class: "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700",
     },
-    secondaryButton: {
-      text: "Cancel",
-    },
+    secondaryButton: { text: "Cancel" },
     onPrimary: () => {
       const fullName = document.getElementById("editFullName").value.trim();
       const username = document.getElementById("editUsername").value.trim();
@@ -870,17 +988,58 @@ function editUser(userId) {
   modalManager.show("editAccountModal");
 }
 
+// Preview selected photo
+function previewUserProfilePic(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  window.userProfilePicFile = file;
+  window.removeUserPhoto = false;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const container = document.getElementById("userAvatarContainer");
+    container.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover" />`;
+
+    const removeBtn = document.getElementById("removeUserPhotoBtn");
+    if (removeBtn) {
+      removeBtn.classList.remove("hidden");
+      removeBtn.classList.add("flex");
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// Remove photo — revert to initials
+function removeUserProfilePic(initials) {
+  const container = document.getElementById("userAvatarContainer");
+  container.innerHTML = `<span class="text-2xl font-bold">${initials}</span>`;
+
+  window.userProfilePicFile = null;
+  window.removeUserPhoto = true;
+
+  const removeBtn = document.getElementById("removeUserPhotoBtn");
+  if (removeBtn) {
+    removeBtn.classList.add("hidden");
+    removeBtn.classList.remove("flex");
+  }
+
+  const input = document.getElementById("userProfilePicInput");
+  if (input) input.value = "";
+}
+
+// Updated handleUpdateAccount — uses FormData for file support
 async function handleUpdateAccount(userId) {
   const fullName = document.getElementById("editFullName").value.trim();
   const username = document.getElementById("editUsername").value.trim();
-  const role = document.getElementById("editRole").value;
+  const role     = document.getElementById("editRole").value;
 
   if (!fullName || !username) {
     showToast("error", "Please fill in all fields");
     return;
   }
 
-  // Add this check:
+  // Check username only if changed
   const originalUser = allUsers.find((u) => u.userId === userId);
   if (username !== originalUser.username) {
     const exists = await checkIfUsernameExists(username);
@@ -891,10 +1050,22 @@ async function handleUpdateAccount(userId) {
   }
 
   try {
+    const formData = new FormData();
+    formData.append("userId",   userId);
+    formData.append("fullName", fullName);
+    formData.append("username", username);
+    formData.append("role",     role);
+
+    if (window.userProfilePicFile) {
+      formData.append("profilePicture", window.userProfilePicFile);
+    }
+    if (window.removeUserPhoto) {
+      formData.append("removePhoto", "1");
+    }
+
     const response = await fetch("api/user_management/update-user.php", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, fullName, username, role }),
+      body: formData, // No Content-Type header — browser sets boundary automatically
     });
 
     const result = await response.json();
@@ -902,9 +1073,9 @@ async function handleUpdateAccount(userId) {
     if (result.success) {
       showToast("success", "Account updated successfully");
       modalManager.close("editAccountModal");
-      fetchUsers(); // Refresh the user list
+      fetchUsers();
     } else {
-      showToast("error", "Failed to update account");
+      showToast("error", result.error || "Failed to update account");
     }
   } catch (error) {
     console.error("Error updating account:", error);

@@ -19,7 +19,8 @@ try {
             'role' => $user['role'],
             'status' => $user['status'],
             'lastLogin' => $user['last_login'],
-            'createdAt' => $user['created_at']
+            'createdAt' => $user['created_at'],
+            'profilePicture' => $user['profile_picture'] ?? null 
         ];
     }, $users);
     

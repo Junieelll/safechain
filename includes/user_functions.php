@@ -141,7 +141,7 @@ function getAllUsers($conn, $role = null) {
     if ($role) {
         $stmt = mysqli_prepare($conn, 
             "SELECT user_id, name, username, role, status, suspended_until, suspension_reason, 
-                    created_at, updated_at, last_login 
+                    created_at, updated_at, last_login, profile_picture
              FROM users WHERE role = ? ORDER BY created_at DESC"
         );
         mysqli_stmt_bind_param($stmt, "s", $role);
@@ -149,7 +149,7 @@ function getAllUsers($conn, $role = null) {
     } else {
         $stmt = mysqli_prepare($conn, 
             "SELECT user_id, name, username, role, status, suspended_until, suspension_reason, 
-                    created_at, updated_at, last_login 
+                    created_at, updated_at, last_login, profile_picture
              FROM users ORDER BY created_at DESC"
         );
         mysqli_stmt_execute($stmt);

@@ -297,6 +297,9 @@ function renderTable() {
         // Generate initials and color dynamically
         const initials = resident.initials || getInitials(resident.name);
         const color = resident.color || getColorForName(resident.name);
+        const avatarHtml = resident.profilePicture
+          ? `<img src="${resident.profilePicture}" class="w-full h-full rounded-full object-cover" alt="${resident.name}" />`
+          : `<div class="w-10 h-10 ${color} rounded-full flex items-center p-4 justify-center text-white font-semibold text-sm">${initials}</div>`;
 
         return `
       <tr class="hover:bg-gray-50 dark:hover:bg-black/20 transition item-enter" style="animation-delay: ${
@@ -304,8 +307,8 @@ function renderTable() {
       }s">
         <td class="px-6 py-4">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 ${color} rounded-full flex items-center p-4 justify-center text-white font-semibold text-sm">
-              ${initials}
+            <div class="w-10 h-10 ${color} rounded-full flex items-center justify-center text-white font-semibold text-sm">
+              ${avatarHtml}
             </div>
             <span class="text-xs font-medium text-gray-800 dark:text-gray-200">${
               resident.name
@@ -693,60 +696,138 @@ function editResident(id) {
   const resident = residentsData.find((r) => r.id === id);
   if (!resident) return;
 
+  const initials = getInitials(resident.name);
+  const color = getColorForName(resident.name);
+
+  // Extract the base bg color class for the avatar (e.g. "bg-emerald-500")
+  const bgClass = color.split(" ")[0];
+
   const editBody = `
-    <div class="space-y-5">
-      <!-- Resident Name -->
-      <div>
-        <label for="editResidentName" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
-          Resident Name
-        </label>
-        <input type="text" id="editResidentName" value="${resident.name}" class="w-full px-4 py-3 bg-gray-50 dark:text-gray-200 dark:bg-neutral-700 border border-gray-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter resident name" />
+    <div class="space-y-0">
+
+      <!-- Profile Card Header -->
+      <div class="relative rounded-2xl overflow-hidden mb-5" style="background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)">
+        <!-- Decorative circles -->
+        <div class="absolute top-[-20px] right-[-20px] w-36 h-36 rounded-full bg-white/10"></div>
+        <div class="absolute bottom-[-30px] left-[-10px] w-28 h-28 rounded-full bg-white/10"></div>
+
+        <div class="relative z-10 flex flex-col items-center pt-8 pb-5 px-6">
+          <!-- Avatar Upload -->
+          <div class="relative group mb-3">
+            <div id="avatarContainer" class="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden flex items-center justify-center ${bgClass} text-white font-bold text-2xl cursor-pointer transition-all duration-200">
+              ${
+                resident.profilePicture
+                  ? `<img id="avatarPreview" src="${resident.profilePicture}" class="w-full h-full object-cover" />`
+                  : `<span id="avatarInitials">${initials}</span>`
+              }
+            </div>
+
+            <!-- Camera overlay on hover -->
+            <label for="profilePicInput" class="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer">
+              <div class="text-center">
+                <i class="uil uil-camera text-white text-2xl block"></i>
+                <span class="text-white text-[10px] font-medium">Change</span>
+              </div>
+            </label>
+            <input type="file" id="profilePicInput" accept="image/*" class="hidden" onchange="previewProfilePic(event)" />
+
+            <!-- Remove photo button (only if has photo) -->
+            ${
+              resident.profilePicture
+                ? `<button onclick="removeProfilePic()" id="removePhotoBtn" class="absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-md transition-colors" title="Remove photo">
+                <i class="uil uil-times text-white text-xs"></i>
+              </button>`
+                : `<button onclick="removeProfilePic()" id="removePhotoBtn" class="absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full items-center justify-center shadow-md transition-colors hidden" title="Remove photo">
+                <i class="uil uil-times text-white text-xs"></i>
+              </button>`
+            }
+          </div>
+
+          <!-- Resident Name & ID preview -->
+          <h3 id="namePreview" class="text-white font-bold text-base tracking-wide">${resident.name || "Resident Name"}</h3>
+          <span class="mt-1 px-3 py-0.5 bg-white/20 text-white text-xs rounded-full font-mono">${resident.id}</span>
+        </div>
       </div>
 
-      <!-- User ID (Read-only) -->
-      <div>
-        <label for="editUserId" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
-          User ID
-        </label>
-        <input type="text" id="editUserId" value="${resident.id}" class="w-full px-4 py-3 dark:bg-emerald-900/60 bg-emerald-50 border focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 border-emerald-200 dark:border-emerald-900 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 rounded-lg text-xs text-emerald-600 font-medium cursor-not-allowed transition-all ease-in-out duration-200" readonly />
-      </div>
+      <!-- Form Fields -->
+      <div class="space-y-4">
+        <!-- Resident Name -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+            Full Name
+          </label>
+          <input 
+            type="text" 
+            id="editResidentName" 
+            value="${resident.name}" 
+            oninput="document.getElementById('namePreview').textContent = this.value || 'Resident Name'"
+            class="w-full px-4 py-2.5 bg-gray-50 dark:bg-neutral-700 border-2 border-transparent dark:text-gray-100
+                   focus:border-emerald-400 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-neutral-600
+                   focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/50
+                   rounded-xl text-sm text-gray-800 transition-all duration-200 placeholder:text-gray-400"
+            placeholder="Enter resident name" 
+          />
+        </div>
 
-      <!-- Household/Address -->
-      <div>
-        <label for="editAddress" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
-          Household / Address
-        </label>
-        <input type="text" id="editAddress" value="${resident.address}" class="w-full px-4 py-3 bg-gray-50 dark:text-gray-200 dark:bg-neutral-700 border border-gray-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter address" />
-      </div>
+        <!-- Address & Contact in 2 columns -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+              Address
+            </label>
+            <input 
+              type="text" 
+              id="editAddress" 
+              value="${resident.address}" 
+              class="w-full px-4 py-2.5 bg-gray-50 dark:bg-neutral-700 border-2 border-transparent dark:text-gray-100
+                     focus:border-emerald-400 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-neutral-600
+                     focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/50
+                     rounded-xl text-sm text-gray-800 transition-all duration-200 placeholder:text-gray-400"
+              placeholder="Enter address" 
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+              Contact
+            </label>
+            <input 
+              type="tel" 
+              id="editContact" 
+              value="${resident.contact}" 
+              class="w-full px-4 py-2.5 bg-gray-50 dark:bg-neutral-700 border-2 border-transparent dark:text-gray-100
+                     focus:border-emerald-400 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-neutral-600
+                     focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/50
+                     rounded-xl text-sm text-gray-800 transition-all duration-200 placeholder:text-gray-400"
+              placeholder="Contact number" 
+            />
+          </div>
+        </div>
 
-      <!-- Contact Number -->
-      <div>
-        <label for="editContact" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
-          Contact Number
-        </label>
-        <input type="tel" id="editContact" value="${resident.contact}" class="w-full px-4 py-3 bg-gray-50 dark:text-gray-200 dark:bg-neutral-700 border border-gray-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 focus:border-emerald-400 transition text-xs text-gray-800 transition-all ease-in-out duration-200" placeholder="Enter contact number" />
-      </div>
-
-      <!-- Device ID -->
-      <div>
-        <label for="editDeviceId" class="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-2 uppercase tracking-wide">
-          Device ID
-        </label>
-        <input type="text" id="editDeviceId" value="${resident.deviceId}" class="w-full px-4 py-3 bg-emerald-50 dark:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-900 rounded-lg focus:outline-none focus:border-2 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900 dark:focus:border-emerald-600 focus:border-emerald-400 transition transition text-xs text-emerald-600 font-medium transition-all ease-in-out duration-200" placeholder="Enter device ID" readonly />
+        <!-- Device ID -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+            Device ID
+          </label>
+          <div class="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-900/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl">
+            <i class="uil uil-mobile-android text-emerald-500 text-base"></i>
+            <span class="text-sm text-emerald-600 dark:text-emerald-400 font-mono font-medium">${resident.deviceId || "—"}</span>
+          </div>
+        </div>
       </div>
     </div>
   `;
 
-  // Store current editing ID
   window.currentEditingId = id;
+  window.profilePicFile = null;
+  window.removePhoto = false;
 
   modalManager.create({
     id: "editModal",
-    icon: "uil-pen",
-    iconColor: "text-blue-500",
-    iconBg: "bg-blue-100 dark:bg-blue-900/60",
-    title: "Edit Resident",
-    subtitle: "Update resident information.",
+    icon: "uil-user-circle",
+    iconColor: "text-emerald-500",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/60",
+    title: "Edit Resident Profile",
+    subtitle: "Update resident information and photo.",
     body: editBody,
     primaryButton: {
       text: "Save Changes",
@@ -763,40 +844,90 @@ function editResident(id) {
   modalManager.show("editModal");
 }
 
+// Preview profile picture before upload
+function previewProfilePic(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  window.profilePicFile = file;
+  window.removePhoto = false;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const container = document.getElementById("avatarContainer");
+    container.innerHTML = `<img id="avatarPreview" src="${e.target.result}" class="w-full h-full object-cover" />`;
+
+    // Show remove button
+    const removeBtn = document.getElementById("removePhotoBtn");
+    if (removeBtn) removeBtn.classList.remove("hidden");
+    removeBtn.classList.add("flex");
+  };
+  reader.readAsDataURL(file);
+}
+
+// Remove profile picture
+function removeProfilePic() {
+  const resident = residentsData.find((r) => r.id === window.currentEditingId);
+  const initials = getInitials(resident?.name || "");
+  const bgClass = getColorForName(resident?.name || "").split(" ")[0];
+
+  const container = document.getElementById("avatarContainer");
+  container.innerHTML = `<span id="avatarInitials" class="text-2xl font-bold">${initials}</span>`;
+  container.className = `w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden flex items-center justify-center ${bgClass} text-white font-bold text-2xl cursor-pointer transition-all duration-200`;
+
+  window.profilePicFile = null;
+  window.removePhoto = true;
+
+  // Hide remove button
+  const removeBtn = document.getElementById("removePhotoBtn");
+  if (removeBtn) {
+    removeBtn.classList.add("hidden");
+    removeBtn.classList.remove("flex");
+  }
+
+  // Reset file input
+  const input = document.getElementById("profilePicInput");
+  if (input) input.value = "";
+}
+
 async function saveResidentChanges() {
   const id = window.currentEditingId;
   if (!id) return;
 
-  // Get values from form
   const name = document.getElementById("editResidentName").value.trim();
   const address = document.getElementById("editAddress").value.trim();
   const contact = document.getElementById("editContact").value.trim();
-  const deviceId = document.getElementById("editDeviceId").value.trim();
+  const deviceId = residentsData.find((r) => r.id === id)?.deviceId || "";
 
   try {
+    // Use FormData to support file upload
+    const formData = new FormData();
+    formData.append("id", id);
+    formData.append("name", name);
+    formData.append("address", address);
+    formData.append("contact", contact);
+    formData.append("deviceId", deviceId);
+
+    if (window.profilePicFile) {
+      formData.append("profilePicture", window.profilePicFile);
+    }
+    if (window.removePhoto) {
+      formData.append("removePhoto", "1");
+    }
+
     const response = await fetch("api/residents/update_resident.php", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        id: id,
-        name: name,
-        address: address,
-        contact: contact,
-        deviceId: deviceId,
-      }),
+      body: formData, // No Content-Type header — browser sets it with boundary
     });
 
     const result = await response.json();
 
     if (result.success) {
-      // Refresh data from database
       await fetchResidents();
       modalManager.close("editModal");
-      showToast("success", `${name}'s details have been updated successfully!`);
+      showToast("success", `${name}'s profile has been updated!`);
     } else {
-      showToast("error", "Failed to update resident: " + result.error);
+      showToast("error", "Failed to update: " + result.error);
     }
   } catch (error) {
     console.error("Update error:", error);
