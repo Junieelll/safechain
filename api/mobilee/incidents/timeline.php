@@ -76,7 +76,21 @@ function handle_create(mysqli $conn, array $user): void
     $title       = trim($body['title']);
     $description = trim($body['description']);
     $actor       = trim($body['actor']);
-    $user_id     = $user['id'] ?? null; // ← get user_id from authenticated user
+    $user_id     = $user['id'] ?? null;
+
+    // ── Use client timestamp if provided (offline sync accuracy) ──────────
+    $now = date('Y-m-d H:i:s'); // fallback — already Asia/Manila from conn.php
+
+    if (!empty($body['timestamp'])) {
+        $parsed = DateTime::createFromFormat('Y-m-d H:i:s', $body['timestamp']);
+        if ($parsed) {
+            $candidateTs = $parsed->getTimestamp();
+            $nowTs       = time();
+            if ($candidateTs <= ($nowTs + 86400) && $candidateTs >= ($nowTs - 604800)) {
+                $now = $parsed->format('Y-m-d H:i:s');
+            }
+        }
+    }
 
     $check = $conn->prepare('SELECT id FROM incidents WHERE id = ? LIMIT 1');
     $check->bind_param('s', $incident_id);
@@ -88,11 +102,12 @@ function handle_create(mysqli $conn, array $user): void
         ResponseHelper::notFound('Incident not found');
     }
 
+    // Pass $now as the created_at value instead of letting MySQL default to NOW()
     $stmt = $conn->prepare(
-        'INSERT INTO incident_timeline (incident_id, title, description, actor, user_id)
-         VALUES (?, ?, ?, ?, ?)'  // ← added user_id
+        'INSERT INTO incident_timeline (incident_id, title, description, actor, user_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)'
     );
-    $stmt->bind_param('sssss', $incident_id, $title, $description, $actor, $user_id); // ← added
+    $stmt->bind_param('ssssss', $incident_id, $title, $description, $actor, $user_id, $now);
 
     if (!$stmt->execute()) {
         $stmt->close();
