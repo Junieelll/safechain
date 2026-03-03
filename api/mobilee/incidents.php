@@ -189,6 +189,44 @@ function handle_update_status(mysqli $conn, string $id, array $user): void
         );
     }
 
+    // ── Use client timestamp if provided (offline sync accuracy) ──────────
+    // Client sends ISO 8601 e.g. "2025-02-18T10:35:00.000Z"
+    // Validate and convert to MySQL datetime, fall back to server time
+    $now = date('Y-m-d H:i:s'); // server fallback
+
+    if (!empty($body['updated_at'])) {
+        $parsed = DateTime::createFromFormat(
+            DateTime::ATOM,            // ISO 8601 / RFC 3339
+            $body['updated_at'],
+            new DateTimeZone('UTC')
+        );
+
+        // Also try without milliseconds (JS sometimes omits them)
+        if (!$parsed) {
+            $parsed = DateTime::createFromFormat(
+                'Y-m-d\TH:i:s\Z',
+                $body['updated_at'],
+                new DateTimeZone('UTC')
+            );
+        }
+
+        if ($parsed) {
+            // Convert to your server/DB timezone if needed — adjust as appropriate
+            $parsed->setTimezone(new DateTimeZone('Asia/Manila'));
+            $candidate = $parsed->format('Y-m-d H:i:s');
+
+            // Sanity check: reject timestamps more than 24 hrs in the future
+            // or more than 7 days in the past (stale offline operation)
+            $candidateTs = $parsed->getTimestamp();
+            $nowTs       = time();
+
+            if ($candidateTs <= ($nowTs + 86400) && $candidateTs >= ($nowTs - 604800)) {
+                $now = $candidate;
+            }
+            // If out of range, silently fall back to server time
+        }
+    }
+
     // Fetch existing incident
     $stmt = $conn->prepare('SELECT * FROM incidents WHERE id = ? AND is_archived = 0 LIMIT 1');
     $stmt->bind_param('s', $id);
@@ -210,12 +248,11 @@ function handle_update_status(mysqli $conn, string $id, array $user): void
         );
     }
 
-    $now            = date('Y-m-d H:i:s');
     $responder_name = $user['name'] ?? $user['username'] ?? 'Unknown';
     $responder_id   = $user['id'] ?? '';
 
     if ($status === 'responding' && $incident['status'] === 'pending') {
-        // Responder is accepting the incident — record who took it
+        // $now used for both dispatched_at and updated_at — same accurate time
         $stmt = $conn->prepare(
             'UPDATE incidents SET status=?, dispatched_to=?, dispatched_at=?, dispatched_by=?, updated_at=? WHERE id=?'
         );

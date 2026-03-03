@@ -35,11 +35,19 @@ function sendFCMToAllResponders(mysqli $conn, array $incident): void
     $placeholders = implode(',', array_fill(0, count($roles), '?'));
     $types = str_repeat('s', count($roles));
 
-    // ── 2. Only fetch tokens belonging to those roles ──────────────────────
-    $stmt = $conn->prepare(
-        "SELECT token FROM device_tokens WHERE role IN ($placeholders)"
-    );
-    $stmt->bind_param($types, ...$roles);
+    $now = date('H:i:s');
+    $today = date('Y-m-d');
+    
+    $stmt = $conn->prepare("
+        SELECT token FROM device_tokens 
+        WHERE role IN ($placeholders)
+        AND on_duty = 1
+        AND (duty_start IS NULL OR duty_start <= ?)
+        AND (duty_end IS NULL OR duty_end >= ?)
+        AND (duty_until IS NULL OR duty_until >= ?)
+    ");
+
+    $stmt->bind_param($types . 'sss', ...[...$roles, $now, $now, $today]);
     $stmt->execute();
     $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
