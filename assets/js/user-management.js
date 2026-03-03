@@ -34,7 +34,8 @@ async function fetchUsers() {
 }
 
 const userTableBody = document.querySelector("tbody");
-userTableBody.style.transition = "opacity 0.3s ease-in-out, transform 0.3s ease-in-out";
+userTableBody.style.transition =
+  "opacity 0.3s ease-in-out, transform 0.3s ease-in-out";
 
 function showUserLoadingSkeleton() {
   userTableBody.style.opacity = "0";
@@ -42,7 +43,8 @@ function showUserLoadingSkeleton() {
   setTimeout(() => {
     userTableBody.innerHTML = Array(usersPerPage)
       .fill(0)
-      .map(() => `
+      .map(
+        () => `
         <tr>
           <td class="px-6 py-4">
             <div class="h-3 w-16 bg-gray-200 dark:bg-gray-700/50 rounded animate-pulse"></div>
@@ -74,7 +76,9 @@ function showUserLoadingSkeleton() {
             </div>
           </td>
         </tr>
-      `).join("");
+      `,
+      )
+      .join("");
 
     userTableBody.style.opacity = "1";
   }, 100);
@@ -294,7 +298,9 @@ function renderPagination() {
     paginationHTML += `
       <button onclick="changePage(1)"
         class="w-8 h-8 flex items-center justify-center rounded-full ${
-          currentPage === 1 ? "bg-emerald-500 text-white" : "hover:bg-white dark:hover:bg-emerald-900/60 text-neutral-600 dark:text-neutral-400 dark:hover:text-emerald-500"
+          currentPage === 1
+            ? "bg-emerald-500 text-white"
+            : "hover:bg-white dark:hover:bg-emerald-900/60 text-neutral-600 dark:text-neutral-400 dark:hover:text-emerald-500"
         } text-sm font-medium transition">
         1
       </button>
@@ -305,13 +311,15 @@ function renderPagination() {
     }
 
     const startPage = Math.max(2, currentPage - 1);
-    const endPage   = Math.min(totalPages - 1, currentPage + 1);
+    const endPage = Math.min(totalPages - 1, currentPage + 1);
 
     for (let i = startPage; i <= endPage; i++) {
       paginationHTML += `
         <button onclick="changePage(${i})"
           class="w-8 h-8 flex items-center justify-center rounded-full ${
-            currentPage === i ? "bg-emerald-500 text-white" : "hover:bg-white dark:hover:bg-emerald-900/60 text-neutral-600 dark:text-neutral-400 dark:hover:text-emerald-500"
+            currentPage === i
+              ? "bg-emerald-500 text-white"
+              : "hover:bg-white dark:hover:bg-emerald-900/60 text-neutral-600 dark:text-neutral-400 dark:hover:text-emerald-500"
           } text-sm font-medium transition">
           ${i}
         </button>
@@ -326,7 +334,9 @@ function renderPagination() {
     paginationHTML += `
       <button onclick="changePage(${totalPages})"
         class="w-8 h-8 flex items-center justify-center rounded-full ${
-          currentPage === totalPages ? "bg-emerald-500 text-white" : "hover:bg-white dark:hover:bg-emerald-900/60 text-neutral-600 dark:text-neutral-400 dark:hover:text-emerald-500"
+          currentPage === totalPages
+            ? "bg-emerald-500 text-white"
+            : "hover:bg-white dark:hover:bg-emerald-900/60 text-neutral-600 dark:text-neutral-400 dark:hover:text-emerald-500"
         } text-sm font-medium transition">
         ${totalPages}
       </button>
@@ -456,6 +466,48 @@ function filterByStatus(status) {
   applyFilters();
 }
 
+function handleNameKeydown(event) {
+  // Allow: backspace, delete, tab, escape, enter, arrows, home, end
+  const allowedKeys = [
+    "Backspace",
+    "Delete",
+    "Tab",
+    "Escape",
+    "Enter",
+    "ArrowLeft",
+    "ArrowRight",
+    "ArrowUp",
+    "ArrowDown",
+    "Home",
+    "End",
+  ];
+
+  if (allowedKeys.includes(event.key)) return;
+
+  // Block any numeric key (0-9)
+  if (/[0-9]/.test(event.key)) {
+    event.preventDefault();
+    return;
+  }
+}
+
+function handleNamePaste(event) {
+  event.preventDefault();
+  const pasted = (event.clipboardData || window.clipboardData)
+    .getData("text")
+    .replace(/[0-9]/g, ""); // Strip numbers from pasted text
+
+  // Insert cleaned text at cursor position
+  const input = event.target;
+  const start = input.selectionStart;
+  const end = input.selectionEnd;
+  input.value = input.value.slice(0, start) + pasted + input.value.slice(end);
+
+  // Update name preview if in edit modal
+  const namePreview = document.getElementById("userNamePreview");
+  if (namePreview) namePreview.textContent = input.value || "Full Name";
+}
+
 // User Management Modals
 
 // ============================================
@@ -474,6 +526,8 @@ function openCreateAccountModal() {
                     id="createFullName"
                     placeholder="Enter Full Name"
                     onblur="handleFullNameBlur()"
+                      onkeydown="handleNameKeydown(event)"
+                      onpaste="handleNamePaste(event)"
                     class="w-full px-4 py-3 bg-[#F1F5F9] dark:bg-neutral-700 rounded-xl text-sm 
                            border-2 border-transparent focus:border-emerald-400 dark:focus:border-emerald-500
                            focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/60
@@ -868,7 +922,7 @@ function editUser(userId) {
 
             <!-- Remove button -->
             <button onclick="removeUserProfilePic('${initials}')" id="removeUserPhotoBtn"
-              class="${user.profilePicture ? 'flex' : 'hidden'} absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full items-center justify-center shadow-md transition-colors"
+              class="${user.profilePicture ? "flex" : "hidden"} absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full items-center justify-center shadow-md transition-colors"
               title="Remove photo">
               <i class="uil uil-times text-white text-xs"></i>
             </button>
@@ -893,6 +947,8 @@ function editUser(userId) {
             value="${user.name}"
             placeholder="Enter Full Name"
             oninput="document.getElementById('userNamePreview').textContent = this.value || 'Full Name'"
+            onkeydown="handleNameKeydown(event)"
+  onpaste="handleNamePaste(event)"
             class="w-full px-4 py-2.5 bg-gray-100 dark:bg-neutral-700 border-2 border-transparent
                    focus:border-blue-400 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-neutral-600
                    focus:outline-none focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50
@@ -914,7 +970,7 @@ function editUser(userId) {
               oninput="checkUsernameAvailability('editUsername')"
               onkeydown="handleUsernameKeydown(event)"
               onpaste="handleUsernamePaste(event)"
-              class="w-full px-4 py-2.5 pr-10 bg-gray-100 dark:bg-neutral-700 border-2 border-transparent
+              class="w-full px-4 py-2.5 pr-10 bg-gray-50 dark:bg-neutral-700 border-2 border-transparent
                      focus:border-blue-400 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-neutral-600
                      focus:outline-none focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50
                      rounded-xl text-sm text-gray-800 dark:text-gray-100 transition-all duration-200"
@@ -935,14 +991,14 @@ function editUser(userId) {
           <div class="relative">
             <select
               id="editRole"
-              class="w-full px-4 py-2.5 bg-gray-100 dark:bg-neutral-700 border-2 border-transparent
+              class="w-full px-4 py-2.5 bg-gray-50 dark:bg-neutral-700 border-2 border-transparent
                      focus:border-blue-400 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-neutral-600
                      focus:outline-none focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50
                      rounded-xl text-sm text-gray-800 dark:text-gray-100 appearance-none cursor-pointer transition-all duration-200"
             >
-              <option value="admin"       ${user.role === "admin"       ? "selected" : ""}>Admin</option>
-              <option value="bpso"        ${user.role === "bpso"        ? "selected" : ""}>BPSO</option>
-              <option value="bhert"       ${user.role === "bhert"       ? "selected" : ""}>BHERT</option>
+              <option value="admin"       ${user.role === "admin" ? "selected" : ""}>Admin</option>
+              <option value="bpso"        ${user.role === "bpso" ? "selected" : ""}>BPSO</option>
+              <option value="bhert"       ${user.role === "bhert" ? "selected" : ""}>BHERT</option>
               <option value="firefighter" ${user.role === "firefighter" ? "selected" : ""}>Firefighter</option>
             </select>
             <i class="uil uil-angle-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
@@ -967,7 +1023,8 @@ function editUser(userId) {
     primaryButton: {
       text: "Update Account",
       icon: "uil-check",
-      class: "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700",
+      class:
+        "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700",
     },
     secondaryButton: { text: "Cancel" },
     onPrimary: () => {
@@ -1032,7 +1089,7 @@ function removeUserProfilePic(initials) {
 async function handleUpdateAccount(userId) {
   const fullName = document.getElementById("editFullName").value.trim();
   const username = document.getElementById("editUsername").value.trim();
-  const role     = document.getElementById("editRole").value;
+  const role = document.getElementById("editRole").value;
 
   if (!fullName || !username) {
     showToast("error", "Please fill in all fields");
@@ -1051,10 +1108,10 @@ async function handleUpdateAccount(userId) {
 
   try {
     const formData = new FormData();
-    formData.append("userId",   userId);
+    formData.append("userId", userId);
     formData.append("fullName", fullName);
     formData.append("username", username);
-    formData.append("role",     role);
+    formData.append("role", role);
 
     if (window.userProfilePicFile) {
       formData.append("profilePicture", window.userProfilePicFile);
