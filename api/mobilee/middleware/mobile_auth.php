@@ -16,6 +16,8 @@ require_once __DIR__ .'/../../helpers/response_helper.php';
 $user = mobile_authenticate();
 function mobile_authenticate(): array
 {
+    global $conn;
+
     // ── 1. Extract token ───────────────────────────────────────────────────
     $token = JWTHelper::getTokenFromHeader();
     if (!$token) {
@@ -28,37 +30,33 @@ function mobile_authenticate(): array
         ResponseHelper::unauthorized('Invalid or expired token. Please log in again.');
     }
 
-    // ── 3. Check live user status from DB ──────────────────────────────────
-    require_once __DIR__ . '/../../../config/conn.php';
-
+    // ── 3. Check live user status from DB ─────────────────────────────────
     $stmt = mysqli_prepare($conn,
         "SELECT status, suspension_reason, suspended_until FROM users WHERE user_id = ?"
     );
     mysqli_stmt_bind_param($stmt, "s", $payload['user_id']);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
-    $user = mysqli_fetch_assoc($result);
+    $dbUser = mysqli_fetch_assoc($result);
     mysqli_stmt_close($stmt);
 
-    if (!$user) {
+    if (!$dbUser) {
         ResponseHelper::unauthorized('Account not found.');
     }
 
-    if ($user['status'] === 'suspended') {
-        // Check if suspension has expired
-        if ($user['suspended_until'] && strtotime($user['suspended_until']) < time()) {
-            // Auto-lift expired suspension
+    if ($dbUser['status'] === 'suspended') {
+        if ($dbUser['suspended_until'] && strtotime($dbUser['suspended_until']) < time()) {
+            // Auto-lift expired suspension — user_functions.php is safe to require here
             require_once __DIR__ . '/../../../includes/user_functions.php';
             activateUser($conn, $payload['user_id']);
         } else {
-            // Still suspended — return structured 401 for the mobile app to handle
             http_response_code(401);
             echo json_encode([
                 'success'         => false,
                 'code'            => 'ACCOUNT_SUSPENDED',
                 'message'         => 'Your account has been suspended.',
-                'reason'          => $user['suspension_reason'],
-                'suspended_until' => $user['suspended_until'],
+                'reason'          => $dbUser['suspension_reason'],
+                'suspended_until' => $dbUser['suspended_until'],
             ]);
             exit;
         }
