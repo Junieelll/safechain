@@ -10,11 +10,11 @@ ini_set('display_errors', '0');
 
 setCorsHeaders();
 
-$user   = mobile_authenticate();
+$user = mobile_authenticate();
 $method = $_SERVER['REQUEST_METHOD'];
 
 match ($method) {
-    'GET'  => handle_get_recent($conn, $user),
+    'GET' => handle_get_recent($conn, $user),
     'POST' => handle_create($conn, $user),
     default => ResponseHelper::error('Method not allowed', 405),
 };
@@ -24,7 +24,7 @@ match ($method) {
 // ═══════════════════════════════════════════════════════════════════════════
 function handle_get_recent(mysqli $conn, array $user): void
 {
-    $limit   = min(20, (int) ($_GET['limit'] ?? 5));
+    $limit = min(20, (int) ($_GET['limit'] ?? 5));
     $user_id = $user['id'] ?? null;
 
     $stmt = $conn->prepare("
@@ -42,14 +42,14 @@ function handle_get_recent(mysqli $conn, array $user): void
 
     ResponseHelper::success(array_map(function ($row) {
         return [
-            'id'            => (int) $row['id'],
-            'incident_id'   => $row['incident_id'],
+            'id' => (int) $row['id'],
+            'incident_id' => $row['incident_id'],
             'incident_type' => $row['incident_type'] ?? 'unknown',
-            'status'        => $row['incident_status'] ?? 'pending',
-            'title'         => $row['title'],
-            'description'   => $row['description'],
-            'actor'         => $row['actor'],
-            'created_at'    => $row['created_at'],
+            'status' => $row['incident_status'] ?? 'pending',
+            'title' => $row['title'],
+            'description' => $row['description'],
+            'actor' => $row['actor'],
+            'created_at' => $row['created_at'],
         ];
     }, $rows), 'Recent timeline fetched');
 }
@@ -73,21 +73,45 @@ function handle_create(mysqli $conn, array $user): void
     }
 
     $incident_id = trim($body['incident_id']);
-    $title       = trim($body['title']);
+    $title = trim($body['title']);
     $description = trim($body['description']);
-    $actor       = trim($body['actor']);
-    $user_id     = $user['id'] ?? null;
+    $actor = trim($body['actor']);
+    $user_id = $user['id'] ?? null;
 
     // ── Use client timestamp if provided (offline sync accuracy) ──────────
-    $now = date('Y-m-d H:i:s'); // fallback — already Asia/Manila from conn.php
+    // ── Use client timestamp if provided (offline sync accuracy) ──────────
+    $now = date('Y-m-d H:i:s'); // fallback
 
     if (!empty($body['timestamp'])) {
-        $parsed = DateTime::createFromFormat('Y-m-d H:i:s', $body['timestamp']);
+        // Fix: + signs become spaces in URL transit
+        $raw_ts = str_replace(' ', '+', trim($body['timestamp']));
+
+        $parsed = DateTime::createFromFormat(DateTime::ATOM, $raw_ts);
+
+        if (!$parsed) {
+            $parsed = DateTime::createFromFormat(
+                'Y-m-d\TH:i:s\Z',
+                $raw_ts,
+                new DateTimeZone('UTC')
+            );
+        }
+
+        if (!$parsed) {
+            $parsed = DateTime::createFromFormat(
+                'Y-m-d H:i:s',
+                $raw_ts,
+                new DateTimeZone('Asia/Manila')
+            );
+        }
+
         if ($parsed) {
+            $parsed->setTimezone(new DateTimeZone('Asia/Manila'));
+            $candidate = $parsed->format('Y-m-d H:i:s');
             $candidateTs = $parsed->getTimestamp();
-            $nowTs       = time();
+            $nowTs = time();
+
             if ($candidateTs <= ($nowTs + 86400) && $candidateTs >= ($nowTs - 604800)) {
-                $now = $parsed->format('Y-m-d H:i:s');
+                $now = $candidate;
             }
         }
     }
@@ -124,11 +148,11 @@ function handle_create(mysqli $conn, array $user): void
     $fetch->close();
 
     ResponseHelper::success([
-        'id'          => (int) $row['id'],
+        'id' => (int) $row['id'],
         'incident_id' => $row['incident_id'],
-        'title'       => $row['title'],
+        'title' => $row['title'],
         'description' => $row['description'],
-        'actor'       => $row['actor'],
-        'created_at'  => $row['created_at'],
+        'actor' => $row['actor'],
+        'created_at' => $row['created_at'],
     ], 'Timeline entry saved', 201);
 }
