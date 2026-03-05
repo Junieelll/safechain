@@ -278,7 +278,6 @@ $currentUserRole = AuthChecker::getUserRole();
         <!-- Right Column (1/3) -->
         <div class="space-y-7">
           <!-- Actions Card -->
-          <!-- Actions Card -->
           <div class="bg-white dark:bg-neutral-800 rounded-3xl p-7">
             <div class="flex justify-between items-center pb-4 mb-5 border-b-2 border-gray-100 dark:border-neutral-600">
               <h2 class="text-base font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-2.5">
@@ -287,15 +286,31 @@ $currentUserRole = AuthChecker::getUserRole();
               </h2>
             </div>
 
-            <div class="space-y-2.5">
-              <button id="updateStatusBtn" onclick="updateStatus()"
-                class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-xs font-medium hover:bg-blue-600 hover:-translate-y-0.5 hover:shadow-lg transition-all">
-                <i class="uil uil-pen text-lg"></i> Update Status
-              </button>
+            <!-- Responder Info Banner (hidden by default) -->
+            <div id="responderBanner" class="hidden mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+              <p class="text-xs text-blue-500 dark:text-blue-400 font-semibold uppercase tracking-wider mb-2">
+                Assigned Responder
+              </p>
+              <div class="flex items-center gap-3">
+                <img id="responderAvatar" src="" alt="" class="w-9 h-9 rounded-full object-cover hidden" />
+                <div id="responderAvatarFallback"
+                  class="w-9 h-9 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center">
+                  <i class="uil uil-user text-blue-500 dark:text-blue-300"></i>
+                </div>
+                <div>
+                  <p id="responderName" class="text-sm font-semibold text-gray-900 dark:text-neutral-200">—</p>
+                  <p id="responderStatus" class="text-xs text-gray-500 dark:text-neutral-400">—</p>
+                </div>
+              </div>
+            </div>
 
-              <button id="markResolvedBtn" onclick="markAsResolved()"
-                class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white rounded-xl text-xs font-medium hover:bg-emerald-600 hover:-translate-y-0.5 hover:shadow-lg transition-all">
-                <i class="uil uil-check-circle text-lg"></i> Mark as Resolved
+            <div class="space-y-2.5">
+              <!-- Force Resolve: only shown when stuck responding -->
+              <button id="forceResolveBtn" onclick="forceResolve()" class="hidden
+                  w-full flex items-center justify-center gap-2 px-5 py-3 
+                  bg-orange-500 hover:bg-orange-600 text-white rounded-xl 
+                  text-xs font-medium hover:-translate-y-0.5 hover:shadow-lg transition-all">
+                <i class="uil uil-exclamation-triangle text-lg"></i> Force Resolve
               </button>
 
               <button id="generateReportBtn" onclick="generateReport()"

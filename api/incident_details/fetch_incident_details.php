@@ -12,32 +12,35 @@ try {
 
     // Fetch incident details
     $query = "
-        SELECT 
-            i.id,
-            i.type,
-            i.location,
-            i.reporter,
-            DATE_FORMAT(i.date_time, '%M %e, %Y') as date_reported,
-            DATE_FORMAT(i.date_time, '%h:%i %p') as time_reported,
-            i.date_time,
-            i.status,
-            i.dispatched_to,
-            i.dispatched_at,
-            i.dispatched_by,
-            i.latitude as lat, 
-            i.longitude as lng,
-            r.name as reporter_name,
-            r.resident_id as reporter_user_id,
-            r.contact as reporter_contact,
-            r.address as reporter_address,
-            r.registered_date,
-            ir.description as report_description
-        FROM incidents i
-        LEFT JOIN residents r ON i.reporter = r.name
-        LEFT JOIN incident_reports ir ON ir.incident_id = i.id
-        WHERE i.id = '$incidentId' AND i.is_archived = 0
-        LIMIT 1
-    ";
+    SELECT 
+        i.id,
+        i.type,
+        i.location,
+        i.reporter,
+        DATE_FORMAT(i.date_time, '%M %e, %Y') as date_reported,
+        DATE_FORMAT(i.date_time, '%h:%i %p') as time_reported,
+        i.date_time,
+        i.status,
+        i.dispatched_to,
+        i.dispatched_at,
+        i.dispatched_by,
+        i.latitude as lat, 
+        i.longitude as lng,
+        r.name as reporter_name,
+        r.resident_id as reporter_user_id,
+        r.contact as reporter_contact,
+        r.address as reporter_address,
+        r.registered_date,
+        ir.description as report_description,
+        u.name AS responder_name,
+        u.profile_picture AS responder_avatar
+    FROM incidents i
+    LEFT JOIN residents r ON i.reporter = r.name
+    LEFT JOIN incident_reports ir ON ir.incident_id = i.id
+    LEFT JOIN users u ON u.user_id = i.dispatched_to
+    WHERE i.id = '$incidentId' AND i.is_archived = 0
+    LIMIT 1
+";
 
     $result = mysqli_query($conn, $query);
 

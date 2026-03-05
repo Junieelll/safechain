@@ -196,7 +196,6 @@ async function fetchIncidentDetails() {
       fetchIncidentNotes();
       fetchIncidentTimeline();
       fetchEvidence();
-      //updateActionButtons(result.data.status, result.data.dispatched_to);
     } else {
       showToast("error", "Failed to load incident: " + result.error);
       setTimeout(() => {
@@ -539,17 +538,7 @@ function renderTimeline(timelineItems) {
 }
 
 function updateActionButtons(status, hasReport) {
-  const markResolvedBtn = document.getElementById("markResolvedBtn");
   const generateReportBtn = document.getElementById("generateReportBtn");
-
-  // Hide "Mark as Resolved" if already resolved
-  if (status === "resolved") {
-    markResolvedBtn.classList.add("hidden");
-  } else {
-    markResolvedBtn.classList.remove("hidden");
-  }
-
-  // Hide "Generate Report" if no report exists yet
   if (!hasReport) {
     generateReportBtn.classList.add("hidden");
   } else {
@@ -614,6 +603,7 @@ async function populateIncidentDetails(incident) {
   `;
 
   updateStatusBadge(incident.status);
+  populateResponderBanner(incident);
   updateActionButtons(incident.status, !!incident.report_description);
 
   // Hide description label + box if no report
@@ -695,6 +685,122 @@ async function populateIncidentDetails(incident) {
   // ✅ NEW: Update map location and marker dynamically
   if (incident.lat && incident.lng) {
     updateIncidentMap(incident);
+  }
+}
+
+async function forceResolve() {
+  modalManager.create({
+    id: "forceResolveModal",
+    icon: "uil-exclamation-triangle",
+    iconColor: "text-orange-600 dark:text-orange-400",
+    iconBg: "bg-orange-100 dark:bg-orange-900/60",
+    title: "Force Resolve Incident",
+    subtitle: "Admin override — use only when responder is unreachable",
+    body: `
+      <p class="text-xs text-center px-2 mb-3">
+        This incident has been in <strong>responding</strong> status for over 6 hours. 
+        Force resolving will close it administratively.
+      </p>
+      <textarea id="forceResolveReason" rows="3" 
+        placeholder="Reason for force resolving..."
+        class="w-full p-3 border-2 border-gray-200 dark:border-neutral-600 dark:bg-neutral-700 dark:text-white rounded-lg text-sm resize-none focus:outline-none focus:border-orange-500"></textarea>
+    `,
+    showWarning: true,
+    warningText: "This will override the responder's active session.",
+    primaryButton: {
+      text: "Force Resolve",
+      icon: "uil-check",
+      class: "bg-orange-500 hover:bg-orange-600",
+    },
+    secondaryButton: { text: "Cancel" },
+    onPrimary: async () => {
+      const reason = document.getElementById("forceResolveReason").value.trim();
+      if (!reason) {
+        showToast("error", "Please provide a reason");
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          "api/incident_details/update_incident_status.php",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: incidentId,
+              status: "resolved",
+              admin_name: currentAdminName,
+              notes: `[Force Resolved by Admin] ${reason}`,
+            }),
+          },
+        );
+
+        const result = await response.json();
+        if (result.success) {
+          updateStatusBadge("resolved");
+          document.getElementById("forceResolveBtn").classList.add("hidden");
+          showToast("success", "Incident force resolved");
+          fetchIncidentTimeline();
+          fetchIncidentNotes();
+        } else {
+          showToast("error", result.error || "Failed to force resolve");
+        }
+      } catch (err) {
+        showToast("error", "Failed to force resolve");
+      }
+
+      modalManager.close("forceResolveModal");
+    },
+  });
+
+  modalManager.show("forceResolveModal");
+}
+
+function populateResponderBanner(incident) {
+  const banner = document.getElementById("responderBanner");
+  const nameEl = document.getElementById("responderName");
+  const statusEl = document.getElementById("responderStatus");
+  const avatarImg = document.getElementById("responderAvatar");
+  const avatarFallback = document.getElementById("responderAvatarFallback");
+  const forceResolveBtn = document.getElementById("forceResolveBtn");
+
+  // Show banner only if someone is assigned
+  if (!incident.dispatched_to) {
+    banner.classList.add("hidden");
+    forceResolveBtn.classList.add("hidden");
+    return;
+  }
+
+  banner.classList.remove("hidden");
+  nameEl.textContent =
+    incident.responder_name ?? incident.dispatched_by ?? incident.dispatched_to;
+
+  if (incident.status === "responding") {
+    statusEl.textContent = "Currently responding";
+    statusEl.className = "text-xs text-blue-500 dark:text-blue-400";
+  } else if (incident.status === "resolved") {
+    statusEl.textContent = "Resolved this incident";
+    statusEl.className = "text-xs text-green-500 dark:text-green-400";
+  }
+
+  // Avatar
+  if (incident.responder_avatar) {
+    avatarImg.src = `https://safechain.site/${incident.responder_avatar}`;
+    avatarImg.classList.remove("hidden");
+    avatarFallback.classList.add("hidden");
+  } else {
+    avatarImg.classList.add("hidden");
+    avatarFallback.classList.remove("hidden");
+  }
+
+  // Force Resolve: only when stuck responding > 6 hours
+  if (incident.status === "responding" && incident.dispatched_at) {
+    const dispatchedAt = new Date(incident.dispatched_at);
+    const hoursElapsed =
+      (Date.now() - dispatchedAt.getTime()) / (1000 * 60 * 60);
+    if (hoursElapsed >= 6) {
+      forceResolveBtn.classList.remove("hidden");
+    }
   }
 }
 
