@@ -267,14 +267,6 @@ function renderTable() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedResidents = filteredResidents.slice(startIndex, endIndex);
 
-  const falseCount = resident.falseReportCount ?? 0;
-  const falseBadge =
-    falseCount > 0
-      ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400">
-       🚩 ${falseCount} false
-     </span>`
-      : "";
-
   // Add fade-out effect
   tableBody.style.opacity = "0";
 
@@ -308,6 +300,14 @@ function renderTable() {
         const avatarHtml = resident.profilePicture
           ? `<img src="${resident.profilePicture}" class="w-full h-full rounded-full object-cover" alt="${resident.name}" />`
           : `<div class="w-10 h-10 ${color} rounded-full flex items-center p-4 justify-center text-white font-semibold text-sm">${initials}</div>`;
+
+        const falseCount = resident.falseReportCount ?? 0;
+        const falseBadge =
+          falseCount > 0
+            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400">
+            🚩 ${falseCount} false
+          </span>`
+                  : "";
 
         return `
       <tr class="hover:bg-gray-50 dark:hover:bg-black/20 transition item-enter" style="animation-delay: ${
