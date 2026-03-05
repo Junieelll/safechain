@@ -37,7 +37,7 @@ function handle_get(mysqli $conn, string $id, array $user): void
             r.address      AS reporter_address,
             r.resident_id  AS reporter_resident_id
         FROM incidents i
-        LEFT JOIN residents r ON r.device_id = i.device_id
+        LEFT JOIN residents r ON r.resident_id = i.reporter_id
         WHERE i.id = ?
           AND i.is_archived = 0
         LIMIT 1
@@ -52,7 +52,6 @@ function handle_get(mysqli $conn, string $id, array $user): void
         ResponseHelper::notFound('Incident not found');
     }
 
-    // Role-based access check
     $role_types = [
         'bpso'        => ['crime'],
         'bhert'       => ['flood'],
@@ -78,8 +77,8 @@ function format_detail(array $row): array
         'device_id'        => $row['device_id'],
         'reporter'         => $row['reporter'],
         'reporter_id'      => $row['reporter_id'],
-        'reporter_contact' => $row['reporter_contact'] ?? null,  // from residents table
-        'reporter_address' => $row['reporter_address'] ?? null,  // from residents table
+        'reporter_contact' => $row['reporter_contact'] ?? null,
+        'reporter_address' => $row['reporter_address'] ?? null,
         'date_time'        => $row['date_time'],
         'status'           => $row['status'],
         'dispatched_to'    => $row['dispatched_to'],
@@ -89,5 +88,6 @@ function format_detail(array $row): array
         'archived_at'      => $row['archived_at'],
         'created_at'       => $row['created_at'],
         'updated_at'       => $row['updated_at'],
+        'is_false_alarm'   => (bool) $row['is_false_alarm'], // ← added
     ];
-}   
+}

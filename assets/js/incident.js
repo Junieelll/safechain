@@ -3,20 +3,20 @@ let incidentsData = [];
 // Fetch incidents from database
 async function fetchIncidents() {
   try {
-    const response = await fetch('api/incidents/fetch_incidents.php');
+    const response = await fetch("api/incidents/fetch_incidents.php");
     const result = await response.json();
-    
+
     if (result.success) {
       incidentsData = result.data;
       updateWidgetCounts(result.stats); // ← pass stats
       renderTable();
     } else {
-      console.error('Error fetching incidents:', result.error);
-      showError('Failed to load incidents data');
+      console.error("Error fetching incidents:", result.error);
+      showError("Failed to load incidents data");
     }
   } catch (error) {
-    console.error('Fetch error:', error);
-    showError('Failed to connect to server');
+    console.error("Fetch error:", error);
+    showError("Failed to connect to server");
   }
 }
 
@@ -34,13 +34,15 @@ function updateWidgetCounts(stats) {
   const isUp = totalChange >= 0;
   const totalSubtitle = document.querySelector(".card:nth-child(1) .subtitle");
   totalSubtitle.innerHTML = `
-    <i class="uil uil-arrow-${isUp ? 'up' : 'down'}"></i>
+    <i class="uil uil-arrow-${isUp ? "up" : "down"}"></i>
     ${Math.abs(totalChange)}% from last month
   `;
-  totalSubtitle.className = `subtitle text-[10px] md:text-xs flex items-center ${isUp ? 'text-red-400' : 'text-emerald-400'}`;
+  totalSubtitle.className = `subtitle text-[10px] md:text-xs flex items-center ${isUp ? "text-red-400" : "text-emerald-400"}`;
 
   // Resolution rate
-  const resolutionSubtitle = document.querySelector(".card:nth-child(3) .subtitle");
+  const resolutionSubtitle = document.querySelector(
+    ".card:nth-child(3) .subtitle",
+  );
   resolutionSubtitle.innerHTML = `
     <i class="uil uil-arrow-up"></i> ${stats.resolution_rate}% resolution rate
   `;
@@ -98,7 +100,7 @@ const tableBody = document.querySelector("tbody");
 
 // Pagination
 const paginationContainer = document.querySelector(
-  ".inline-flex.items-center.justify-center"
+  ".inline-flex.items-center.justify-center",
 );
 
 // Filter States
@@ -144,7 +146,7 @@ function showLoadingSkeleton() {
             </div>
           </td>
         </tr>
-      `
+      `,
       )
       .join("");
 
@@ -174,6 +176,7 @@ function getStatusColor(status) {
       "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-600",
     pending:
       "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-600",
+    false_alarm: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-600", // ← add
   };
   return (
     colors[status] ||
@@ -183,17 +186,17 @@ function getStatusColor(status) {
 
 function parseDate(dateStr) {
   // Parse "2025-11-20 10:15 AM" format
-  const parts = dateStr.trim().split(' ');
-  
+  const parts = dateStr.trim().split(" ");
+
   if (parts.length < 3) {
-    console.error('Invalid date format:', dateStr);
+    console.error("Invalid date format:", dateStr);
     return new Date();
   }
-  
+
   const [datePart, timePart, period] = parts;
   const [year, month, day] = datePart.split("-");
   const [hoursStr, minutesStr] = timePart.split(":");
-  
+
   let hours = parseInt(hoursStr);
   const minutes = parseInt(minutesStr);
 
@@ -205,17 +208,23 @@ function parseDate(dateStr) {
     hours = 0;
   }
 
-  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), hours, minutes);
+  return new Date(
+    parseInt(year),
+    parseInt(month) - 1,
+    parseInt(day),
+    hours,
+    minutes,
+  );
 }
 
 function filterByDateRange(incident) {
   if (!selectedDateRange) return true;
 
   const incidentDate = parseDate(incident.dateTime);
-  
+
   // Validate the parsed date
   if (isNaN(incidentDate.getTime())) {
-    console.error('Invalid date for incident:', incident.id, incident.dateTime);
+    console.error("Invalid date for incident:", incident.id, incident.dateTime);
     return false;
   }
 
@@ -301,9 +310,8 @@ function renderTable() {
   const pageData = filteredData.slice(startIndex, endIndex);
 
   // Update count
-  document.querySelector(
-    ".incidents h1 .count"
-  ).textContent = `(${filteredData.length})`;
+  document.querySelector(".incidents h1 .count").textContent =
+    `(${filteredData.length})`;
 
   // Fade out
   tbody.style.opacity = "0";
@@ -337,7 +345,7 @@ function renderTable() {
           }</span></td>
           <td class="px-3 md:px-6 py-3 md:py-4">
             <span class="inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(
-              incident.type
+              incident.type,
             )}">
               ${incident.type.charAt(0).toUpperCase() + incident.type.slice(1)}
             </span>
@@ -353,11 +361,15 @@ function renderTable() {
           }</span></td>
           <td class="px-3 md:px-6 py-3 md:py-4">
             <span class="inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-              incident.status
+              incident.status,
             )}">
               ${
-                incident.status.charAt(0).toUpperCase() +
-                incident.status.slice(1)
+                {
+                  pending: "Pending",
+                  responding: "Responding",
+                  resolved: "Resolved",
+                  false_alarm: "False Alarm",
+                }[incident.status] ?? incident.status
               }
             </span>
           </td>
@@ -428,7 +440,7 @@ function renderPagination(totalPages) {
     }
 
     paginationNumbers.appendChild(
-      createPageButton(totalPages, currentPage === totalPages)
+      createPageButton(totalPages, currentPage === totalPages),
     );
   }
 
@@ -542,7 +554,7 @@ typeDropdownItems.forEach((item) => {
     typeSelectedText.textContent = text;
 
     typeDropdownItems.forEach((i) =>
-      i.classList.remove(...activeDropdownClasses)
+      i.classList.remove(...activeDropdownClasses),
     );
     e.target.classList.add(...activeDropdownClasses);
 
@@ -576,7 +588,7 @@ statusDropdownItems.forEach((item) => {
     statusSelectedText.textContent = text;
 
     statusDropdownItems.forEach((i) =>
-      i.classList.remove(...activeDropdownClasses)
+      i.classList.remove(...activeDropdownClasses),
     );
     e.target.classList.add(...activeDropdownClasses);
 
@@ -610,7 +622,9 @@ quickDateButtons.forEach((button) => {
     const days = button.getAttribute("data-days");
 
     // Remove active classes from all buttons
-    quickDateButtons.forEach((btn) => btn.classList.remove(...activeDropdownClasses));
+    quickDateButtons.forEach((btn) =>
+      btn.classList.remove(...activeDropdownClasses),
+    );
 
     // Add active classes to selected button
     button.classList.add(...activeDropdownClasses);
@@ -619,11 +633,11 @@ quickDateButtons.forEach((button) => {
       customDates.classList.remove("hidden");
     } else {
       customDates.classList.add("hidden");
-      const text = button.textContent.trim(); 
+      const text = button.textContent.trim();
       dateText.textContent = text;
-      selectedDateRange = text; 
+      selectedDateRange = text;
 
-      console.log('selectedDateRange set to:', selectedDateRange); 
+      console.log("selectedDateRange set to:", selectedDateRange);
 
       dateMenu.classList.add("hidden");
       dateIcon.style.transform = "rotate(0deg)";
@@ -666,8 +680,8 @@ clearDate.addEventListener("click", () => {
     btn.classList.remove(
       "bg-emerald-50",
       "border-emerald-500",
-      "text-emerald-600"
-    )
+      "text-emerald-600",
+    ),
   );
   dateMenu.classList.add("hidden");
   dateIcon.style.transform = "rotate(0deg)";
@@ -686,14 +700,14 @@ clearFilterBtn.addEventListener("click", () => {
   selectedType = "all";
   typeSelectedText.textContent = "All Types";
   typeDropdownItems.forEach((i) =>
-    i.classList.remove(...activeDropdownClasses)
+    i.classList.remove(...activeDropdownClasses),
   );
 
   // Reset status
   selectedStatus = "all";
   statusSelectedText.textContent = "All Status";
   statusDropdownItems.forEach((i) =>
-    i.classList.remove(...activeDropdownClasses)
+    i.classList.remove(...activeDropdownClasses),
   );
 
   // Reset date
@@ -703,7 +717,7 @@ clearFilterBtn.addEventListener("click", () => {
   endDate.value = "";
   customDates.classList.add("hidden");
   quickDateButtons.forEach((btn) =>
-    btn.classList.remove(...activeDropdownClasses)
+    btn.classList.remove(...activeDropdownClasses),
   );
 
   currentPage = 1;
@@ -788,30 +802,27 @@ async function confirmArchiveIncident() {
   if (!id) return;
 
   try {
-    const response = await fetch('api/incidents/archive_incident.php', {
-      method: 'POST',
+    const response = await fetch("api/incidents/archive_incident.php", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ id: id })
+      body: JSON.stringify({ id: id }),
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       // Refresh the incidents data from database
       await fetchIncidents();
       currentPage = 1;
       renderTable();
-      showToast(
-        "success",
-        `${id} has been moved to archive successfully!`
-      );
+      showToast("success", `${id} has been moved to archive successfully!`);
     } else {
       showToast("error", "Failed to archive incident: " + result.error);
     }
   } catch (error) {
-    console.error('Archive error:', error);
+    console.error("Archive error:", error);
     showToast("error", "Failed to archive incident. Please try again.");
   }
 
@@ -837,27 +848,26 @@ function initPageAnimations() {
 
 // Refresh incidents from database
 async function refreshIncidents() {
-  const refreshButton = event.target.closest('button');
-  const icon = refreshButton.querySelector('i');
-  
-  icon.classList.add('animate-spin');
+  const refreshButton = event.target.closest("button");
+  const icon = refreshButton.querySelector("i");
+
+  icon.classList.add("animate-spin");
   refreshButton.disabled = true;
-  
+
   try {
     showLoadingSkeleton();
-    
+
     await fetchIncidents();
-    
+
     currentPage = 1;
-    
+
     renderTable();
-    
   } catch (error) {
-    console.error('Refresh error:', error);
+    console.error("Refresh error:", error);
     showToast("error", "Failed to refresh incidents");
   } finally {
     setTimeout(() => {
-      icon.classList.remove('animate-spin');
+      icon.classList.remove("animate-spin");
       refreshButton.disabled = false;
     }, 500);
   }

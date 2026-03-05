@@ -12,6 +12,7 @@ try {
             contact,
             device_id AS deviceId,
             profile_picture_url,
+            false_report_count,
             registered_date AS registeredDate
         FROM residents
         WHERE is_archived = 0
@@ -34,6 +35,7 @@ try {
         'deviceId'       => $row['deviceId'],
         'profilePicture' => $row['profile_picture_url'], // ← map it here
         'registeredDate' => $row['registeredDate'],
+        'falseReportCount' => (int)($row['false_report_count'] ?? 0),
     ];
 }
 

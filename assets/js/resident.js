@@ -267,6 +267,14 @@ function renderTable() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedResidents = filteredResidents.slice(startIndex, endIndex);
 
+  const falseCount = resident.falseReportCount ?? 0;
+  const falseBadge =
+    falseCount > 0
+      ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400">
+       🚩 ${falseCount} false
+     </span>`
+      : "";
+
   // Add fade-out effect
   tableBody.style.opacity = "0";
 
@@ -310,17 +318,18 @@ function renderTable() {
             <div class="w-10 h-10 ${color} rounded-full flex items-center justify-center text-white font-semibold text-sm">
               ${avatarHtml}
             </div>
-            <span class="text-xs font-medium text-gray-800 dark:text-gray-200">${
-              resident.name
-            }</span>
+            <div class="flex flex-col">
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200">${resident.name}</span>
+              ${falseBadge}  // ← add this
+            </div>
           </div>
         </td>
         <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${
           resident.id
         }</td>
         <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${valueOrBadge(resident.address)}</td>
-<td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${valueOrBadge(resident.contact)}</td>
-<td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${valueOrBadge(resident.deviceId)}</td>
+        <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${valueOrBadge(resident.contact)}</td>
+        <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${valueOrBadge(resident.deviceId)}</td>
         <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${formatDate(
           resident.registeredDate,
         )}</td>
