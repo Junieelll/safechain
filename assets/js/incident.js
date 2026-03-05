@@ -360,7 +360,7 @@ function renderTable() {
             incident.dateTime
           }</span></td>
           <td class="px-3 md:px-6 py-3 md:py-4">
-            <span class="inline-flex items-center px-2 md:px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+            <span class="inline-flex shrink-0 whitespace-nowrap items-center px-2 md:px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
               incident.status,
             )}">
               ${
