@@ -259,6 +259,18 @@ function valueOrBadge(value) {
   return value;
 }
 
+function deviceIdBadge(deviceId) {
+  if (!deviceId || deviceId.trim() === "") {
+    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-neutral-700 text-gray-400 dark:text-gray-500 text-xs font-medium italic">
+      <i class="uil uil-minus-circle text-sm"></i> Not set
+    </span>`;
+  }
+  return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[11px] font-mono font-semibold">
+    <i class="uil uil-mobile-android text-sm"></i>
+    ${deviceId}
+  </span>`;
+}
+
 // Render table
 function renderTable() {
   filterAndSortResidents();
@@ -305,7 +317,7 @@ function renderTable() {
         const falseBadge =
           falseCount > 0
             ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400">
-            🚩 ${falseCount} false
+            🚩 ${falseCount} false report
           </span>`
                   : "";
 
@@ -329,7 +341,7 @@ function renderTable() {
         }</td>
         <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${valueOrBadge(resident.address)}</td>
         <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${valueOrBadge(resident.contact)}</td>
-        <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${valueOrBadge(resident.deviceId)}</td>
+        <td class="px-6 py-4">${deviceIdBadge(resident.deviceId)}</td>
         <td class="px-6 py-4 text-xs text-gray-600 dark:text-gray-200">${formatDate(
           resident.registeredDate,
         )}</td>
