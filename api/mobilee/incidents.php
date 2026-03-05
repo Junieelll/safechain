@@ -84,7 +84,7 @@ function handle_get_list(mysqli $conn, array $allowed_types): void
     $status = $_GET['status'] ?? null;
     $type = $_GET['type'] ?? null;
     $page = max(1, (int) ($_GET['page'] ?? 1));
-    $limit = min(100, max(1, (int)($_GET['limit'] ?? 10))); // ← was 20
+    $limit = min(100, max(1, (int) ($_GET['limit'] ?? 10))); // ← was 20
     $offset = ($page - 1) * $limit;
 
     // Build WHERE
@@ -105,6 +105,12 @@ function handle_get_list(mysqli $conn, array $allowed_types): void
     if ($status && in_array($status, $valid_statuses, true)) {
         $conditions[] = 'status = ?';
         $params[] = $status;
+        $types .= 's';
+    }
+
+    if (!empty($_GET['dispatched_to'])) {
+        $conditions[] = 'dispatched_to = ?';
+        $params[] = $_GET['dispatched_to'];
         $types .= 's';
     }
 
