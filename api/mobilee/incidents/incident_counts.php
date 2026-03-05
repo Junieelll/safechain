@@ -1,7 +1,7 @@
 <?php
-require_once __DIR__ . '/../../config/conn.php';
-require_once __DIR__ . '/../helpers/response_helper.php';
-require_once __DIR__ . '/middleware/mobile_auth.php';
+require_once __DIR__ . '/../../../config/conn.php';
+require_once __DIR__ . '/../../helpers/response_helper.php';
+require_once __DIR__ . '/../middleware/mobile_auth.php';
 
 error_reporting(E_ERROR | E_PARSE);
 ini_set('display_errors', '0');
