@@ -35,9 +35,11 @@ function handle_get(mysqli $conn, string $id, array $user): void
             i.*,
             r.contact      AS reporter_contact,
             r.address      AS reporter_address,
-            r.resident_id  AS reporter_resident_id
+            r.resident_id  AS reporter_resident_id,
+            f.flag_reason  AS flag_reason
         FROM incidents i
         LEFT JOIN residents r ON r.resident_id = i.reporter_id
+        LEFT JOIN incident_flags f ON f.incident_id = i.id
         WHERE i.id = ?
           AND i.is_archived = 0
         LIMIT 1
@@ -88,6 +90,7 @@ function format_detail(array $row): array
         'archived_at'      => $row['archived_at'],
         'created_at'       => $row['created_at'],
         'updated_at'       => $row['updated_at'],
-        'is_false_alarm'   => (bool) $row['is_false_alarm'], // ← added
+        'is_false_alarm'   => (bool) $row['is_false_alarm'],
+        'flag_reason'      => $row['flag_reason'] ?? null,
     ];
 }
