@@ -15,7 +15,7 @@ try {
             r.registered_date AS registeredDate,
             d.device_id AS deviceId
         FROM residents r
-        LEFT JOIN devices d ON d.user_id = r.resident_id
+        LEFT JOIN devices d ON d.resident_id = r.resident_id
         WHERE r.is_archived = 0
         ORDER BY r.registered_date DESC
     ";
