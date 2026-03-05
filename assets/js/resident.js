@@ -304,7 +304,7 @@ function renderTable() {
         const falseCount = resident.falseReportCount ?? 0;
         const falseBadge =
           falseCount > 0
-            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400">
+            ? `<span class="inline-flex shrink-0 whitespace-nowrap items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400">
             🚩 ${falseCount} false
           </span>`
                   : "";
