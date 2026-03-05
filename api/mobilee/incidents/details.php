@@ -36,12 +36,15 @@ function handle_get(mysqli $conn, string $id, array $user): void
             r.contact      AS reporter_contact,
             r.address      AS reporter_address,
             r.resident_id  AS reporter_resident_id,
-            f.flag_reason  AS flag_reason
+            f.flag_reason  AS flag_reason,
+            u.name         AS responder_name,
+            u.profile_picture AS responder_avatar
         FROM incidents i
         LEFT JOIN residents r ON r.resident_id = i.reporter_id
         LEFT JOIN incident_flags f ON f.incident_id = i.id
+        LEFT JOIN users u ON u.user_id = i.dispatched_to
         WHERE i.id = ?
-          AND i.is_archived = 0
+        AND i.is_archived = 0
         LIMIT 1
     ");
 
@@ -55,10 +58,10 @@ function handle_get(mysqli $conn, string $id, array $user): void
     }
 
     $role_types = [
-        'bpso'        => ['crime'],
-        'bhert'       => ['flood'],
+        'bpso' => ['crime'],
+        'bhert' => ['flood'],
         'firefighter' => ['fire'],
-        'admin'       => ['fire', 'flood', 'crime'],
+        'admin' => ['fire', 'flood', 'crime'],
     ];
     $allowed = $role_types[strtolower($user['role'] ?? '')] ?? [];
     if (!empty($allowed) && !in_array($row['type'], $allowed, true)) {
@@ -71,26 +74,28 @@ function handle_get(mysqli $conn, string $id, array $user): void
 function format_detail(array $row): array
 {
     return [
-        'id'               => $row['id'],
-        'type'             => $row['type'],
-        'location'         => $row['location'],
-        'latitude'         => $row['latitude']  !== null ? (float) $row['latitude']  : null,
-        'longitude'        => $row['longitude'] !== null ? (float) $row['longitude'] : null,
-        'device_id'        => $row['device_id'],
-        'reporter'         => $row['reporter'],
-        'reporter_id'      => $row['reporter_id'],
+        'id' => $row['id'],
+        'type' => $row['type'],
+        'location' => $row['location'],
+        'latitude' => $row['latitude'] !== null ? (float) $row['latitude'] : null,
+        'longitude' => $row['longitude'] !== null ? (float) $row['longitude'] : null,
+        'device_id' => $row['device_id'],
+        'reporter' => $row['reporter'],
+        'reporter_id' => $row['reporter_id'],
         'reporter_contact' => $row['reporter_contact'] ?? null,
         'reporter_address' => $row['reporter_address'] ?? null,
-        'date_time'        => $row['date_time'],
-        'status'           => $row['status'],
-        'dispatched_to'    => $row['dispatched_to'],
-        'dispatched_at'    => $row['dispatched_at'],
-        'dispatched_by'    => $row['dispatched_by'],
-        'is_archived'      => (bool) $row['is_archived'],
-        'archived_at'      => $row['archived_at'],
-        'created_at'       => $row['created_at'],
-        'updated_at'       => $row['updated_at'],
-        'is_false_alarm'   => (bool) $row['is_false_alarm'],
-        'flag_reason'      => $row['flag_reason'] ?? null,
+        'date_time' => $row['date_time'],
+        'status' => $row['status'],
+        'dispatched_to' => $row['dispatched_to'],
+        'dispatched_at' => $row['dispatched_at'],
+        'dispatched_by' => $row['dispatched_by'],
+        'is_archived' => (bool) $row['is_archived'],
+        'archived_at' => $row['archived_at'],
+        'created_at' => $row['created_at'],
+        'updated_at' => $row['updated_at'],
+        'is_false_alarm' => (bool) $row['is_false_alarm'],
+        'flag_reason' => $row['flag_reason'] ?? null,
+        'responder_name' => $row['responder_name'] ?? null,
+        'responder_avatar' => $row['responder_avatar'] ?? null,
     ];
 }
