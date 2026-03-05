@@ -101,7 +101,7 @@ function handle_get_list(mysqli $conn, array $allowed_types): void
     }
 
     // Optional status filter
-    $valid_statuses = ['pending', 'responding', 'resolved'];
+    $valid_statuses = ['pending', 'responding', 'resolved', 'false_alarm'];
     if ($status && in_array($status, $valid_statuses, true)) {
         $conditions[] = 'status = ?';
         $params[] = $status;
