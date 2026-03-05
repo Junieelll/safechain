@@ -320,7 +320,7 @@ function renderTable() {
             </div>
             <div class="flex flex-col">
               <span class="text-xs font-medium text-gray-800 dark:text-gray-200">${resident.name}</span>
-              ${falseBadge}  // ← add this
+              ${falseBadge}
             </div>
           </div>
         </td>
