@@ -8,7 +8,7 @@ class JWTHelper
     /**
      * Generate JWT token for user
      */
-    public static function generateToken($userId, $username, $role)
+    public static function generateToken($userId, $username, $role, $name = '')
     {
         $issued_at = time();
         $expiration_time = $issued_at + (60 * 60 * 24 * 30); // 30 days
@@ -18,6 +18,7 @@ class JWTHelper
             'exp' => $expiration_time,
             'user_id' => $userId,
             'username' => $username,
+            'name'     => $name,
             'role' => $role,
         ];
 
