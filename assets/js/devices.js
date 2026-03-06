@@ -2,18 +2,18 @@
 // Dynamic device management — fetches from PHP API (session auth)
 // Add LoRa modal uses Leaflet + Nominatim reverse geocoding
 
-const API = '/api/devices/index.php';
+const API = "api/devices/index.php";
 
-let allDevices   = { nodes: [], lora: [] };
-let currentView  = localStorage.getItem('deviceViewMode') || 'grid';
-let searchQuery  = '';
-let selectedType = 'AllTypes';
+let allDevices = { nodes: [], lora: [] };
+let currentView = localStorage.getItem("deviceViewMode") || "grid";
+let searchQuery = "";
+let selectedType = "AllTypes";
 
 // Map state
-let loraMap     = null;
-let loraMarker  = null;
-let pickedLat   = null;
-let pickedLng   = null;
+let loraMap = null;
+let loraMarker = null;
+let pickedLat = null;
+let pickedLng = null;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FETCH
@@ -21,7 +21,7 @@ let pickedLng   = null;
 async function fetchDevices() {
   renderSkeletonLoading();
   try {
-    const res  = await fetch(`${API}?action=list`);
+    const res = await fetch(`${API}?action=list`);
     const json = await res.json();
     if (!json.success) throw new Error(json.message);
 
@@ -29,8 +29,8 @@ async function fetchDevices() {
     updateStats(json.data.stats);
     renderDevices();
   } catch (err) {
-    console.error('[Devices]', err);
-    document.getElementById('devicesContainer').innerHTML = `
+    console.error("[Devices]", err);
+    document.getElementById("devicesContainer").innerHTML = `
       <div class="col-span-full flex flex-col items-center justify-center py-16 text-red-400">
         <i class="uil uil-exclamation-triangle text-5xl mb-3 opacity-60"></i>
         <p class="font-medium">Failed to load devices</p>
@@ -43,11 +43,14 @@ async function fetchDevices() {
 // STATS
 // ─────────────────────────────────────────────────────────────────────────────
 function updateStats(s) {
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('statTotal',     s.total);
-  set('statNodes',     s.total_nodes);
-  set('statLora',      s.total_lora);
-  set('statGateways',  s.active_gateways);
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = v;
+  };
+  set("statTotal", s.total);
+  set("statNodes", s.total_nodes);
+  set("statLora", s.total_lora);
+  set("statGateways", s.active_gateways);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -56,20 +59,36 @@ function updateStats(s) {
 function getFiltered() {
   const q = searchQuery.toLowerCase();
 
-  let nodes = allDevices.nodes.map(d => ({ ...d, _kind: 'node' }));
-  let lora  = allDevices.lora.map(d => ({ ...d, _kind: 'lora' }));
+  let nodes = allDevices.nodes.map((d) => ({ ...d, _kind: "node" }));
+  let lora = allDevices.lora.map((d) => ({ ...d, _kind: "lora" }));
 
-  if (selectedType === 'NodeDevice')  lora  = [];
-  if (selectedType === 'LoRaGateway') nodes = [];
-  if (selectedType === 'Gateway')     lora  = lora.filter(d => d.device_type === 'gateway');
-  if (selectedType === 'Repeater')    lora  = lora.filter(d => d.device_type === 'repeater');
+  if (selectedType === "NodeDevice") lora = [];
+  if (selectedType === "Gateway") {
+    nodes = [];
+    lora = lora.filter((d) => d.device_type === "gateway");
+  }
+  if (selectedType === "Repeater") {
+    nodes = [];
+    lora = lora.filter((d) => d.device_type === "repeater");
+  }
 
   const all = [...nodes, ...lora];
   if (!q) return all;
 
-  return all.filter(d =>
-    [d.device_id, d.device_name, d.owner_name, d.location_label, d.signal, d.status, d.address]
-      .filter(Boolean).join(' ').toLowerCase().includes(q)
+  return all.filter((d) =>
+    [
+      d.device_id,
+      d.device_name,
+      d.owner_name,
+      d.location_label,
+      d.signal,
+      d.status,
+      d.address,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q),
   );
 }
 
@@ -81,15 +100,23 @@ function handleSearch(e) {
 // ─────────────────────────────────────────────────────────────────────────────
 // RENDER HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-const signalColor = s => ({ Excellent: 'text-emerald-600', Good: 'text-blue-500', Fair: 'text-yellow-500', Weak: 'text-red-500' }[s] || 'text-gray-400');
+const signalColor = (s) =>
+  ({
+    Excellent: "text-emerald-600",
+    Good: "text-blue-500",
+    Fair: "text-yellow-500",
+    Weak: "text-red-500",
+  })[s] || "text-gray-400";
 
-const statusPill = s => ({
-  active:      `<span class="text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">Active</span>`,
-  inactive:    `<span class="text-xs font-medium text-red-500 bg-red-50 dark:bg-red-900/40 px-2 py-0.5 rounded-full">Inactive</span>`,
-  maintenance: `<span class="text-xs font-medium text-yellow-600 bg-yellow-50 dark:bg-yellow-900/40 px-2 py-0.5 rounded-full">Maintenance</span>`,
-}[s] || '');
+const statusPill = (s) =>
+  ({
+    active: `<span class="text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">Active</span>`,
+    inactive: `<span class="text-xs font-medium text-red-500 bg-red-50 dark:bg-red-900/40 px-2 py-0.5 rounded-full">Inactive</span>`,
+    maintenance: `<span class="text-xs font-medium text-yellow-600 bg-yellow-50 dark:bg-yellow-900/40 px-2 py-0.5 rounded-full">Maintenance</span>`,
+  })[s] || "";
 
-const batteryColor = b => b > 60 ? 'text-emerald-500' : b > 20 ? 'text-yellow-500' : 'text-red-500';
+const batteryColor = (b) =>
+  b > 60 ? "text-emerald-500" : b > 20 ? "text-yellow-500" : "text-red-500";
 
 function infoBox(icon, label, value) {
   return `
@@ -111,50 +138,87 @@ function enc(d) {
 // RENDER
 // ─────────────────────────────────────────────────────────────────────────────
 function renderDevices() {
-  const container = document.getElementById('devicesContainer');
-  const filtered  = getFiltered();
+  const container = document.getElementById("devicesContainer");
+  const filtered = getFiltered();
 
   const empty = `
-    <div class="${currentView === 'grid' ? 'col-span-full' : ''} flex flex-col items-center justify-center py-16 text-gray-400 dark:text-neutral-500">
+    <div class="${currentView === "grid" ? "col-span-full" : ""} flex flex-col items-center justify-center py-16 text-gray-400 dark:text-neutral-500">
       <i class="uil uil-search text-6xl mb-4 opacity-30"></i>
       <p class="text-lg font-medium">No devices found</p>
       <p class="text-sm">Try adjusting your search or filter</p>
     </div>`;
 
-  if (currentView === 'grid') {
-    container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
-    container.innerHTML = filtered.length ? filtered.map(gridCard).join('') : empty;
+  if (currentView === "grid") {
+    container.className =
+      "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+    container.innerHTML = filtered.length
+      ? filtered.map(gridCard).join("")
+      : empty;
   } else {
-    container.className = 'flex flex-col gap-4';
-    container.innerHTML = filtered.length ? filtered.map(listCard).join('') : empty;
+    container.className = "flex flex-col gap-4";
+    container.innerHTML = filtered.length
+      ? filtered.map(listCard).join("")
+      : empty;
   }
 }
 
 function gridCard(d) {
-  const isNode   = d._kind === 'node';
-  const icon     = isNode ? 'uil-mobile-android' : (d.device_type === 'gateway' ? 'uil-wifi-router' : 'uil-broadcast');
-  const typeLabel= isNode ? 'Node Device' : (d.device_type === 'gateway' ? 'LoRa Gateway' : 'LoRa Repeater');
-  const col1Lbl  = isNode ? 'OWNER'    : 'LOCATION';
-  const col1Icon = isNode ? 'uil-user' : 'uil-map-marker';
-  const col1Val  = isNode ? (d.owner_name || 'Unassigned') : (d.location_label || '—');
-  const col2Lbl  = isNode ? 'BATTERY'  : 'SIGNAL';
-  const col2Icon = isNode ? 'uil-battery-bolt' : 'uil-signal-alt-3';
-  const col2Val  = isNode
-    ? `<span class="${batteryColor(d.battery)}">${d.battery ?? '—'}%</span>`
-    : `<span class="${signalColor(d.signal)}">${d.signal || '—'}</span>`;
-  const data     = enc(d);
+  const isNode = d._kind === "node";
+  const iconEl = isNode
+    ? `<i class="uil uil-mobile-android text-2xl text-white"></i>`
+    : d.device_type === "gateway"
+      ? `<i class="uil uil-wifi-router text-2xl text-white"></i>`
+      : `<svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+     <!-- Center dot -->
+    <circle cx="12" cy="11" r="1.5"/>
+    <!-- Vertical line -->
+    <path d="M12 12.5 L12 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+    <!-- Inner waves -->
+    <path d="M9.5 8.5a3.5 3.5 0 0 0 0 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+    <path d="M14.5 8.5a3.5 3.5 0 0 1 0 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+    <!-- Outer waves -->
+    <path d="M7 6a6.5 6.5 0 0 0 0 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+    <path d="M17 6a6.5 6.5 0 0 1 0 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+   </svg>`;
+  const typeLabel = isNode
+    ? "Node Device"
+    : d.device_type === "gateway"
+      ? "LoRa Gateway"
+      : "LoRa Repeater";
+  const col1Lbl = isNode ? "OWNER" : "LOCATION";
+  const col1Icon = isNode ? "uil-user" : "uil-map-marker";
+  const col1Val = isNode
+    ? d.owner_name || "Unassigned"
+    : d.location_label || "—";
+  const col2Lbl = isNode ? "BATTERY" : "SIGNAL";
+  const col2Icon = isNode ? "uil-battery-bolt" : "uil-signal-alt-3";
+  const col2Val = isNode
+    ? `<span class="${batteryColor(d.battery)}">${d.battery ?? "—"}%</span>`
+    : `<span class="${signalColor(d.signal)}">${d.signal || "—"}</span>`;
+  const data = enc(d);
+
+  const isInactive = d.status === "inactive";
+  const actionBtn = isInactive
+    ? `<button onclick="confirmReactivate(decodeURIComponent('${data}'))"
+      class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-emerald-600 hover:border-emerald-400 transition-colors">
+      <i class="uil uil-refresh"></i><span class="text-xs font-medium">Reactivate</span>
+    </button>`
+    : `<button onclick="confirmDeactivate(decodeURIComponent('${data}'))"
+      class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-red-600 hover:border-red-400 transition-colors">
+      <i class="uil uil-ban"></i><span class="text-xs font-medium">Deactivate</span>
+    </button>`;
 
   return `
     <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 border-2 border-transparent hover:border-emerald-400 shadow-[0_0_24px_rgba(0,0,0,0.10)] hover:shadow-[0_0_26px_rgba(39,194,145,0.36)] transition-all">
       <div class="flex items-start gap-4 mb-6">
         <div class="w-11 h-11 bg-[linear-gradient(141.34deg,#27C291_4.44%,#20A577_95.56%)] rounded-xl flex items-center justify-center flex-shrink-0">
-          <i class="uil ${icon} text-2xl text-white"></i>
+          ${iconEl}
         </div>
         <div class="flex-1 min-w-0">
           <h3 class="text-sm font-semibold text-gray-800 dark:text-neutral-300">${d.device_id}</h3>
           <div class="flex items-center gap-2 mt-1">
             <span class="text-xs text-gray-400 dark:text-neutral-400">${typeLabel}</span>
-            ${!isNode ? statusPill(d.status) : ''}
+            ${!isNode ? statusPill(d.status) : ""}
           </div>
         </div>
       </div>
@@ -183,37 +247,117 @@ function gridCard(d) {
           class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-emerald-600 hover:border-emerald-400 transition-colors">
           <i class="uil uil-eye"></i><span class="text-xs font-medium">View</span>
         </button>
-        <button onclick="confirmDeactivate(decodeURIComponent('${data}'))"
-          class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-red-600 hover:border-red-400 transition-colors">
-          <i class="uil uil-ban"></i><span class="text-xs font-medium">Deactivate</span>
-        </button>
+       ${actionBtn}
       </div>
     </div>`;
 }
 
+function confirmReactivate(raw) {
+  const d = typeof raw === "string" ? JSON.parse(raw) : raw;
+
+  modalManager.create({
+    id: "reactivateModal",
+    icon: "uil-refresh",
+    iconColor: "text-emerald-600",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/60",
+    title: "Reactivate Device",
+    subtitle: d.device_id,
+    body: `
+      <div class="text-sm text-center">
+        <p class="mb-2">Are you sure you want to reactivate <strong>${d.device_id}</strong>?</p>
+        <p class="text-xs text-gray-500">Name: ${d.name}</p>
+      </div>`,
+    primaryButton: {
+      text: "Reactivate",
+      icon: "uil-refresh",
+      class: "bg-emerald-500 hover:bg-emerald-600",
+    },
+    secondaryButton: { text: "Cancel" },
+    onPrimary: () => {
+      doReactivateLora(d.id);
+      return false;
+    },
+    onSecondary: () => modalManager.close("reactivateModal"),
+  });
+  modalManager.show("reactivateModal");
+}
+
+async function doReactivateLora(id) {
+  try {
+    const res = await fetch(`${API}?action=reactivate-lora`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      modalManager.close("reactivateModal");
+      showToast("success", "Device reactivated");
+      fetchDevices();
+    } else {
+      showToast("error", json.message || "Failed to reactivate");
+      modalManager.setButtonLoading("reactivateModal", "primary", false);
+    }
+  } catch {
+    showToast("error", "Network error");
+    modalManager.setButtonLoading("reactivateModal", "primary", false);
+  }
+}
+
 function listCard(d) {
-  const isNode   = d._kind === 'node';
-  const icon     = isNode ? 'uil-mobile-android' : (d.device_type === 'gateway' ? 'uil-wifi-router' : 'uil-broadcast');
-  const typeLabel= isNode ? 'Node Device' : (d.device_type === 'gateway' ? 'LoRa Gateway' : 'LoRa Repeater');
-  const col1Val  = isNode ? (d.owner_name || 'Unassigned') : (d.location_label || '—');
-  const col1Lbl  = isNode ? 'OWNER' : 'LOCATION';
-  const col2Val  = isNode
-    ? `<span class="${batteryColor(d.battery)}">${d.battery ?? '—'}%</span>`
-    : `<span class="${signalColor(d.signal)}">${d.signal || '—'}</span>`;
-  const col2Lbl  = isNode ? 'BATTERY' : 'SIGNAL';
-  const data     = enc(d);
+  const isNode = d._kind === "node";
+  const iconEl = isNode
+    ? `<i class="uil uil-mobile-android text-2xl text-white"></i>`
+    : d.device_type === "gateway"
+      ? `<i class="uil uil-wifi-router text-2xl text-white"></i>`
+      : `<svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+     <!-- Center dot -->
+    <circle cx="12" cy="11" r="1.5"/>
+    <!-- Vertical line -->
+    <path d="M12 12.5 L12 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+    <!-- Inner waves -->
+    <path d="M9.5 8.5a3.5 3.5 0 0 0 0 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+    <path d="M14.5 8.5a3.5 3.5 0 0 1 0 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+    <!-- Outer waves -->
+    <path d="M7 6a6.5 6.5 0 0 0 0 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+    <path d="M17 6a6.5 6.5 0 0 1 0 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+   </svg>`;
+  const typeLabel = isNode
+    ? "Node Device"
+    : d.device_type === "gateway"
+      ? "LoRa Gateway"
+      : "LoRa Repeater";
+  const col1Val = isNode
+    ? d.owner_name || "Unassigned"
+    : d.location_label || "—";
+  const col1Lbl = isNode ? "OWNER" : "LOCATION";
+  const col2Val = isNode
+    ? `<span class="${batteryColor(d.battery)}">${d.battery ?? "—"}%</span>`
+    : `<span class="${signalColor(d.signal)}">${d.signal || "—"}</span>`;
+  const col2Lbl = isNode ? "BATTERY" : "SIGNAL";
+  const data = enc(d);
+  const isInactive = d.status === "inactive";
+  const actionBtn = isInactive
+    ? `<button onclick="confirmReactivate(decodeURIComponent('${data}'))"
+      class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-emerald-600 hover:border-emerald-400 transition-colors">
+      <i class="uil uil-refresh"></i><span class="text-xs font-medium">Reactivate</span>
+    </button>`
+    : `<button onclick="confirmDeactivate(decodeURIComponent('${data}'))"
+      class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-red-600 hover:border-red-400 transition-colors">
+      <i class="uil uil-ban"></i><span class="text-xs font-medium">Deactivate</span>
+    </button>`;
 
   return `
     <div class="bg-white dark:bg-neutral-800 rounded-3xl p-5 border-2 border-transparent hover:border-emerald-400 shadow-[0_0_24px_rgba(0,0,0,0.10)] transition-all">
       <div class="flex items-center gap-5">
         <div class="w-11 h-11 bg-[linear-gradient(141.34deg,#27C291_4.44%,#20A577_95.56%)] rounded-xl flex items-center justify-center flex-shrink-0">
-          <i class="uil ${icon} text-2xl text-white"></i>
+          ${iconEl}
         </div>
         <div class="flex-1 min-w-0">
           <h3 class="text-sm font-semibold text-gray-800 dark:text-neutral-300">${d.device_id}</h3>
           <div class="flex items-center gap-2 mt-0.5">
             <span class="text-xs text-gray-400 dark:text-neutral-400">${typeLabel}</span>
-            ${!isNode ? statusPill(d.status) : ''}
+            ${!isNode ? statusPill(d.status) : ""}
           </div>
         </div>
         <div class="hidden md:flex items-center gap-10">
@@ -231,10 +375,7 @@ function listCard(d) {
             class="flex items-center gap-2 py-2 px-4 border border-neutral-400 rounded-xl text-gray-700 dark:text-neutral-400 hover:text-emerald-600 hover:border-emerald-400 transition-colors text-sm">
             <i class="uil uil-eye"></i><span class="hidden sm:inline">View</span>
           </button>
-          <button onclick="confirmDeactivate(decodeURIComponent('${data}'))"
-            class="flex items-center gap-2 py-2 px-4 border border-neutral-400 rounded-xl text-gray-700 dark:text-neutral-400 hover:text-red-600 hover:border-red-400 transition-colors text-sm">
-            <i class="uil uil-ban"></i><span class="hidden sm:inline">Deactivate</span>
-          </button>
+          ${actionBtn}
         </div>
       </div>
     </div>`;
@@ -244,7 +385,7 @@ function listCard(d) {
 // SKELETON
 // ─────────────────────────────────────────────────────────────────────────────
 function renderSkeletonLoading() {
-  const c = document.getElementById('devicesContainer');
+  const c = document.getElementById("devicesContainer");
   const sk = `
     <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 border-2 border-transparent shadow-[0_0_24px_rgba(0,0,0,0.10)] animate-pulse">
       <div class="flex items-start gap-4 mb-6">
@@ -257,10 +398,11 @@ function renderSkeletonLoading() {
       </div>
       <div class="flex gap-3"><div class="flex-1 h-9 bg-gray-100 dark:bg-neutral-700 rounded-lg"></div><div class="flex-1 h-9 bg-gray-100 dark:bg-neutral-700 rounded-lg"></div></div>
     </div>`;
-  c.className = currentView === 'grid'
-    ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-    : 'flex flex-col gap-4';
-  c.innerHTML = Array(6).fill(sk).join('');
+  c.className =
+    currentView === "grid"
+      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      : "flex flex-col gap-4";
+  c.innerHTML = Array(6).fill(sk).join("");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -268,11 +410,13 @@ function renderSkeletonLoading() {
 // ─────────────────────────────────────────────────────────────────────────────
 function setViewMode(mode) {
   currentView = mode;
-  localStorage.setItem('deviceViewMode', mode);
-  const on  = 'p-3 w-[50px] h-[50px] flex items-center justify-center bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors';
-  const off = 'p-3 w-[50px] h-[50px] flex items-center justify-center bg-[#f4f5f9] dark:bg-neutral-700 text-emerald-500 dark:text-neutral-300 rounded-xl hover:bg-gray-50 transition-colors';
-  document.getElementById('gridBtn').className = mode === 'grid' ? on : off;
-  document.getElementById('listBtn').className = mode === 'list' ? on : off;
+  localStorage.setItem("deviceViewMode", mode);
+  const on =
+    "p-3 w-[50px] h-[50px] flex items-center justify-center bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors";
+  const off =
+    "p-3 w-[50px] h-[50px] flex items-center justify-center bg-[#f4f5f9] dark:bg-neutral-700 text-emerald-500 dark:text-neutral-300 rounded-xl hover:bg-gray-50 transition-colors";
+  document.getElementById("gridBtn").className = mode === "grid" ? on : off;
+  document.getElementById("listBtn").className = mode === "list" ? on : off;
   renderSkeletonLoading();
   setTimeout(renderDevices, 300);
 }
@@ -281,20 +425,27 @@ function setViewMode(mode) {
 // VIEW DEVICE MODAL
 // ─────────────────────────────────────────────────────────────────────────────
 function viewDevice(raw) {
-  const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-  const isNode = d._kind === 'node';
+  const d = typeof raw === "string" ? JSON.parse(raw) : raw;
+  const isNode = d._kind === "node";
 
   if (isNode) {
-    const meds = Array.isArray(d.medical_conditions) && d.medical_conditions.length
-      ? d.medical_conditions.map(m =>
-          `<span class="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 px-2 py-0.5 rounded-full">${m}</span>`
-        ).join(' ')
-      : '<span class="text-xs text-gray-400">None on file</span>';
+    const meds =
+      Array.isArray(d.medical_conditions) && d.medical_conditions.length
+        ? d.medical_conditions
+            .map(
+              (m) =>
+                `<span class="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 px-2 py-0.5 rounded-full">${m}</span>`,
+            )
+            .join(" ")
+        : '<span class="text-xs text-gray-400">None on file</span>';
 
     modalManager.create({
-      id: 'viewDeviceModal',
-      icon: 'uil-mobile-android', iconColor: 'text-emerald-600', iconBg: 'bg-emerald-100 dark:bg-emerald-900/60',
-      title: 'Node Device Details', subtitle: d.device_id,
+      id: "viewDeviceModal",
+      icon: "uil-mobile-android",
+      iconColor: "text-emerald-600",
+      iconBg: "bg-emerald-100 dark:bg-emerald-900/60",
+      title: "Node Device Details",
+      subtitle: d.device_id,
       body: `
         <div class="space-y-4">
           <div class="bg-emerald-500 rounded-2xl p-5 text-white flex items-center gap-4">
@@ -302,34 +453,45 @@ function viewDevice(raw) {
             <div>
               <p class="text-xs opacity-80">DEVICE ID</p>
               <p class="text-lg font-semibold">${d.device_id}</p>
-              <p class="text-xs opacity-80">${d.device_name || ''}</p>
+              <p class="text-xs opacity-80">${d.device_name || ""}</p>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-3">
-            ${infoBox('uil-user',          'Owner',      d.owner_name   || 'Unassigned')}
-            ${infoBox('uil-phone',         'Contact',    d.contact      || '—')}
-            ${infoBox('uil-location-point','Address',    d.address      || '—')}
-            ${infoBox('uil-battery-bolt',  'Battery',    (d.battery ?? '—') + '%')}
-            ${infoBox('uil-calendar-alt',  'Registered', d.registered_date || '—')}
-            ${infoBox('uil-bluetooth-b',   'BT Remote',  d.bt_remote_id || '—')}
+            ${infoBox("uil-user", "Owner", d.owner_name || "Unassigned")}
+            ${infoBox("uil-phone", "Contact", d.contact || "—")}
+            ${infoBox("uil-location-point", "Address", d.address || "—")}
+            ${infoBox("uil-battery-bolt", "Battery", (d.battery ?? "—") + "%")}
+            ${infoBox("uil-calendar-alt", "Registered", d.registered_date || "—")}
+            ${infoBox("uil-bluetooth-b", "BT Remote", d.bt_remote_id || "—")}
           </div>
           <div>
             <p class="text-xs font-medium text-gray-500 dark:text-neutral-400 uppercase mb-2">Medical Conditions</p>
             <div class="flex flex-wrap gap-2">${meds}</div>
           </div>
         </div>`,
-      primaryButton:   { text: 'Deactivate', icon: 'uil-ban', class: 'bg-transparent border-2 border-red-500 text-red-500 hover:bg-red-50' },
-      secondaryButton: { text: 'Close' },
-      onPrimary:   () => { modalManager.close('viewDeviceModal'); confirmDeactivate(d); },
-      onSecondary: () => modalManager.close('viewDeviceModal'),
+      primaryButton: {
+        text: "Deactivate",
+        icon: "uil-ban",
+        class:
+          "bg-transparent border-2 border-red-500 text-red-500 hover:bg-red-50",
+      },
+      secondaryButton: { text: "Close" },
+      onPrimary: () => {
+        modalManager.close("viewDeviceModal");
+        confirmDeactivate(d);
+      },
+      onSecondary: () => modalManager.close("viewDeviceModal"),
     });
-
   } else {
-    const typeLabel = d.device_type === 'gateway' ? 'LoRa Gateway' : 'LoRa Repeater';
+    const typeLabel =
+      d.device_type === "gateway" ? "LoRa Gateway" : "LoRa Repeater";
     modalManager.create({
-      id: 'viewLoraModal',
-      icon: 'uil-wifi-router', iconColor: 'text-emerald-600', iconBg: 'bg-emerald-100 dark:bg-emerald-900/60',
-      title: typeLabel + ' Details', subtitle: d.device_id,
+      id: "viewLoraModal",
+      icon: "uil-wifi-router",
+      iconColor: "text-emerald-600",
+      iconBg: "bg-emerald-100 dark:bg-emerald-900/60",
+      title: typeLabel + " Details",
+      subtitle: d.device_id,
       body: `
         <div class="space-y-4">
           <div class="bg-emerald-500 rounded-2xl p-5 text-white flex items-center gap-4">
@@ -342,82 +504,206 @@ function viewDevice(raw) {
             ${statusPill(d.status)}
           </div>
           <div class="grid grid-cols-2 gap-3">
-            ${infoBox('uil-map-marker',   'Location',   d.location_label || '—')}
-            ${infoBox('uil-signal-alt-3', 'Signal',     d.signal || '—')}
-            ${infoBox('uil-layer-group',  'Coverage',   (d.coverage_radius || '—') + 'm')}
-            ${infoBox('uil-wifi',         'Frequency',  d.frequency || '—')}
-            ${infoBox('uil-file-alt',     'Firmware',   d.firmware || '—')}
-            ${infoBox('uil-calendar-alt', 'Installed',  d.install_date || '—')}
+            ${infoBox("uil-map-marker", "Location", d.location_label || "—")}
+            ${infoBox("uil-signal-alt-3", "Signal", d.signal || "—")}
+            ${infoBox("uil-layer-group", "Coverage", (d.coverage_radius || "—") + "m")}
+            ${infoBox("uil-wifi", "Frequency", d.frequency || "—")}
+            ${infoBox("uil-file-alt", "Firmware", d.firmware || "—")}
+            ${infoBox("uil-calendar-alt", "Installed", d.install_date || "—")}
           </div>
-          ${d.lat && d.lng ? `
-          <div class="bg-[#F1F5F9] dark:bg-neutral-600 rounded-xl p-3">
-            <p class="text-xs font-medium text-gray-500 dark:text-neutral-400 uppercase mb-1">Coordinates</p>
-            <p class="text-sm text-gray-700 dark:text-neutral-300 font-mono">${parseFloat(d.lat).toFixed(6)}, ${parseFloat(d.lng).toFixed(6)}</p>
-          </div>` : ''}
-          ${d.notes ? `
+          ${
+            d.lat && d.lng
+              ? `
+<div>
+  <p class="text-xs font-medium text-gray-500 dark:text-neutral-400 uppercase mb-1">Location</p>
+  <div class="w-full h-80 rounded-2xl overflow-hidden border-2 border-[#D5E7F9] dark:border-neutral-600 relative">
+    <div id="viewLoraMapEl" class="w-full h-full"></div>
+    <div class="absolute top-3 right-3 z-[1000] flex flex-col gap-0.5 overflow-hidden p-0.5">
+      <button id="viewLoraZoomIn" type="button"
+        class="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md border border-white/20 text-white hover:bg-black/45 transition-all duration-200 rounded-t-full shadow-md">
+        <i class="uil uil-plus text-xl"></i>
+      </button>
+      <button id="viewLoraZoomOut" type="button"
+        class="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md border border-white/20 text-white hover:bg-black/45 transition-all duration-200 rounded-b-full shadow-md">
+        <i class="uil uil-minus text-xl"></i>
+      </button>
+    </div>
+  </div>
+</div>`
+              : ""
+          }
+          ${
+            d.notes
+              ? `
           <div>
             <p class="text-xs font-medium text-gray-500 dark:text-neutral-400 uppercase mb-1">Notes</p>
             <p class="text-sm text-gray-700 dark:text-neutral-300 bg-[#F1F5F9] dark:bg-neutral-600 rounded-xl p-3">${d.notes}</p>
-          </div>` : ''}
+          </div>`
+              : ""
+          }
         </div>`,
-      primaryButton:   { text: 'Deactivate', icon: 'uil-ban', class: 'bg-transparent border-2 border-red-500 text-red-500 hover:bg-red-50' },
-      secondaryButton: { text: 'Close' },
-      onPrimary:   () => { modalManager.close('viewLoraModal'); confirmDeactivate(d); },
-      onSecondary: () => modalManager.close('viewLoraModal'),
+      primaryButton: {
+        text: "Deactivate",
+        icon: "uil-ban",
+        class:
+          "bg-transparent border-2 border-red-500 text-red-500 hover:bg-red-50",
+      },
+      secondaryButton: { text: "Close" },
+      onPrimary: () => {
+        modalManager.close("viewLoraModal");
+        confirmDeactivate(d);
+      },
+      onSecondary: () => modalManager.close("viewLoraModal"),
     });
   }
 
-  modalManager.show(isNode ? 'viewDeviceModal' : 'viewLoraModal');
+  modalManager.show(isNode ? "viewDeviceModal" : "viewLoraModal");
+
+  if (!isNode && d.lat && d.lng) {
+    setTimeout(() => initViewLoraMap(d), 200); // wait for 300ms modal animation to finish
+  }
 }
 
+function initViewLoraMap(d) {
+  const el = document.getElementById("viewLoraMapEl");
+  if (!el) return;
+
+  const build = () => {
+    buildMap(el);
+
+    loraMap.setView([d.lat, d.lng], 16);
+    loraMap.doubleClickZoom.disable();
+    loraMap.touchZoom.disable();
+    loraMap.off("click", onMapClick);
+
+    const zoomIn = document.getElementById("viewLoraZoomIn");
+    const zoomOut = document.getElementById("viewLoraZoomOut");
+    if (zoomIn)
+      zoomIn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        loraMap.zoomIn();
+      });
+    if (zoomOut)
+      zoomOut.addEventListener("click", (e) => {
+        e.stopPropagation();
+        loraMap.zoomOut();
+      });
+
+    const pinIcon = L.divIcon({
+      html: `<div style="
+        width:36px;height:36px;
+        background:linear-gradient(141.34deg,#27C291 4.44%,#20A577 95.56%);
+        border-radius:50%;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 2px 8px rgba(0,0,0,.3);
+      ">
+        ${
+          d.device_type === "gateway"
+            ? `<i class="uil uil-wifi-router" style="color:white;font-size:18px;"></i>`
+            : `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="white">
+              <circle cx="12" cy="11" r="1.5"/>
+              <path d="M12 12.5 L12 17" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+              <path d="M9.5 8.5a3.5 3.5 0 0 0 0 5" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+              <path d="M14.5 8.5a3.5 3.5 0 0 1 0 5" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+              <path d="M7 6a6.5 6.5 0 0 0 0 10" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+              <path d="M17 6a6.5 6.5 0 0 1 0 10" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+             </svg>`
+        }
+      </div>`,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
+      className: "",
+    });
+
+    L.marker([d.lat, d.lng], { icon: pinIcon }).addTo(loraMap);
+
+    if (d.coverage_radius) {
+      L.circle([d.lat, d.lng], {
+        radius: d.coverage_radius,
+        color: "#3B82F6",
+        weight: 2,
+        opacity: 0.8,
+        fillColor: "#3B82F6",
+        fillOpacity: 0.15,
+      }).addTo(loraMap);
+    }
+  };
+
+  // Same guard as initLoraMap
+  if (typeof L !== "undefined") {
+    build();
+  } else {
+    if (!document.getElementById("leaflet-css")) {
+      const link = Object.assign(document.createElement("link"), {
+        id: "leaflet-css",
+        rel: "stylesheet",
+        href: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css",
+      });
+      document.head.appendChild(link);
+    }
+    const s = document.createElement("script");
+    s.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    s.onload = build;
+    document.head.appendChild(s);
+  }
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // DEACTIVATE
 // ─────────────────────────────────────────────────────────────────────────────
 function confirmDeactivate(raw) {
-  const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
-  const isNode = d._kind === 'node';
+  const d = typeof raw === "string" ? JSON.parse(raw) : raw;
+  const isNode = d._kind === "node";
 
   modalManager.create({
-    id: 'deactivateModal',
-    icon: 'uil-ban', iconColor: 'text-red-600 dark:text-red-400', iconBg: 'bg-red-100 dark:bg-red-900/60',
-    title: 'Deactivate Device', subtitle: d.device_id,
+    id: "deactivateModal",
+    icon: "uil-ban",
+    iconColor: "text-red-600 dark:text-red-400",
+    iconBg: "bg-red-100 dark:bg-red-900/60",
+    title: "Deactivate Device",
+    subtitle: d.device_id,
     showWarning: true,
-    warningText: 'This device will be disconnected and will no longer send or receive data.',
+    warningText:
+      "This device will be disconnected and will no longer send or receive data.",
     body: `
       <div class="text-sm text-center">
         <p class="mb-2">Are you sure you want to deactivate <strong>${d.device_id}</strong>?</p>
-        <p class="text-xs text-gray-500">${isNode ? 'Owner: ' + (d.owner_name || 'Unknown') : 'Name: ' + d.name}</p>
+        <p class="text-xs text-gray-500">${isNode ? "Owner: " + (d.owner_name || "Unknown") : "Name: " + d.name}</p>
       </div>`,
-    primaryButton:   { text: 'Deactivate', icon: 'uil-ban', class: 'bg-red-600 hover:bg-red-700' },
-    secondaryButton: { text: 'Cancel' },
+    primaryButton: {
+      text: "Deactivate",
+      icon: "uil-ban",
+      class: "bg-red-600 hover:bg-red-700",
+    },
+    secondaryButton: { text: "Cancel" },
     onPrimary: async () => {
-      modalManager.close('deactivateModal');
+      modalManager.close("deactivateModal");
       if (!isNode) {
         await doDeactivateLora(d.id);
       }
       // Node device deactivation: add your own endpoint if needed
     },
-    onSecondary: () => modalManager.close('deactivateModal'),
+    onSecondary: () => modalManager.close("deactivateModal"),
   });
-  modalManager.show('deactivateModal');
+  modalManager.show("deactivateModal");
 }
 
 async function doDeactivateLora(id) {
   try {
-    const res  = await fetch(`${API}?action=deactivate-lora`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch(`${API}?action=deactivate-lora`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
     const json = await res.json();
     if (json.success) {
-      showToast('Device deactivated', 'success');
+      showToast("success", "Device deactivated");
       fetchDevices();
     } else {
-      showToast(json.message || 'Failed to deactivate', 'error');
+      showToast(json.message || "Failed to deactivate", "error");
     }
   } catch {
-    showToast('Network error', 'error');
+    showToast("Network error", "error");
   }
 }
 
@@ -428,20 +714,70 @@ function openAddLoraModal() {
   pickedLat = null;
   pickedLng = null;
 
+  // Reusable dropdown HTML builder
+  const customDropdown = (id, options, defaultVal) => {
+    const activeOpt = options.find((o) => o.value === defaultVal) || options[0];
+    return `
+      <div class="relative" id="${id}Wrapper">
+        <button type="button" id="${id}Btn"
+          class="w-full bg-[#F1F5F9] dark:bg-neutral-700 h-[43.2px] rounded-xl px-3 py-2.5 border-2 border-transparent text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-emerald-400 transition">
+          <span id="${id}Text" class="text-sm text-gray-700 dark:text-neutral-300 flex items-center gap-2">
+            ${activeOpt.dot ? `<span class="w-2 h-2 rounded-full ${activeOpt.dot} flex-shrink-0"></span>` : ""}
+            ${activeOpt.label}
+          </span>
+          <i id="${id}Icon" class="uil uil-angle-down text-xl text-gray-400 dark:text-gray-300 transition-transform duration-200"></i>
+        </button>
+        <div id="${id}Menu"
+          class="hidden absolute z-[99999] w-full mt-1 bg-white dark:bg-neutral-700 border border-gray-200 dark:border-neutral-600 rounded-xl shadow-lg overflow-hidden">
+          <div class="py-1">
+            ${options
+              .map(
+                (o) => `
+              <button type="button"
+                class="${id}-option text-sm w-full text-left px-4 py-2.5 flex items-center gap-2
+                       text-gray-700 dark:text-white/85
+                       hover:bg-emerald-50 dark:hover:bg-emerald-700/20 hover:text-emerald-600 transition
+                       ${o.value === defaultVal ? "bg-emerald-50 dark:bg-emerald-700/20 text-emerald-600 dark:text-emerald-300 font-medium" : ""}"
+                data-value="${o.value}"
+                ${o.dot ? `data-dot="${o.dot}"` : ""}>
+                ${o.dot ? `<span class="w-2 h-2 rounded-full ${o.dot} flex-shrink-0"></span>` : ""}
+                ${o.label}
+              </button>`,
+              )
+              .join("")}
+          </div>
+        </div>
+        <input type="hidden" id="${id}Val" value="${defaultVal}" />
+      </div>`;
+  };
+
+  const typeOptions = [
+    { value: "gateway", label: "Gateway" },
+    { value: "repeater", label: "Repeater" },
+  ];
+
+  const freqOptions = [
+    { value: "433 MHz", label: "433 MHz" },
+    { value: "868 MHz", label: "868 MHz" },
+    { value: "915 MHz", label: "915 MHz" },
+    { value: "923 MHz", label: "923 MHz" },
+  ];
+
   modalManager.create({
-    id: 'addLoraModal',
-    icon: 'uil-wifi-router', iconColor: 'text-emerald-600', iconBg: 'bg-emerald-100 dark:bg-emerald-900/60',
-    title: 'Add LoRa Device', subtitle: 'Pin the location on the map',
+    id: "addLoraModal",
+    icon: "uil-wifi-router",
+    iconColor: "text-emerald-600",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/60",
+    title: "Add LoRa Device",
+    subtitle: "Pin the location on the map",
     body: `
       <div class="space-y-4">
+
         <!-- Type + Name -->
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Device Type *</label>
-            <select id="loraType" class="w-full px-3 py-2.5 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-xl text-sm border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400">
-              <option value="gateway">Gateway</option>
-              <option value="repeater">Repeater</option>
-            </select>
+            ${customDropdown("loraType", typeOptions, "gateway")}
           </div>
           <div>
             <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Device Name *</label>
@@ -456,18 +792,27 @@ function openAddLoraModal() {
             Pin Location *
             <span class="normal-case font-normal text-gray-400 ml-1">— tap the map to place a pin</span>
           </label>
-
-          <!-- Map container -->
-          <div class="w-full h-56 rounded-2xl overflow-hidden border-2 border-[#D5E7F9] dark:border-neutral-600 relative">
+          <div class="w-full h-72 rounded-2xl overflow-hidden border-2 border-[#D5E7F9] dark:border-neutral-600 relative">
             <div id="loraMapEl" class="w-full h-full"></div>
+            <!-- Zoom controls -->
+            <div class="absolute top-3 right-3 z-[1000] flex flex-col gap-0.5 overflow-hidden p-0.5">
+              <button id="loraZoomIn" type="button" title="Zoom in"
+                class="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md border border-white/20 text-white hover:bg-black/45 hover:-translate-y-0.5 transition-all duration-200 rounded-t-full shadow-md">
+                <i class="uil uil-plus text-xl"></i>
+              </button>
+              <button id="loraZoomOut" type="button" title="Zoom out"
+                class="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md border border-white/20 text-white hover:bg-black/45 hover:-translate-y-0.5 transition-all duration-200 rounded-b-full shadow-md">
+                <i class="uil uil-minus text-xl"></i>
+              </button>
+            </div>
+            <!-- Hint -->
             <div id="mapHint" class="absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity">
               <div class="bg-white/90 dark:bg-neutral-800/90 rounded-xl px-4 py-2 shadow text-xs text-gray-500 dark:text-neutral-400">
                 <i class="uil uil-crosshair mr-1"></i> Tap to drop a pin
               </div>
             </div>
           </div>
-
-          <!-- Reverse-geocoded address -->
+          <!-- Address -->
           <div class="mt-2 relative">
             <i class="uil uil-map-marker absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg pointer-events-none"></i>
             <input id="loraLabel" type="text" placeholder="Address auto-fills when you pin…"
@@ -476,30 +821,18 @@ function openAddLoraModal() {
           <p id="loraCoords" class="text-xs text-gray-400 dark:text-neutral-500 mt-1 pl-1 h-4"></p>
         </div>
 
-        <!-- Signal + Coverage -->
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Signal</label>
-            <select id="loraSignal" class="w-full px-3 py-2.5 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-xl text-sm border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400">
-              <option value="Excellent">Excellent</option>
-              <option value="Good" selected>Good</option>
-              <option value="Fair">Fair</option>
-              <option value="Weak">Weak</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Coverage Radius (m)</label>
-            <input id="loraCoverage" type="number" value="300" min="50" max="2000"
-              class="w-full px-3 py-2.5 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-xl text-sm border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-          </div>
+        <!-- Coverage -->
+        <div>
+          <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Coverage Radius (m)</label>
+          <input id="loraCoverage" type="number" value="300" min="50" max="2000"
+            class="w-full px-3 py-2.5 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-xl text-sm border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400" />
         </div>
 
         <!-- Frequency + Firmware -->
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Frequency</label>
-            <input id="loraFreq" type="text" value="915 MHz"
-              class="w-full px-3 py-2.5 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-xl text-sm border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+            ${customDropdown("loraFreq", freqOptions, "915 MHz")}
           </div>
           <div>
             <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Firmware</label>
@@ -517,53 +850,200 @@ function openAddLoraModal() {
 
         <div id="loraError" class="hidden text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2"></div>
       </div>`,
-    primaryButton:   { text: 'Add Device', icon: 'uil-plus' },
-    secondaryButton: { text: 'Cancel' },
-    onPrimary:   submitAddLora,
-    onSecondary: () => { destroyLoraMap(); modalManager.close('addLoraModal'); },
+    primaryButton: { text: "Add Device", icon: "uil-plus" },
+    secondaryButton: { text: "Cancel" },
+    onPrimary: () => {
+      const name = document.getElementById("loraName")?.value.trim();
+
+      if (!name) {
+        showToast("error", "Device name is required");
+        modalManager.setButtonLoading("addLoraModal", "primary", false);
+        return false;
+      }
+      if (pickedLat === null || pickedLng === null) {
+        showToast("error", "Please tap the map to pin a location");
+        modalManager.setButtonLoading("addLoraModal", "primary", false);
+        return false;
+      }
+
+      submitAddLora(); // fire async separately, don't await
+      return false; // always prevent auto-close — submitAddLora closes manually on success
+    },
+    onSecondary: () => {
+      destroyLoraMap();
+      modalManager.close("addLoraModal");
+    },
   });
 
-  modalManager.show('addLoraModal');
-  setTimeout(initLoraMap, 200); // wait for modal DOM
+  modalManager.show("addLoraModal");
+  setTimeout(() => {
+    initLoraMap();
+    initModalDropdowns();
+  }, 200);
+}
+
+// ── Modal custom dropdowns (type, signal, freq) ──────────────────────────────
+function initModalDropdowns() {
+  // Generic initializer — works for any dropdown built by customDropdown()
+  const initOne = (id) => {
+    const btn = document.getElementById(`${id}Btn`);
+    const menu = document.getElementById(`${id}Menu`);
+    const icon = document.getElementById(`${id}Icon`);
+    const text = document.getElementById(`${id}Text`);
+    const hidden = document.getElementById(`${id}Val`);
+    if (!btn) return;
+
+    const activeOn = [
+      "bg-emerald-50",
+      "dark:bg-emerald-700/20",
+      "text-emerald-600",
+      "dark:text-emerald-300",
+      "font-medium",
+    ];
+    const activeOff = activeOn;
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      // Close all other modal dropdowns first
+      ["loraType", "loraSignal", "loraFreq"].forEach((other) => {
+        if (other !== id) {
+          document.getElementById(`${other}Menu`)?.classList.add("hidden");
+          const oi = document.getElementById(`${other}Icon`);
+          if (oi) oi.style.transform = "rotate(0deg)";
+        }
+      });
+      const isHidden = menu.classList.contains("hidden");
+      menu.classList.toggle("hidden", !isHidden);
+      icon.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
+    });
+
+    menu.querySelectorAll(`.${id}-option`).forEach((opt) => {
+      opt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const val = opt.dataset.value;
+        const dot = opt.dataset.dot || "";
+
+        hidden.value = val;
+
+        // Update button label (with dot if present)
+        text.innerHTML = dot
+          ? `<span class="w-2 h-2 rounded-full ${dot} flex-shrink-0"></span>${val}`
+          : val;
+
+        // Active state
+        menu
+          .querySelectorAll(`.${id}-option`)
+          .forEach((o) => o.classList.remove(...activeOff));
+        opt.classList.add(...activeOn);
+
+        menu.classList.add("hidden");
+        icon.style.transform = "rotate(0deg)";
+      });
+    });
+  };
+
+  initOne("loraType");
+  initOne("loraFreq");
+
+  // Close all on outside click
+  document.addEventListener("click", function closeModalDropdowns(e) {
+    ["loraType", "loraSignal", "loraFreq"].forEach((id) => {
+      const wrapper = document.getElementById(`${id}Wrapper`);
+      if (wrapper && !wrapper.contains(e.target)) {
+        document.getElementById(`${id}Menu`)?.classList.add("hidden");
+        const icon = document.getElementById(`${id}Icon`);
+        if (icon) icon.style.transform = "rotate(0deg)";
+      }
+    });
+    if (!document.getElementById("loraTypBtn")) {
+      document.removeEventListener("click", closeModalDropdowns);
+    }
+  });
+
+  // Zoom controls
+  const zIn = document.getElementById("loraZoomIn");
+  const zOut = document.getElementById("loraZoomOut");
+  if (zIn)
+    zIn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      loraMap?.zoomIn();
+    });
+  if (zOut)
+    zOut.addEventListener("click", (e) => {
+      e.stopPropagation();
+      loraMap?.zoomOut();
+    });
 }
 
 // ── Init Leaflet ──────────────────────────────────────────────────────────────
 function initLoraMap() {
-  const el = document.getElementById('loraMapEl');
+  const el = document.getElementById("loraMapEl");
   if (!el) return;
 
-  const load = (cb) => {
-    if (typeof L !== 'undefined') { cb(); return; }
-    // Load CSS
-    if (!document.getElementById('leaflet-css')) {
-      const link = Object.assign(document.createElement('link'), {
-        id: 'leaflet-css', rel: 'stylesheet',
-        href: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
+  // Leaflet is already loaded by the page (same as dashboard) — just build the map
+  if (typeof L !== "undefined") {
+    buildMap(el);
+  } else {
+    if (!document.getElementById("leaflet-css")) {
+      const link = Object.assign(document.createElement("link"), {
+        id: "leaflet-css",
+        rel: "stylesheet",
+        href: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css",
       });
       document.head.appendChild(link);
     }
-    // Load JS
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
-    s.onload = cb;
+    const s = document.createElement("script");
+    s.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    s.onload = () => buildMap(el);
     document.head.appendChild(s);
-  };
-
-  load(() => buildMap(el));
+  }
 }
 
 function buildMap(el) {
-  if (loraMap) { loraMap.remove(); loraMap = null; loraMarker = null; }
+  if (loraMap) {
+    loraMap.remove();
+    loraMap = null;
+    loraMarker = null;
+  }
 
-  // Center on Gulod, Novaliches, QC
-  loraMap = L.map(el, { zoomControl: true }).setView([14.7142, 121.0414], 15);
+  const MAPTILER_KEY = "2bXjFOI9q9BSiHQVwLb7";
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
-    maxZoom: 19,
-  }).addTo(loraMap);
+  const onlineTile = isDark
+    ? `https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`
+    : `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`;
 
-  loraMap.on('click', onMapClick);
+  const offlineTile = isDark
+    ? "assets/tiles/street-v2-dark/{z}/{x}/{y}.png"
+    : "assets/tiles/street-v2/{z}/{x}/{y}.png";
+
+  loraMap = L.map(el, { zoomControl: false, maxZoom: 21 }).setView(
+    [14.7142, 121.0414],
+    15,
+  );
+
+  const tileLayer = L.tileLayer(navigator.onLine ? onlineTile : offlineTile, {
+    maxZoom: 21,
+    maxNativeZoom: 21,
+    attribution:
+      '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+  })
+    .on("tileerror", function (error, tile) {
+      const matches = tile.tile.src.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
+      if (matches) {
+        const [, z, x, y] = matches;
+        tile.tile.src = isDark
+          ? `assets/tiles/street-v2-dark/${z}/${x}/${y}.png`
+          : `assets/tiles/street-v2/${z}/${x}/${y}.png`;
+      }
+    })
+    .addTo(loraMap);
+
+  window.addEventListener("online", () => tileLayer.setUrl(onlineTile));
+  window.addEventListener("offline", () => tileLayer.setUrl(offlineTile));
+
+  loraMap.on("click", onMapClick);
 }
 
 async function onMapClick(e) {
@@ -574,16 +1054,27 @@ async function onMapClick(e) {
   // Custom pin icon
   const pinIcon = L.divIcon({
     html: `<div style="
-      width:22px;height:22px;
-      background:#27C291;
-      border:3px solid #fff;
-      border-radius:50% 50% 50% 0;
-      transform:rotate(-45deg);
-      box-shadow:0 2px 8px rgba(0,0,0,.3);
-    "></div>`,
-    iconSize:   [22, 22],
+    width:22px;height:22px;
+    background:#EF4444;
+    border:3px solid #fff;
+    border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg);
+    box-shadow:0 2px 8px rgba(0,0,0,.3);
+    position:relative;
+  ">
+    <div style="
+      width:7px;height:7px;
+      background:white;
+      border-radius:50%;
+      position:absolute;
+      top:50%;left:50%;
+      transform:translate(-50%,-50%) rotate(45deg);
+      opacity:0.9;
+    "></div>
+  </div>`,
+    iconSize: [22, 22],
     iconAnchor: [11, 22],
-    className:  '',
+    className: "",
   });
 
   if (loraMarker) {
@@ -592,24 +1083,29 @@ async function onMapClick(e) {
     loraMarker = L.marker([lat, lng], { icon: pinIcon }).addTo(loraMap);
   }
 
+  // Draw / update coverage circle
+  const radiusM = parseInt(
+    document.getElementById("loraCoverage")?.value || "300",
+  );
+
   // Hide hint
-  const hint = document.getElementById('mapHint');
-  if (hint) hint.style.opacity = '0';
+  const hint = document.getElementById("mapHint");
+  if (hint) hint.style.opacity = "0";
 
   // Show raw coords
-  const coordsEl = document.getElementById('loraCoords');
+  const coordsEl = document.getElementById("loraCoords");
   if (coordsEl) coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
   // Reverse geocode with Nominatim
-  const labelEl = document.getElementById('loraLabel');
+  const labelEl = document.getElementById("loraLabel");
   if (labelEl) {
-    labelEl.value = 'Looking up address…';
+    labelEl.value = "Looking up address…";
     labelEl.disabled = true;
   }
   try {
-    const res  = await fetch(
+    const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-      { headers: { 'Accept-Language': 'en', 'User-Agent': 'SafeChain/1.0' } }
+      { headers: { "Accept-Language": "en", "User-Agent": "SafeChain/1.0" } },
     );
     const data = await res.json();
     const addr = data.address || {};
@@ -618,127 +1114,132 @@ async function onMapClick(e) {
     const parts = [
       addr.road,
       addr.suburb || addr.village || addr.neighbourhood,
-      addr.city   || addr.town || addr.municipality,
+      addr.city || addr.town || addr.municipality,
       addr.country,
     ].filter(Boolean);
 
-    const label = parts.length ? parts.join(', ') : (data.display_name || '');
+    const label = parts.length ? parts.join(", ") : data.display_name || "";
     if (labelEl) labelEl.value = label;
   } catch {
-    if (labelEl) labelEl.value = '';
+    if (labelEl) labelEl.value = "";
   } finally {
     if (labelEl) labelEl.disabled = false;
   }
 }
 
 function destroyLoraMap() {
-  if (loraMap) { loraMap.remove(); loraMap = null; loraMarker = null; }
+  if (loraMap) {
+    loraMap.remove();
+    loraMap = null;
+    loraMarker = null;
+    loraCircle = null;
+  }
   pickedLat = null;
   pickedLng = null;
 }
 
 // ── Submit add lora ───────────────────────────────────────────────────────────
 async function submitAddLora() {
-  const errEl = document.getElementById('loraError');
-  errEl.classList.add('hidden');
-
-  const name     = document.getElementById('loraName')?.value.trim();
-  const type     = document.getElementById('loraType')?.value;
-  const label    = document.getElementById('loraLabel')?.value.trim();
-  const signal   = document.getElementById('loraSignal')?.value;
-  const coverage = parseInt(document.getElementById('loraCoverage')?.value || '300');
-  const freq     = document.getElementById('loraFreq')?.value.trim();
-  const firmware = document.getElementById('loraFirmware')?.value.trim();
-  const notes    = document.getElementById('loraNotes')?.value.trim();
-
-  // Client-side validation
-  if (!name) {
-    showFormError(errEl, 'Device name is required'); return;
-  }
-  if (pickedLat === null || pickedLng === null) {
-    showFormError(errEl, 'Please tap the map to pin a location'); return;
-  }
-
-  // Disable button while submitting
-  const btn = document.querySelector('[data-modal-primary="addLoraModal"]');
-  if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+  const name = document.getElementById("loraName")?.value.trim();
+  const type = document.getElementById("loraTypeVal")?.value;
+  const label = document.getElementById("loraLabel")?.value.trim();
+  const coverage = parseInt(
+    document.getElementById("loraCoverage")?.value || "300",
+  );
+  const freq = document.getElementById("loraFreqVal")?.value.trim();
+  const firmware = document.getElementById("loraFirmware")?.value.trim();
+  const notes = document.getElementById("loraNotes")?.value.trim();
 
   try {
-    const res  = await fetch(`${API}?action=add-lora`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch(`${API}?action=add-lora`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name, device_type: type, location_label: label,
-        lat: pickedLat, lng: pickedLng,
-        signal, coverage_radius: coverage,
-        frequency: freq, firmware, notes,
-        install_date: new Date().toISOString().split('T')[0],
+        name,
+        device_type: type,
+        location_label: label,
+        lat: pickedLat,
+        lng: pickedLng,
+        signal: "Good",
+        coverage_radius: coverage,
+        frequency: freq,
+        firmware,
+        notes,
+        install_date: new Date().toISOString().split("T")[0],
       }),
     });
     const json = await res.json();
 
     if (json.success) {
       destroyLoraMap();
-      modalManager.close('addLoraModal');
-      showToast(`${json.data.device_id} added successfully`, 'success');
-      fetchDevices(); // refresh list
+      modalManager.close("addLoraModal");
+      showToast("success", `${json.data.device_id} added successfully`);
+      fetchDevices();
     } else {
-      const msg = json.errors ? json.errors.join(', ') : (json.message || 'Failed to add device');
-      showFormError(errEl, msg);
+      const msg = json.errors
+        ? json.errors.join(", ")
+        : json.message || "Failed to add device";
+      showToast("error", msg);
+      modalManager.setButtonLoading("addLoraModal", "primary", false);
     }
   } catch {
-    showFormError(errEl, 'Network error — please try again');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Add Device'; }
+    showToast("error", "Network error — please try again");
+    modalManager.setButtonLoading("addLoraModal", "primary", false);
   }
 }
 
 function showFormError(el, msg) {
   el.textContent = msg;
-  el.classList.remove('hidden');
+  el.classList.remove("hidden");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DROPDOWN
 // ─────────────────────────────────────────────────────────────────────────────
 const activeDropdownClasses = [
-  'bg-emerald-50','border-emerald-500','text-emerald-600',
-  'dark:bg-emerald-700/20','dark:border-emerald-700/20','dark:text-emerald-300',
+  "bg-emerald-50",
+  "border-emerald-500",
+  "text-emerald-600",
+  "dark:bg-emerald-700/20",
+  "dark:border-emerald-700/20",
+  "dark:text-emerald-300",
 ];
 
-document.addEventListener('DOMContentLoaded', () => {
-  const dropBtn  = document.getElementById('sortDropdownButton');
-  const dropMenu = document.getElementById('sortDropdownMenu');
-  const dropIcon = document.getElementById('sortDropdownIcon');
-  const dropText = document.getElementById('sortSelectedText');
+document.addEventListener("DOMContentLoaded", () => {
+  const dropBtn = document.getElementById("sortDropdownButton");
+  const dropMenu = document.getElementById("sortDropdownMenu");
+  const dropIcon = document.getElementById("sortDropdownIcon");
+  const dropText = document.getElementById("sortSelectedText");
 
   if (dropBtn) {
-    dropBtn.addEventListener('click', (e) => {
+    dropBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const hidden = dropMenu.classList.contains('hidden');
-      dropMenu.classList.toggle('hidden', !hidden);
-      dropIcon.style.transform = hidden ? 'rotate(180deg)' : 'rotate(0deg)';
+      const hidden = dropMenu.classList.contains("hidden");
+      dropMenu.classList.toggle("hidden", !hidden);
+      dropIcon.style.transform = hidden ? "rotate(180deg)" : "rotate(0deg)";
     });
   }
 
-  document.addEventListener('click', () => {
+  document.addEventListener("click", () => {
     if (dropMenu) {
-      dropMenu.classList.add('hidden');
-      dropIcon.style.transform = 'rotate(0deg)';
+      dropMenu.classList.add("hidden");
+      dropIcon.style.transform = "rotate(0deg)";
     }
   });
 
-  document.querySelectorAll('.dropdown-item').forEach(item => {
-    item.addEventListener('click', (e) => {
+  document.querySelectorAll(".dropdown-item").forEach((item) => {
+    item.addEventListener("click", (e) => {
       e.stopPropagation();
-      selectedType = item.getAttribute('data-value');
+      selectedType = item.getAttribute("data-value");
       dropText.textContent = item.textContent.trim();
 
-      document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove(...activeDropdownClasses));
+      document
+        .querySelectorAll(".dropdown-item")
+        .forEach((i) => i.classList.remove(...activeDropdownClasses));
       item.classList.add(...activeDropdownClasses);
 
-      dropMenu.classList.add('hidden');
-      dropIcon.style.transform = 'rotate(0deg)';
+      dropMenu.classList.add("hidden");
+      dropIcon.style.transform = "rotate(0deg)";
 
       renderSkeletonLoading();
       setTimeout(renderDevices, 400);
@@ -746,8 +1247,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Search
-  const searchInput = document.querySelector('input[placeholder="Search devices..."]');
-  if (searchInput) searchInput.addEventListener('input', handleSearch);
+  const searchInput = document.querySelector(
+    'input[placeholder="Search devices..."]',
+  );
+  if (searchInput) searchInput.addEventListener("input", handleSearch);
 
   // Initial load
   setViewMode(currentView);

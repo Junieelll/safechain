@@ -6,9 +6,9 @@ class ModalManager {
   }
 
   initializeContainer() {
-    if (!document.getElementById('modalContainer')) {
-      const container = document.createElement('div');
-      container.id = 'modalContainer';
+    if (!document.getElementById("modalContainer")) {
+      const container = document.createElement("div");
+      container.id = "modalContainer";
       document.body.appendChild(container);
     }
   }
@@ -29,7 +29,7 @@ class ModalManager {
       onSecondary,
       onTertiary, // NEW: Add tertiary callback
       showWarning = false,
-      warningText = ''
+      warningText = "",
     } = config;
 
     // Remove existing modal if it exists
@@ -60,14 +60,14 @@ class ModalManager {
               ${
                 subtitle
                   ? `<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${subtitle}</p>`
-                  : ''
+                  : ""
               }
             </div>
           </div>
         </div>
 
         <!-- Modal Body -->
-        <div class="px-6 py-4">
+        <div class="px-6 py-4 max-h-[65vh] overflow-y-auto">
           ${
             showWarning
               ? `
@@ -83,7 +83,7 @@ class ModalManager {
               </div>
             </div>
           `
-              : ''
+              : ""
           }
 
           <div id="${id}Body" class="modal-body text-gray-700 dark:text-neutral-300">
@@ -101,18 +101,18 @@ class ModalManager {
               id="${id}TertiaryBtn"
               class="flex-1 px-4 py-3.5 min-h-[45px] text-xs font-medium 
                      rounded-full transition-colors flex items-center justify-center gap-2
-                     ${tertiaryButton.hidden ? 'hidden' : ''}
-                     ${tertiaryButton.class || 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-neutral-700 hover:bg-gray-200 dark:hover:bg-neutral-600'}"
+                     ${tertiaryButton.hidden ? "hidden" : ""}
+                     ${tertiaryButton.class || "text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-neutral-700 hover:bg-gray-200 dark:hover:bg-neutral-600"}"
             >
               ${
                 tertiaryButton.icon
                   ? `<i class="uil ${tertiaryButton.icon} text-lg"></i>`
-                  : ''
+                  : ""
               }
               ${tertiaryButton.text}
             </button>
           `
-              : ''
+              : ""
           }
 
           ${
@@ -129,7 +129,7 @@ class ModalManager {
               ${secondaryButton.text}
             </button>
           `
-              : ''
+              : ""
           }
 
           ${
@@ -139,17 +139,17 @@ class ModalManager {
               id="${id}PrimaryBtn"
               class="flex-1 px-4 py-3.5 max-h-[45px] text-xs font-medium text-white 
                      rounded-full transition-colors flex items-center justify-center gap-2 
-                     ${primaryButton.class || 'bg-[#01AF78] hover:bg-[#00965F] dark:bg-[#01AF78]/90 dark:hover:bg-[#01AF78]'}"
+                     ${primaryButton.class || "bg-[#01AF78] hover:bg-[#00965F] dark:bg-[#01AF78]/90 dark:hover:bg-[#01AF78]"}"
             >
               ${
                 primaryButton.icon
                   ? `<i class="uil ${primaryButton.icon} text-lg"></i>`
-                  : ''
+                  : ""
               }
               ${primaryButton.text}
             </button>
           `
-              : ''
+              : ""
           }
 
         </div>
@@ -157,8 +157,8 @@ class ModalManager {
     `;
 
     // Insert into container
-    const container = document.getElementById('modalContainer');
-    const modalWrapper = document.createElement('div');
+    const container = document.getElementById("modalContainer");
+    const modalWrapper = document.createElement("div");
     modalWrapper.innerHTML = modalHTML;
     container.appendChild(modalWrapper);
 
@@ -168,7 +168,7 @@ class ModalManager {
       overlay: document.getElementById(`${id}Overlay`),
       onPrimary,
       onSecondary,
-      onTertiary // NEW: Store tertiary callback
+      onTertiary, // NEW: Store tertiary callback
     });
 
     this.attachEventListeners(id);
@@ -182,53 +182,53 @@ class ModalManager {
 
     const { overlay, onPrimary, onSecondary, onTertiary } = modalData;
 
-    overlay.addEventListener('click', () => this.close(id));
+    overlay.addEventListener("click", () => this.close(id));
 
     const primaryBtn = document.getElementById(`${id}PrimaryBtn`);
     if (primaryBtn && onPrimary) {
-      primaryBtn.addEventListener('click', async () => {
+      primaryBtn.addEventListener("click", async () => {
         // Automatically handle loading state for async callbacks
-        this.setButtonLoading(id, 'primary', true);
-        
+        this.setButtonLoading(id, "primary", true);
+
         try {
           const result = onPrimary();
-          
+
           // If callback returns a promise, wait for it
           if (result instanceof Promise) {
             await result;
           }
-          
+
           // Auto-close modal on success (unless callback explicitly returns false)
           if (result !== false) {
             this.close(id);
           }
         } catch (error) {
-          console.error('Modal primary action error:', error);
+          console.error("Modal primary action error:", error);
           // Keep modal open on error and restore button
-          this.setButtonLoading(id, 'primary', false);
+          this.setButtonLoading(id, "primary", false);
         }
       });
     }
 
     const secondaryBtn = document.getElementById(`${id}SecondaryBtn`);
     if (secondaryBtn) {
-      secondaryBtn.addEventListener('click', async () => {
+      secondaryBtn.addEventListener("click", async () => {
         if (onSecondary) {
-          this.setButtonLoading(id, 'secondary', true);
-          
+          this.setButtonLoading(id, "secondary", true);
+
           try {
             const result = onSecondary();
-            
+
             if (result instanceof Promise) {
               await result;
             }
-            
+
             if (result !== false) {
               this.close(id);
             }
           } catch (error) {
-            console.error('Modal secondary action error:', error);
-            this.setButtonLoading(id, 'secondary', false);
+            console.error("Modal secondary action error:", error);
+            this.setButtonLoading(id, "secondary", false);
           }
         } else {
           this.close(id);
@@ -239,22 +239,22 @@ class ModalManager {
     // NEW: Attach tertiary button listener
     const tertiaryBtn = document.getElementById(`${id}TertiaryBtn`);
     if (tertiaryBtn && onTertiary) {
-      tertiaryBtn.addEventListener('click', async () => {
-        this.setButtonLoading(id, 'tertiary', true);
-        
+      tertiaryBtn.addEventListener("click", async () => {
+        this.setButtonLoading(id, "tertiary", true);
+
         try {
           const result = onTertiary();
-          
+
           if (result instanceof Promise) {
             await result;
           }
-          
+
           if (result !== false) {
             this.close(id);
           }
         } catch (error) {
-          console.error('Modal tertiary action error:', error);
-          this.setButtonLoading(id, 'tertiary', false);
+          console.error("Modal tertiary action error:", error);
+          this.setButtonLoading(id, "tertiary", false);
         }
       });
     }
@@ -266,14 +266,14 @@ class ModalManager {
 
     const { element, overlay } = modalData;
 
-    overlay.classList.remove('hidden');
-    element.classList.remove('hidden');
+    overlay.classList.remove("hidden");
+    element.classList.remove("hidden");
 
     setTimeout(() => {
-      overlay.classList.remove('opacity-0');
-      overlay.classList.add('opacity-100');
-      element.classList.remove('opacity-0', 'scale-95');
-      element.classList.add('opacity-100', 'scale-100');
+      overlay.classList.remove("opacity-0");
+      overlay.classList.add("opacity-100");
+      element.classList.remove("opacity-0", "scale-95");
+      element.classList.add("opacity-100", "scale-100");
     }, 10);
   }
 
@@ -283,14 +283,14 @@ class ModalManager {
 
     const { element, overlay } = modalData;
 
-    overlay.classList.remove('opacity-100');
-    overlay.classList.add('opacity-0');
-    element.classList.remove('opacity-100', 'scale-100');
-    element.classList.add('opacity-0', 'scale-95');
+    overlay.classList.remove("opacity-100");
+    overlay.classList.add("opacity-0");
+    element.classList.remove("opacity-100", "scale-100");
+    element.classList.add("opacity-0", "scale-95");
 
     setTimeout(() => {
-      element.classList.add('hidden');
-      overlay.classList.add('hidden');
+      element.classList.add("hidden");
+      overlay.classList.add("hidden");
     }, 300);
   }
 
@@ -303,16 +303,20 @@ class ModalManager {
   setButtonLoading(id, buttonType, isLoading) {
     const btnId = `${id}${buttonType.charAt(0).toUpperCase() + buttonType.slice(1)}Btn`;
     const button = document.getElementById(btnId);
-    
+
     if (!button) return;
-    
+
     if (isLoading) {
       button.disabled = true;
-      button.classList.add('opacity-60', 'cursor-not-allowed', 'pointer-events-none');
-      
+      button.classList.add(
+        "opacity-60",
+        "cursor-not-allowed",
+        "pointer-events-none",
+      );
+
       // Store original content
       button.dataset.originalContent = button.innerHTML;
-      
+
       // Show loading spinner
       button.innerHTML = `
         <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -323,8 +327,12 @@ class ModalManager {
       `;
     } else {
       button.disabled = false;
-      button.classList.remove('opacity-60', 'cursor-not-allowed', 'pointer-events-none');
-      
+      button.classList.remove(
+        "opacity-60",
+        "cursor-not-allowed",
+        "pointer-events-none",
+      );
+
       // Restore original content
       if (button.dataset.originalContent) {
         button.innerHTML = button.dataset.originalContent;
@@ -337,7 +345,7 @@ class ModalManager {
   showTertiaryButton(id) {
     const tertiaryBtn = document.getElementById(`${id}TertiaryBtn`);
     if (tertiaryBtn) {
-      tertiaryBtn.classList.remove('hidden');
+      tertiaryBtn.classList.remove("hidden");
     }
   }
 
@@ -345,7 +353,7 @@ class ModalManager {
   hideTertiaryButton(id) {
     const tertiaryBtn = document.getElementById(`${id}TertiaryBtn`);
     if (tertiaryBtn) {
-      tertiaryBtn.classList.add('hidden');
+      tertiaryBtn.classList.add("hidden");
     }
   }
 

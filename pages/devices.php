@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="assets/css/page-load-animation.css" />
   <link rel="icon" type="image/x-icon" href="assets/img/logo.png">
   <link rel="stylesheet" href="assets/css/toast.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <script>
     tailwind.config = { darkMode: ["class", '[data-theme="dark"]'] };
   </script>
@@ -32,7 +33,7 @@
         </div>
         <!-- Add LoRa button (admin only — hide with PHP if needed) -->
         <button onclick="openAddLoraModal()"
-          class="flex items-center gap-2 px-5 py-2.5 bg-[linear-gradient(141.34deg,#27C291_4.44%,#20A577_95.56%)] text-white rounded-xl text-sm font-medium hover:opacity-90 transition shadow-md shadow-emerald-200 dark:shadow-emerald-900/40">
+          class="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-2xl text-xs font-medium hover:opacity-90 transition ">
           <i class="uil uil-plus text-lg"></i>
           Add LoRa Device
         </button>
@@ -42,42 +43,52 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 
         <!-- Total Devices -->
-        <div class="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_0_24px_rgba(0,0,0,0.10)] relative overflow-hidden">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-50 dark:bg-emerald-900/60 rounded-full -mr-16 -mt-16"></div>
+        <div
+          class="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_0_24px_rgba(0,0,0,0.10)] relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-50 dark:bg-emerald-900/60 rounded-full -mr-16 -mt-16">
+          </div>
           <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 dark:bg-emerald-900/30">
             <i class="uil uil-processor text-2xl text-emerald-600"></i>
           </div>
-          <div id="statTotal" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—</div>
+          <div id="statTotal" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—
+          </div>
           <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Total Devices</div>
         </div>
 
         <!-- Active Nodes -->
-        <div class="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_0_24px_rgba(0,0,0,0.10)] relative overflow-hidden">
+        <div
+          class="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_0_24px_rgba(0,0,0,0.10)] relative overflow-hidden">
           <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 dark:bg-blue-900/60 rounded-full -mr-16 -mt-16"></div>
           <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/60 rounded-xl flex items-center justify-center mb-4">
             <i class="uil uil-mobile-android text-2xl text-blue-600"></i>
           </div>
-          <div id="statNodes" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—</div>
+          <div id="statNodes" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—
+          </div>
           <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Node Devices</div>
         </div>
 
         <!-- LoRa Devices -->
-        <div class="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_0_24px_rgba(0,0,0,0.10)] relative overflow-hidden">
+        <div
+          class="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_0_24px_rgba(0,0,0,0.10)] relative overflow-hidden">
           <div class="absolute top-0 right-0 w-32 h-32 bg-red-50 dark:bg-red-900/60 rounded-full -mr-16 -mt-16"></div>
           <div class="w-12 h-12 bg-red-100 dark:bg-red-900/60 rounded-xl flex items-center justify-center mb-4">
             <i class="uil uil-wifi-router text-2xl text-red-600"></i>
           </div>
-          <div id="statLora" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—</div>
+          <div id="statLora" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—
+          </div>
           <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">LoRa Devices</div>
         </div>
 
         <!-- Active Gateways -->
-        <div class="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_0_24px_rgba(0,0,0,0.10)] relative overflow-hidden">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-yellow-50 dark:bg-yellow-900/60 rounded-full -mr-16 -mt-16"></div>
+        <div
+          class="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_0_24px_rgba(0,0,0,0.10)] relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-yellow-50 dark:bg-yellow-900/60 rounded-full -mr-16 -mt-16">
+          </div>
           <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/60 rounded-xl flex items-center justify-center mb-4">
             <i class="uil uil-bolt text-2xl text-yellow-600"></i>
           </div>
-          <div id="statGateways" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—</div>
+          <div id="statGateways" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—
+          </div>
           <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Active Gateways</div>
         </div>
 
@@ -104,16 +115,24 @@
               <button id="sortDropdownButton"
                 class="w-full h-full bg-[#F1F5F9] dark:bg-neutral-700 rounded-lg px-4 py-[10px] border-2 border-transparent text-left flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-500 transition">
                 <span id="sortSelectedText" class="text-gray-700 dark:text-gray-200 text-xs">All Types</span>
-                <i id="sortDropdownIcon" class="uil uil-angle-down text-xl text-gray-400 dark:text-gray-200 transition-transform duration-200"></i>
+                <i id="sortDropdownIcon"
+                  class="uil uil-angle-down text-xl text-gray-400 dark:text-gray-200 transition-transform duration-200"></i>
               </button>
               <div id="sortDropdownMenu"
                 class="hidden absolute z-10 w-full mt-2 bg-white dark:bg-neutral-700 dark:border-gray-800 border border-gray-200 rounded-lg shadow-lg overflow-hidden">
                 <div class="py-1">
-                  <button class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-700/20 transition" data-value="AllTypes">All Types</button>
-                  <button class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-700/20 transition" data-value="NodeDevice">Node Devices</button>
-                  <button class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-700/20 transition" data-value="LoRaGateway">All LoRa</button>
-                  <button class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-700/20 transition" data-value="Gateway">Gateways Only</button>
-                  <button class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-700/20 transition" data-value="Repeater">Repeaters Only</button>
+                  <button
+                    class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-700/20 transition"
+                    data-value="AllTypes">All Types</button>
+                  <button
+                    class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-700/20 transition"
+                    data-value="NodeDevice">Node Devices</button>
+                  <button
+                    class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-700/20 transition"
+                    data-value="Gateway">Gateways Only</button>
+                  <button
+                    class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-700/20 transition"
+                    data-value="Repeater">Repeaters Only</button>
                 </div>
               </div>
             </div>
@@ -139,7 +158,7 @@
     </div>
 
     <!-- Toast -->
-    <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-3 max-w-md w-full"></div>
+    <div id="toastContainer" class="fixed top-4 right-4 z-[99999] space-y-3 max-w-md w-full"></div>
   </main>
 
   <script src="assets/js/sidebar.js"></script>
