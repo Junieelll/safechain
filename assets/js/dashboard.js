@@ -987,5 +987,118 @@ function updateDateTime() {
   }
 }
 
+// ============================================
+// LORA DEVICE MARKERS
+// ============================================
+
+const loraMarkers   = { gateway: [], repeater: [] };
+const loraCircles   = { gateway: [], repeater: [] };
+const loraVisible   = { gateway: true, repeater: true };
+
+const gatewayIcon = L.divIcon({
+  className: '',
+  html: `<div style="
+    width:35px;height:35px;
+    background:linear-gradient(141.34deg,#27C291 4.44%,#20A577 95.56%);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.35);
+    border:2px solid white;
+  ">
+    <i class="uil uil-wifi-router" style="color:white;font-size:16px;"></i>
+  </div>`,
+  iconSize:   [35, 35],
+  iconAnchor: [17, 17],
+});
+
+const repeaterIcon = L.divIcon({
+  className: '',
+  html: `<div style="
+    width:35px;height:35px;
+    background:linear-gradient(141.34deg,#3B82F6 4.44%,#1D4ED8 95.56%);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.35);
+    border:2px solid white;
+  ">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white">
+      <circle cx="12" cy="11" r="1.5"/>
+      <path d="M12 12.5 L12 17" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <path d="M9.5 8.5a3.5 3.5 0 0 0 0 5" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <path d="M14.5 8.5a3.5 3.5 0 0 1 0 5" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <path d="M7 6a6.5 6.5 0 0 0 0 10" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <path d="M17 6a6.5 6.5 0 0 1 0 10" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+    </svg>
+  </div>`,
+  iconSize:   [35, 35],
+  iconAnchor: [17, 17],
+});
+
+async function fetchLoraDevices() {
+  try {
+    const res    = await fetch('api/devices/index.php?action=list');
+    const json   = await res.json();
+    if (!json.success) return;
+
+    // Clear existing
+    ['gateway', 'repeater'].forEach(type => {
+      loraMarkers[type].forEach(m => map.removeLayer(m));
+      loraCircles[type].forEach(c => map.removeLayer(c));
+      loraMarkers[type] = [];
+      loraCircles[type] = [];
+    });
+
+    json.data.lora.forEach(device => {
+      if (!device.lat || !device.lng || device.status !== 'active') return;
+
+      const type   = device.device_type === 'gateway' ? 'gateway' : 'repeater';
+      const icon   = type === 'gateway' ? gatewayIcon : repeaterIcon;
+      const color  = type === 'gateway' ? '#27C291' : '#3B82F6';
+
+      const marker = L.marker([device.lat, device.lng], { icon });
+      marker.bindPopup(`
+        <div style="min-width:160px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px">${device.device_id}</div>
+          <div style="font-size:11px;color:#6b7280;margin-bottom:2px">${device.name}</div>
+          <div style="font-size:11px;color:#6b7280">${device.location_label || ''}</div>
+          <div style="font-size:11px;margin-top:6px">
+            <span style="color:${color};font-weight:500">${type === 'gateway' ? 'Gateway' : 'Repeater'}</span>
+            · ${device.signal || '—'}
+          </div>
+        </div>
+      `);
+
+      if (loraVisible[type]) marker.addTo(map);
+      loraMarkers[type].push(marker);
+
+      // Coverage circle
+      if (device.coverage_radius) {
+        const circle = L.circle([device.lat, device.lng], {
+          radius:      device.coverage_radius,
+          color,
+          weight:       1.5,
+          opacity:      0.6,
+          fillColor:   color,
+          fillOpacity:  0.08,
+        });
+        if (loraVisible[type]) circle.addTo(map);
+        loraCircles[type].push(circle);
+      }
+    });
+  } catch (err) {
+    console.error('[LoRa]', err);
+  }
+}
+
+function toggleLoraLayer(type) {
+  loraVisible[type] = !loraVisible[type];
+
+  loraMarkers[type].forEach(m => loraVisible[type] ? m.addTo(map) : map.removeLayer(m));
+  loraCircles[type].forEach(c => loraVisible[type] ? c.addTo(map) : map.removeLayer(c));
+}
+
+// Fetch once on load
+fetchLoraDevices();
+
 updateDateTime();
 setInterval(updateDateTime, 1000);

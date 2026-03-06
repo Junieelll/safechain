@@ -142,49 +142,54 @@ function enc(d) {
 // RENDER
 // ─────────────────────────────────────────────────────────────────────────────
 function renderDevices() {
-  const container = document.getElementById('devicesContainer');
-  const filtered  = getFiltered();
+  const container = document.getElementById("devicesContainer");
+  const filtered = getFiltered();
   const totalPages = Math.ceil(filtered.length / deviceItemsPerPage);
   const startIndex = (devicePage - 1) * deviceItemsPerPage;
-  const pageData   = filtered.slice(startIndex, startIndex + deviceItemsPerPage);
+  const pageData = filtered.slice(startIndex, startIndex + deviceItemsPerPage);
 
   const empty = `
-    <div class="${currentView === 'grid' ? 'col-span-full' : ''} flex flex-col items-center justify-center py-16 text-gray-400 dark:text-neutral-500">
+    <div class="${currentView === "grid" ? "col-span-full" : ""} flex flex-col items-center justify-center py-16 text-gray-400 dark:text-neutral-500">
       <i class="uil uil-search text-6xl mb-4 opacity-30"></i>
       <p class="text-lg font-medium">No devices found</p>
       <p class="text-sm">Try adjusting your search or filter</p>
     </div>`;
 
-  container.style.opacity = '0';
+  container.style.opacity = "0";
 
   setTimeout(() => showLoadingSkeleton(), 300);
 
   setTimeout(() => {
-    if (currentView === 'grid') {
-      container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
-      container.innerHTML = pageData.length ? pageData.map(gridCard).join('') : empty;
+    if (currentView === "grid") {
+      container.className =
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+      container.innerHTML = pageData.length
+        ? pageData.map(gridCard).join("")
+        : empty;
     } else {
-      container.className = 'flex flex-col gap-4';
-      container.innerHTML = pageData.length ? pageData.map(listCard).join('') : empty;
+      container.className = "flex flex-col gap-4";
+      container.innerHTML = pageData.length
+        ? pageData.map(listCard).join("")
+        : empty;
     }
-    container.style.opacity = '1';
+    container.style.opacity = "1";
     renderDevicePagination(totalPages);
   }, 800);
 }
 
 function renderDevicePagination(totalPages) {
-  const paginationContainer = document.getElementById('devicePagination');
+  const paginationContainer = document.getElementById("devicePagination");
   if (!paginationContainer) return;
 
   if (totalPages <= 1) {
-    paginationContainer.innerHTML = '';
+    paginationContainer.innerHTML = "";
     return;
   }
 
   let html = `
     <button onclick="changeDevicePage(${devicePage - 1})"
-      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-neutral-700 text-gray-600 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20 transition-colors shadow-sm ${devicePage === 1 ? 'opacity-50 cursor-not-allowed' : ''}"
-      ${devicePage === 1 ? 'disabled' : ''}>
+      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-neutral-700 text-gray-600 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20 transition-colors shadow-sm ${devicePage === 1 ? "opacity-50 cursor-not-allowed" : ""}"
+      ${devicePage === 1 ? "disabled" : ""}>
       <i class="uil uil-angle-left text-xl"></i>
     </button>
     <div class="bg-[#F1F5F9] dark:bg-neutral-700 rounded-full p-1 flex items-center gap-1">`;
@@ -195,8 +200,8 @@ function renderDevicePagination(totalPages) {
         <button onclick="changeDevicePage(${i})"
           class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors ${
             devicePage === i
-              ? 'bg-emerald-500 text-white shadow-md'
-              : 'text-neutral-700 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20'
+              ? "bg-emerald-500 text-white shadow-md"
+              : "text-neutral-700 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20"
           }">
           ${i}
         </button>`;
@@ -205,13 +210,16 @@ function renderDevicePagination(totalPages) {
     html += `
       <button onclick="changeDevicePage(1)"
         class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors ${
-          devicePage === 1 ? 'bg-emerald-500 text-white shadow-md' : 'text-neutral-700 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20'
+          devicePage === 1
+            ? "bg-emerald-500 text-white shadow-md"
+            : "text-neutral-700 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20"
         }">1</button>`;
 
-    if (devicePage > 3) html += `<span class="px-2 text-gray-500 font-medium text-sm">...</span>`;
+    if (devicePage > 3)
+      html += `<span class="px-2 text-gray-500 font-medium text-sm">...</span>`;
 
     let start = Math.max(2, devicePage - 1);
-    let end   = Math.min(totalPages - 1, devicePage + 1);
+    let end = Math.min(totalPages - 1, devicePage + 1);
     if (devicePage <= 3) end = 4;
     if (devicePage >= totalPages - 2) start = totalPages - 3;
 
@@ -219,26 +227,31 @@ function renderDevicePagination(totalPages) {
       html += `
         <button onclick="changeDevicePage(${i})"
           class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors ${
-            devicePage === i ? 'bg-emerald-500 text-white shadow-md' : 'text-neutral-700 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20'
+            devicePage === i
+              ? "bg-emerald-500 text-white shadow-md"
+              : "text-neutral-700 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20"
           }">
           ${i}
         </button>`;
     }
 
-    if (devicePage < totalPages - 2) html += `<span class="px-2 text-gray-500 font-medium text-sm">...</span>`;
+    if (devicePage < totalPages - 2)
+      html += `<span class="px-2 text-gray-500 font-medium text-sm">...</span>`;
 
     html += `
       <button onclick="changeDevicePage(${totalPages})"
         class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors ${
-          devicePage === totalPages ? 'bg-emerald-500 text-white shadow-md' : 'text-neutral-700 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20'
+          devicePage === totalPages
+            ? "bg-emerald-500 text-white shadow-md"
+            : "text-neutral-700 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20"
         }">${totalPages}</button>`;
   }
 
   html += `
     </div>
     <button onclick="changeDevicePage(${devicePage + 1})"
-      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-neutral-700 text-gray-600 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20 transition-colors shadow-sm ${devicePage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}"
-      ${devicePage === totalPages ? 'disabled' : ''}>
+      class="w-9 h-9 flex items-center justify-center rounded-full bg-[#F1F5F9] dark:bg-neutral-700 text-gray-600 dark:text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-700/20 transition-colors shadow-sm ${devicePage === totalPages ? "opacity-50 cursor-not-allowed" : ""}"
+      ${devicePage === totalPages ? "disabled" : ""}>
       <i class="uil uil-angle-right text-xl"></i>
     </button>`;
 
@@ -475,13 +488,16 @@ function listCard(d) {
 // SKELETON
 // ─────────────────────────────────────────────────────────────────────────────
 function renderSkeletonLoading() {
-  const c = document.getElementById('devicesContainer');
-  c.style.opacity = '0';
+  const c = document.getElementById("devicesContainer");
+  c.style.opacity = "0";
 
   setTimeout(() => {
-    if (currentView === 'grid') {
-      c.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
-      c.innerHTML = Array(6).fill(null).map((_, i) => `
+    if (currentView === "grid") {
+      c.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+      c.innerHTML = Array(6)
+        .fill(null)
+        .map(
+          (_, i) => `
         <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 border-2 border-transparent shadow-[0_0_24px_rgba(0,0,0,0.10)]">
           <div class="flex items-start gap-4 mb-6">
             <div class="w-11 h-11 bg-gray-200 dark:bg-neutral-700 rounded-xl animate-pulse"></div>
@@ -498,10 +514,15 @@ function renderSkeletonLoading() {
             <div class="flex-1 h-9 bg-gray-100 dark:bg-neutral-700 rounded-lg animate-pulse"></div>
             <div class="flex-1 h-9 bg-gray-100 dark:bg-neutral-700 rounded-lg animate-pulse"></div>
           </div>
-        </div>`).join('');
+        </div>`,
+        )
+        .join("");
     } else {
-      c.className = 'flex flex-col gap-4';
-      c.innerHTML = Array(5).fill(null).map((_, i) => `
+      c.className = "flex flex-col gap-4";
+      c.innerHTML = Array(5)
+        .fill(null)
+        .map(
+          (_, i) => `
         <div class="bg-white dark:bg-neutral-800 rounded-3xl p-5 border-2 border-transparent shadow-[0_0_24px_rgba(0,0,0,0.10)]">
           <div class="flex items-center gap-5">
             <div class="w-11 h-11 bg-gray-200 dark:bg-neutral-700 rounded-xl flex-shrink-0 animate-pulse"></div>
@@ -524,10 +545,12 @@ function renderSkeletonLoading() {
               <div class="h-9 w-24 bg-gray-100 dark:bg-neutral-700 rounded-xl animate-pulse"></div>
             </div>
           </div>
-        </div>`).join('');
+        </div>`,
+        )
+        .join("");
     }
 
-    c.style.opacity = '1';
+    c.style.opacity = "1";
   }, 100);
 }
 
@@ -1332,7 +1355,8 @@ const activeDropdownClasses = [
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById('devicesContainer').style.transition = 'opacity 0.3s ease-in-out';
+  document.getElementById("devicesContainer").style.transition =
+    "opacity 0.3s ease-in-out";
   const dropBtn = document.getElementById("sortDropdownButton");
   const dropMenu = document.getElementById("sortDropdownMenu");
   const dropIcon = document.getElementById("sortDropdownIcon");

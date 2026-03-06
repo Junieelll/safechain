@@ -42,9 +42,7 @@ if (!AuthChecker::isLoggedIn()) {
 
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/includes/sidebar.php'; ?>
 
-    <main
-        id="mainContent"
-        class="transition-all duration-500 ease-in-out ml-[302px] mr-[360px] flex-1 p-8">
+    <main id="mainContent" class="transition-all duration-500 ease-in-out ml-[302px] mr-[360px] flex-1 p-8">
         <div class="left-panel w-full">
             <div class="header flex flex-col items-end">
                 <h1 class="text-sm font-medium mb-1 dark:text-white/90">
@@ -59,48 +57,35 @@ if (!AuthChecker::isLoggedIn()) {
                 <div id="map" class="rounded-2xl"></div>
                 <div class="map-controls flex flex-col gap-3">
                     <div class="zoom-controls flex flex-col gap-0.5 overflow-hidden p-0.5">
-                        <button
-                            class="map-btn flex items-center justify-center dark:border-gray-600"
-                            id="zoomIn"
+                        <button class="map-btn flex items-center justify-center dark:border-gray-600" id="zoomIn"
                             title="Zoom in">
                             <i class="uil uil-plus"></i>
                         </button>
-                        <button
-                            class="map-btn flex items-center justify-center dark:border-gray-600"
-                            id="zoomOut"
+                        <button class="map-btn flex items-center justify-center dark:border-gray-600" id="zoomOut"
                             title="Zoom out">
                             <i class="uil uil-minus"></i>
                         </button>
                     </div>
 
-                    <div class="filter-controls flex flex-col items-center text-white gap-0.5 rounded-[50px] py-1.5 dark:border-gray-600">
-                        <button
-                            class="filter-btn active flex items-center justify-center"
-                            id="filterFire"
-                            title="Fire Incidents"
-                            data-filter="fire">
+                    <div
+                        class="filter-controls flex flex-col items-center text-white gap-0.5 rounded-[50px] py-1.5 dark:border-gray-600">
+                        <button class="filter-btn active flex items-center justify-center" id="filterFire"
+                            title="Fire Incidents" data-filter="fire">
                             <i class="uil uil-fire"></i>
                         </button>
-                        <button
-                            class="filter-btn active flex items-center justify-center"
-                            id="filterCrime"
-                            title="Crime Incidents"
-                            data-filter="crime">
+                        <button class="filter-btn active flex items-center justify-center" id="filterCrime"
+                            title="Crime Incidents" data-filter="crime">
                             <i class="uil uil-shield-plus"></i>
                         </button>
-                        <button
-                            class="filter-btn active flex items-center justify-center"
-                            id="filterFlood"
-                            title="Flood Incidents"
-                            data-filter="flood">
+                        <button class="filter-btn active flex items-center justify-center" id="filterFlood"
+                            title="Flood Incidents" data-filter="flood">
                             <i class="uil uil-water"></i>
                         </button>
                     </div>
 
                     <button
                         class="map-btn rounded-full w-12 h-12 text-2xl flex items-center justify-center dark:border-gray-600"
-                        id="locate"
-                        title="My location">
+                        id="locate" title="My location">
                         <i class="uil uil-crosshairs"></i>
                     </button>
                     <div class="border-t border-white/20 my-1 w-8 mx-auto"></div>
@@ -108,38 +93,59 @@ if (!AuthChecker::isLoggedIn()) {
                     <div class="heatmap-controls flex flex-col items-center gap-3 relative">
                         <button
                             class="map-btn rounded-full w-12 h-12 text-2xl flex items-center justify-center dark:border-gray-600 transition-all"
-                            id="heatmapMenuToggle"
-                            title="Heatmap Controls">
+                            id="heatmapMenuToggle" title="Heatmap Controls">
                             <i class="uil uil-ellipsis-h"></i>
                         </button>
 
-                        <div
-                            id="heatmapControlsContainer"
+                        <div id="heatmapControlsContainer"
                             class="heatmap-controls-container hidden flex-col gap-0.5 rounded-xl p-2 dark:border-neutral-400">
-                            <p class="font-medium text-nowrap text-xs text-neutral-600 dark:text-neutral-200 p-2">TOGGLE HEATMAP</p>
+                            <p class="font-medium text-nowrap text-xs text-neutral-600 dark:text-neutral-200 p-2">TOGGLE
+                                HEATMAP</p>
                             <button
                                 class="filter-btn active flex items-center px-2 py-1 rounded-lg dark:text-neutral-200"
-                                id="toggleFireHeatmap"
-                                title="Fire Heatmap"
-                                data-heatmap="fire">
+                                id="toggleFireHeatmap" title="Fire Heatmap" data-heatmap="fire">
                                 <i class="uil uil-fire"></i>
                                 <span class="heatmap-btn-text">Fire</span>
                             </button>
-                            <button
-                                class="filter-btn active flex items-center px-2 py-1 rounded-lg"
-                                id="toggleCrimeHeatmap"
-                                title="Crime Heatmap"
-                                data-heatmap="crime">
+                            <button class="filter-btn active flex items-center px-2 py-1 rounded-lg"
+                                id="toggleCrimeHeatmap" title="Crime Heatmap" data-heatmap="crime">
                                 <i class="uil uil-shield-plus"></i>
                                 <span class="heatmap-btn-text">Crime</span>
                             </button>
-                            <button
-                                class="filter-btn active flex items-center px-2 py-1 rounded-lg"
-                                id="toggleFloodHeatmap"
-                                title="Flood Heatmap"
-                                data-heatmap="flood">
+                            <button class="filter-btn active flex items-center px-2 py-1 rounded-lg"
+                                id="toggleFloodHeatmap" title="Flood Heatmap" data-heatmap="flood">
                                 <i class="uil uil-water"></i>
                                 <span class="heatmap-btn-text">Flood</span>
+                            </button>
+                            <div class="border-t border-gray-200 dark:border-neutral-600 my-1 mx-1"></div>
+                            <p class="font-medium text-nowrap text-xs text-neutral-600 dark:text-neutral-200 p-2">TOGGLE
+                                LORA</p>
+                            <button
+                                class="filter-btn active flex items-center px-2 py-1 rounded-lg dark:text-neutral-200"
+                                id="toggleGateway" title="LoRa Gateways"
+                                onclick="toggleLoraLayer('gateway'); this.classList.toggle('active');">
+                                <i class="uil uil-wifi-router"></i>
+                                <span class="heatmap-btn-text">Gateway</span>
+                            </button>
+                            <button
+                                class="filter-btn active flex items-center px-2 py-1 rounded-lg dark:text-neutral-200"
+                                id="toggleRepeater" title="LoRa Repeaters"
+                                onclick="toggleLoraLayer('repeater'); this.classList.toggle('active');">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="currentColor" style="margin-right:6px;flex-shrink:0">
+                                    <circle cx="12" cy="11" r="1.5" />
+                                    <path d="M12 12.5 L12 17" stroke="currentColor" stroke-width="1.8"
+                                        stroke-linecap="round" fill="none" />
+                                    <path d="M9.5 8.5a3.5 3.5 0 0 0 0 5" stroke="currentColor" stroke-width="1.8"
+                                        stroke-linecap="round" fill="none" />
+                                    <path d="M14.5 8.5a3.5 3.5 0 0 1 0 5" stroke="currentColor" stroke-width="1.8"
+                                        stroke-linecap="round" fill="none" />
+                                    <path d="M7 6a6.5 6.5 0 0 0 0 10" stroke="currentColor" stroke-width="1.8"
+                                        stroke-linecap="round" fill="none" />
+                                    <path d="M17 6a6.5 6.5 0 0 1 0 10" stroke="currentColor" stroke-width="1.8"
+                                        stroke-linecap="round" fill="none" />
+                                </svg>
+                                <span class="heatmap-btn-text">Repeater</span>
                             </button>
                         </div>
                     </div>
@@ -154,20 +160,17 @@ if (!AuthChecker::isLoggedIn()) {
                     </p>
 
                     <div class="relative">
-                        <button
-                            id="yearDropdownBtn"
+                        <button id="yearDropdownBtn"
                             class="bg-white dark:bg-neutral-800 dark:border-neutral-700 dark:text-gray-400 border border-gray-300 rounded-lg px-4 py-2 pr-10 text-sm font-medium text-gray-700 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#01af78] focus:border-transparent transition-all flex items-center gap-2 min-w-[100px]">
                             <i class="uil uil-calendar-alt"></i>
                             <span id="selectedYear">2024</span>
-                            <i
-                                id="yearDropdownIcon"
+                            <i id="yearDropdownIcon"
                                 class="uil uil-angle-down dark:text-gray-400 absolute right-3 text-gray-600 transition-transform duration-200"></i>
                         </button>
 
-                        <div
-                            id="yearDropdownMenu"
+                        <div id="yearDropdownMenu"
                             class="hidden absolute top-full right-0 mt-2 w-full bg-white dark:bg-neutral-800 dark:border-gray-600 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.15)] overflow-hidden z-50 border border-gray-200">
-                            
+
                         </div>
                     </div>
                 </div>
@@ -179,8 +182,7 @@ if (!AuthChecker::isLoggedIn()) {
         </div>
     </main>
 
-    <aside
-        id="rightPanel"
+    <aside id="rightPanel"
         class="fixed right-0 top-0 w-[360px] h-screen bg-white dark:bg-neutral-800 backdrop-blur-lg p-6 transition-all duration-500 ease-in-out flex flex-col z-40">
         <div class="flex items-center justify-between mb-6 flex-shrink-0">
             <h2 class="text-base font-semibold text-[#27C291] dark:text-emerald-600">
