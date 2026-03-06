@@ -65,7 +65,7 @@ function mobile_authenticate(): array
     // ── 4. Return user payload ─────────────────────────────────────────────
     return [
         'id'       => $payload['user_id'],
-        'name'     => $payload['username'],
+        'name'     => $payload['name'],
         'username' => $payload['username'],
         'role'     => $payload['role'],
     ];
