@@ -157,10 +157,10 @@ function showLoadingSkeleton() {
 // Helper Functions
 function getTypeColor(type) {
   const colors = {
-    fire: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-600",
-    flood: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-600",
+    fire: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-500",
+    flood: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-500",
     crime:
-      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-600",
+      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-500",
   };
   return (
     colors[type] ||
@@ -340,7 +340,7 @@ function renderTable() {
         row.style.animationDelay = `${index * 0.05}s`;
 
         row.innerHTML = `
-          <td class="px-3 md:px-6 py-3 md:py-4"><span class="text-xs font-medium text-blue-600 dark:text-blue-800">${
+          <td class="px-3 md:px-6 py-3 md:py-4"><span class="text-xs font-medium text-blue-600 dark:text-neutral-300">${
             incident.id
           }</span></td>
           <td class="px-3 md:px-6 py-3 md:py-4">
