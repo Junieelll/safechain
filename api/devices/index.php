@@ -1,0 +1,180 @@
+<?php
+// api/devices/index.php
+// GET  ?action=list           → fetch all node devices + lora devices + stats
+// POST ?action=add-lora       → add a new LoRa gateway/repeater
+// POST ?action=deactivate-lora → deactivate a lora device
+
+require_once $_SERVER['DOCUMENT_ROOT'] . '/includes/auth_helper.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/includes/db.php'; // provides $conn
+
+header('Content-Type: application/json');
+
+// Handle CORS preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200); exit;
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+AuthChecker::requireApiAuth();
+AuthChecker::requireApiAnyRole([Roles::ADMIN, Roles::BPSO]);
+
+$userId = AuthChecker::getUserId();
+$role   = AuthChecker::getUserRole();
+$method = $_SERVER['REQUEST_METHOD'];
+$action = $_GET['action'] ?? 'list';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function jsonSuccess($data = null, string $msg = 'Success', int $code = 200): void {
+    http_response_code($code);
+    echo json_encode(['success' => true, 'message' => $msg, 'data' => $data]);
+    exit;
+}
+function jsonError(string $msg = 'Error', int $code = 400, $errors = null): void {
+    http_response_code($code);
+    echo json_encode(['success' => false, 'message' => $msg, 'errors' => $errors]);
+    exit;
+}
+
+// ── GET list ──────────────────────────────────────────────────────────────────
+if ($method === 'GET' && $action === 'list') {
+
+    // Node (keychain) devices
+    $nodeStmt = $conn->prepare("
+        SELECT
+            d.device_id,
+            d.name        AS device_name,
+            d.bt_remote_id,
+            d.battery,
+            d.created_at,
+            r.resident_id,
+            r.name        AS owner_name,
+            r.address,
+            r.contact,
+            r.registered_date,
+            r.profile_picture_url,
+            r.medical_conditions
+        FROM devices d
+        LEFT JOIN residents r ON d.resident_id = r.resident_id
+        WHERE (r.is_archived = 0 OR r.is_archived IS NULL)
+        ORDER BY d.created_at DESC
+    ");
+    $nodeStmt->execute();
+    $nodes = $nodeStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $nodeStmt->close();
+
+    foreach ($nodes as &$n) {
+        $n['medical_conditions'] = !empty($n['medical_conditions'])
+            ? (json_decode($n['medical_conditions'], true) ?? [])
+            : [];
+    }
+    unset($n);
+
+    // LoRa devices
+    $loraStmt = $conn->prepare("
+        SELECT id, device_id, device_type, name,
+               location_label, lat, lng,
+               signal, status, coverage_radius,
+               firmware, frequency, install_date,
+               notes, last_seen, created_at, updated_at
+        FROM lora_devices
+        ORDER BY created_at DESC
+    ");
+    $loraStmt->execute();
+    $lora = $loraStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $loraStmt->close();
+
+    $totalNodes     = count($nodes);
+    $totalLora      = count($lora);
+    $activeGateways = count(array_filter($lora, fn($d) =>
+        $d['status'] === 'active' && $d['device_type'] === 'gateway'
+    ));
+
+    jsonSuccess([
+        'nodes' => $nodes,
+        'lora'  => $lora,
+        'stats' => [
+            'total'           => $totalNodes + $totalLora,
+            'total_nodes'     => $totalNodes,
+            'total_lora'      => $totalLora,
+            'active_gateways' => $activeGateways,
+        ],
+    ]);
+}
+
+// ── POST add-lora ─────────────────────────────────────────────────────────────
+elseif ($method === 'POST' && $action === 'add-lora') {
+
+    if ($role !== Roles::ADMIN) {
+        jsonError('Only admins can add LoRa devices', 403);
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    $name            = trim($input['name']            ?? '');
+    $device_type     = trim($input['device_type']     ?? 'gateway');
+    $location_label  = trim($input['location_label']  ?? '');
+    $lat             = isset($input['lat'])  ? (float)$input['lat']  : null;
+    $lng             = isset($input['lng'])  ? (float)$input['lng']  : null;
+    $signal          = $input['signal']          ?? 'Good';
+    $coverage_radius = (int)($input['coverage_radius'] ?? 300);
+    $firmware        = trim($input['firmware']        ?? '');
+    $frequency       = trim($input['frequency']       ?? '915 MHz');
+    $install_date    = !empty($input['install_date']) ? $input['install_date'] : date('Y-m-d');
+    $notes           = trim($input['notes']           ?? '');
+
+    $errors = [];
+    if (empty($name))                                                $errors[] = 'Name is required';
+    if (!in_array($device_type, ['gateway', 'repeater']))            $errors[] = 'Invalid device type';
+    if ($lat === null || $lng === null)                               $errors[] = 'Location pin is required — tap the map';
+    if (!in_array($signal, ['Excellent', 'Good', 'Fair', 'Weak']))   $errors[] = 'Invalid signal value';
+
+    if (!empty($errors)) jsonError('Validation failed', 422, $errors);
+
+    // device_id auto-generated by DB trigger — pass empty string
+    $ins = $conn->prepare("
+        INSERT INTO lora_devices
+            (device_id, device_type, name, location_label, lat, lng,
+             signal, status, coverage_radius, firmware, frequency, install_date, notes)
+        VALUES ('', ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?)
+    ");
+    $ins->bind_param(
+        "sssddsissss",
+        $device_type, $name, $location_label,
+        $lat, $lng, $signal,
+        $coverage_radius, $firmware, $frequency,
+        $install_date, $notes
+    );
+
+    if ($ins->execute()) {
+        $newId = $conn->insert_id;
+        $fetch = $conn->prepare("SELECT * FROM lora_devices WHERE id = ?");
+        $fetch->bind_param("i", $newId);
+        $fetch->execute();
+        $newDevice = $fetch->get_result()->fetch_assoc();
+        $fetch->close();
+        jsonSuccess($newDevice, 'LoRa device added successfully', 201);
+    } else {
+        jsonError('Failed to add LoRa device: ' . $conn->error, 500);
+    }
+}
+
+// ── POST deactivate-lora ──────────────────────────────────────────────────────
+elseif ($method === 'POST' && $action === 'deactivate-lora') {
+
+    if ($role !== Roles::ADMIN) {
+        jsonError('Only admins can deactivate devices', 403);
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    $id    = (int)($input['id'] ?? 0);
+
+    if (!$id) jsonError('id is required', 422);
+
+    $upd = $conn->prepare("UPDATE lora_devices SET status = 'inactive' WHERE id = ?");
+    $upd->bind_param("i", $id);
+    $upd->execute() ? jsonSuccess(null, 'LoRa device deactivated') : jsonError('Failed to deactivate', 500);
+}
+
+else {
+    jsonError('Invalid action or method', 405);
+}
