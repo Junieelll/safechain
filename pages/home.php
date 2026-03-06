@@ -131,7 +131,7 @@ if (!AuthChecker::isLoggedIn()) {
                                 class="filter-btn active flex items-center px-2 py-1 rounded-lg dark:text-neutral-200"
                                 id="toggleRepeater" title="LoRa Repeaters"
                                 onclick="toggleLoraLayer('repeater'); this.classList.toggle('active');">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="36" viewBox="0 0 24 24"
                                     fill="currentColor" style="margin-right:6px;flex-shrink:0">
                                     <circle cx="12" cy="11" r="1.5" />
                                     <path d="M12 12.5 L12 17" stroke="currentColor" stroke-width="1.8"

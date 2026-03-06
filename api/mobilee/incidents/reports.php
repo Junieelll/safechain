@@ -90,7 +90,7 @@ function handle_create(mysqli $conn, array $user): void
 
     // ── Map fields ─────────────────────────────────────────────────────────
     $incident_id = $body['incident_id'];
-    $submitted_by = $user['username'];
+    $submitted_by = $user['name'];
     $submitted_by_id = $user['id'];
     $description = $body['description'];
     $severity_level = $body['severity_level'];
