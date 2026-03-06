@@ -45,13 +45,13 @@ function handle_get(mysqli $conn, array $user): void
     }
 
     $stmt = $conn->prepare('
-        SELECT r.*, i.type as incident_type, i.location, i.date_time
-        FROM incident_reports r
-        LEFT JOIN incidents i ON i.id = r.incident_id
-        WHERE r.submitted_by = ?
-        ORDER BY r.created_at DESC
-    ');
-    $stmt->bind_param('s', $user['username']);
+    SELECT r.*, i.type as incident_type, i.location, i.date_time
+    FROM incident_reports r
+    LEFT JOIN incidents i ON i.id = r.incident_id
+    WHERE r.submitted_by_id = ?
+    ORDER BY r.created_at DESC
+');
+    $stmt->bind_param('s', $user['id']);
     $stmt->execute();
     $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
@@ -112,10 +112,10 @@ function handle_create(mysqli $conn, array $user): void
     $follow_up_notes = ($body['follow_up_notes'] ?? null);
     $recommendations = ($body['recommendations'] ?? null);
     $type_specific_data = isset($body['type_specific_data']) && !empty($body['type_specific_data'])
-    ? (is_string($body['type_specific_data']) 
-        ? $body['type_specific_data']           // already JSON string
-        : json_encode($body['type_specific_data'])) // array/object
-    : null;
+        ? (is_string($body['type_specific_data'])
+            ? $body['type_specific_data']           // already JSON string
+            : json_encode($body['type_specific_data'])) // array/object
+        : null;
 
     // ── Insert ─────────────────────────────────────────────────────────────
     $stmt = $conn->prepare('
