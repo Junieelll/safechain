@@ -126,11 +126,14 @@ async function fetchLiveIncidents() {
               knownIncidentIds.add(incident.id);
               localStorage.setItem(
                 "knownIncidentIds",
-                JSON.stringify([...knownIncidentIds])
+                JSON.stringify([...knownIncidentIds]),
               );
 
               if (!isInitialLoad && typeof showToast === "function") {
-                showToast("info", `New ${type} incident: ${incident.user.name}`);
+                showToast(
+                  "info",
+                  `New ${type} incident: ${incident.user.name}`,
+                );
                 // playNotificationSound() lives in sidebar.js, available globally
                 if (typeof playNotificationSound === "function") {
                   playNotificationSound();
@@ -179,10 +182,23 @@ function getZoomAdjustedConfig(type) {
   const zoom = map.getZoom();
   const config = { ...heatmapConfigs[type] };
 
-  // Base radius at zoom 16, scales down as you zoom in
-  const baseRadius = { fire: 40, crime: 35, flood: 45 };
-  config.radius = Math.round(baseRadius[type] * Math.pow(2, zoom - 16) * 0.5);
-  config.radius = Math.max(8, Math.min(80, config.radius));
+  // Fixed real-world radius in meters per type
+  const metersRadius = { fire: 150, crime: 120, flood: 180 };
+
+  // Convert meters → pixels at current zoom
+  // At zoom Z, 1 pixel = (156543.03392 * cos(lat)) / 2^Z meters
+  // We use barangay latitude (~14.7158) as reference
+  const lat = 14.7158;
+  const metersPerPixel =
+    (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
+
+  config.radius = Math.round(metersRadius[type] / metersPerPixel);
+  config.radius = Math.max(8, Math.min(60, config.radius));
+  config.blur = Math.round(config.radius * 0.5);
+
+  // Opacity stays consistent regardless of zoom
+  config.minOpacity = 0.35;
+  config.max = 1.0;
 
   return config;
 }
@@ -193,7 +209,10 @@ function updateAllHeatmaps() {
 
     if (heatmapVisible[type]) {
       const heatData = generateHeatmapData(type);
-      heatmapLayers[type] = L.heatLayer(heatData, getZoomAdjustedConfig(type)).addTo(map);
+      heatmapLayers[type] = L.heatLayer(
+        heatData,
+        getZoomAdjustedConfig(type),
+      ).addTo(map);
     }
   });
 }
@@ -221,21 +240,24 @@ function updateHeatmapsForTheme(isDark) {
 const markers = { fire: [], crime: [], flood: [] };
 
 const fireIcon = L.divIcon({
-  className: "custom-marker marker-fire rounded-full flex items-center justify-center",
+  className:
+    "custom-marker marker-fire rounded-full flex items-center justify-center",
   html: '<i class="uil uil-fire"></i>',
   iconSize: [35, 35],
   iconAnchor: [17, 17],
 });
 
 const crimeIcon = L.divIcon({
-  className: "custom-marker marker-crime rounded-full flex items-center justify-center",
+  className:
+    "custom-marker marker-crime rounded-full flex items-center justify-center",
   html: '<i class="uil uil-shield-plus"></i>',
   iconSize: [35, 35],
   iconAnchor: [17, 17],
 });
 
 const floodIcon = L.divIcon({
-  className: "custom-marker marker-flood rounded-full flex items-center justify-center",
+  className:
+    "custom-marker marker-flood rounded-full flex items-center justify-center",
   html: '<i class="uil uil-water"></i>',
   iconSize: [35, 35],
   iconAnchor: [17, 17],
@@ -339,7 +361,6 @@ if (document.readyState === "loading") {
   startPolling();
 }
 
-
 // ============================================
 // RENDER FUNCTIONS
 // ============================================
@@ -435,7 +456,7 @@ function renderEmergencyList() {
     allIncidents = incidentData.all;
   } else {
     allIncidents = ["fire", "crime", "flood"].flatMap(
-      (type) => incidentData[type] || []
+      (type) => incidentData[type] || [],
     );
     allIncidents.sort((a, b) => {
       const dateA = new Date(a.datetime || a.time);
@@ -456,19 +477,25 @@ function renderEmergencyList() {
 
   const colorClasses = {
     red: "bg-red-50 text-red-600 dark:bg-red-900/40 dark:text-red-300",
-    yellow: "bg-yellow-50 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-300",
+    yellow:
+      "bg-yellow-50 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-300",
     blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300",
   };
 
   const statusColors = {
-    pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
-    responding: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-    resolved: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+    pending:
+      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+    responding:
+      "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+    resolved:
+      "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
   };
 
   return `
     <div class="space-y-4">
-      ${allIncidents.map((incident) => `
+      ${allIncidents
+        .map(
+          (incident) => `
         <div onclick="focusIncidentOnMap('${incident.id}', ${incident.lat}, ${incident.lng}, '${incident.type}')"
           class="bg-[#FFFFFF] border border-neutral-300 dark:border-neutral-700 rounded-2xl p-4 space-y-3 text-sm dark:bg-neutral-700 cursor-pointer hover:shadow-lg hover:border-emerald-400 transition-all duration-200">
           <div class="inline-flex items-center gap-2 ${colorClasses[incident.color]} px-3 py-2 rounded-lg">
@@ -497,7 +524,9 @@ function renderEmergencyList() {
             </button>
           </div>
         </div>
-      `).join("")}
+      `,
+        )
+        .join("")}
     </div>
   `;
 }
@@ -536,7 +565,6 @@ function viewIncidentDetails(incidentId) {
   window.location.href = `incidents/details?id=${encodeURIComponent(incidentId)}`;
 }
 
-
 const rightPanel = document.getElementById("rightPanel");
 const rightPanelToggle = document.getElementById("rightPanelToggle");
 const incidentContent = document.getElementById("incidentContent");
@@ -544,7 +572,7 @@ let isRightPanelCollapsed = false;
 
 var map = L.map("map", { maxZoom: 21 }).setView([14.7158532, 121.0403842], 16);
 
-map.on('zoomend', updateAllHeatmaps);
+map.on("zoomend", updateAllHeatmaps);
 
 const isOnline = navigator.onLine;
 
@@ -557,9 +585,10 @@ const darkTileUrl = isOnline
   : "assets/tiles/street-v2-dark/{z}/{x}/{y}.png";
 
 const lightLayer = L.tileLayer(lightTileUrl, {
-     maxZoom: 21,
+  maxZoom: 21,
   maxNativeZoom: 21,
-  attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+  attribution:
+    '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
 }).on("tileerror", function (error, tile) {
   const matches = tile.tile.src.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
   if (matches) {
@@ -569,9 +598,10 @@ const lightLayer = L.tileLayer(lightTileUrl, {
 });
 
 const darkLayer = L.tileLayer(darkTileUrl, {
-     maxZoom: 21,
+  maxZoom: 21,
   maxNativeZoom: 21,
-  attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
+  attribution:
+    '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
 }).on("tileerror", function (error, tile) {
   const matches = tile.tile.src.match(/\/(\d+)\/(\d+)\/(\d+)\.png/);
   if (matches) {
@@ -581,8 +611,12 @@ const darkLayer = L.tileLayer(darkTileUrl, {
 });
 
 window.addEventListener("online", () => {
-  lightLayer.setUrl("https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7");
-  darkLayer.setUrl("https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7");
+  lightLayer.setUrl(
+    "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  );
+  darkLayer.setUrl(
+    "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  );
 });
 
 window.addEventListener("offline", () => {
@@ -613,23 +647,28 @@ setTimeout(() => {
   ["fire", "crime", "flood"].forEach((type, typeIndex) => {
     const incidents = incidentData[type] || [];
     incidents.forEach((incident, incidentIndex) => {
-      setTimeout(() => {
-        const marker = L.marker([incident.lat, incident.lng], {
-          icon: iconMap[type],
-          opacity: 0,
-        })
-          .addTo(map)
-          .bindPopup(`<strong>${incident.type}</strong><br>${incident.user.name}`);
+      setTimeout(
+        () => {
+          const marker = L.marker([incident.lat, incident.lng], {
+            icon: iconMap[type],
+            opacity: 0,
+          })
+            .addTo(map)
+            .bindPopup(
+              `<strong>${incident.type}</strong><br>${incident.user.name}`,
+            );
 
-        setTimeout(() => marker.setOpacity(1), 50);
+          setTimeout(() => marker.setOpacity(1), 50);
 
-        marker.on("click", () => {
-          map.setView([incident.lat, incident.lng], 17);
-          marker.openPopup();
-        });
+          marker.on("click", () => {
+            map.setView([incident.lat, incident.lng], 17);
+            marker.openPopup();
+          });
 
-        markers[type].push(marker);
-      }, typeIndex * 300 + incidentIndex * 150);
+          markers[type].push(marker);
+        },
+        typeIndex * 300 + incidentIndex * 150,
+      );
     });
   });
 }, 1000);
@@ -650,7 +689,8 @@ heatmapToggleButtons.forEach((btn) => {
     if (heatmapVisible[heatmapType]) {
       if (heatmapLayers[heatmapType]) heatmapLayers[heatmapType].addTo(map);
     } else {
-      if (heatmapLayers[heatmapType]) map.removeLayer(heatmapLayers[heatmapType]);
+      if (heatmapLayers[heatmapType])
+        map.removeLayer(heatmapLayers[heatmapType]);
     }
   });
 });
@@ -670,7 +710,9 @@ setTimeout(() => {
 // ============================================
 
 document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
-document.getElementById("zoomOut").addEventListener("click", () => map.zoomOut());
+document
+  .getElementById("zoomOut")
+  .addEventListener("click", () => map.zoomOut());
 
 // ============================================
 // USER LOCATION
@@ -736,7 +778,7 @@ document.getElementById("locate").addEventListener("click", () => {
       };
       showToast("error", messages[error.code] || "Could not get your location");
     },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
   );
 });
 
@@ -768,7 +810,9 @@ filterButtons.forEach((btn) => {
 // ============================================
 
 const heatmapMenuToggle = document.getElementById("heatmapMenuToggle");
-const heatmapControlsContainer = document.getElementById("heatmapControlsContainer");
+const heatmapControlsContainer = document.getElementById(
+  "heatmapControlsContainer",
+);
 let isHeatmapMenuOpen = false;
 
 heatmapMenuToggle.addEventListener("click", (e) => {
@@ -809,7 +853,9 @@ heatmapControlsContainer.addEventListener("click", (e) => e.stopPropagation());
 
 async function fetchChartData(year) {
   try {
-    const response = await fetch(`api/dashboard/get_chart_data.php?year=${year}`);
+    const response = await fetch(
+      `api/dashboard/get_chart_data.php?year=${year}`,
+    );
     const result = await response.json();
 
     if (result.success && emergencyChart) {
@@ -833,24 +879,40 @@ function populateYearDropdown(years, selectedYear) {
   const existing = yearDropdownMenu.querySelectorAll(".year-option");
   if (existing.length === years.length) return;
 
-  yearDropdownMenu.innerHTML = years.map(y => `
-    <div class="year-option px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300/80 hover:bg-gray-100 dark:hover:bg-emerald-700/20 cursor-pointer transition-colors ${y == selectedYear ? 'active bg-[#01af78]/10 font-medium text-emerald-600 dark:text-emerald-400' : ''}" data-year="${y}">
+  yearDropdownMenu.innerHTML = years
+    .map(
+      (y) => `
+    <div class="year-option px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300/80 hover:bg-gray-100 dark:hover:bg-emerald-700/20 cursor-pointer transition-colors ${y == selectedYear ? "active bg-[#01af78]/10 font-medium text-emerald-600 dark:text-emerald-400" : ""}" data-year="${y}">
       ${y}
     </div>
-  `).join("");
+  `,
+    )
+    .join("");
 
   // Re-attach click listeners to new elements
-  yearDropdownMenu.querySelectorAll(".year-option").forEach(option => {
+  yearDropdownMenu.querySelectorAll(".year-option").forEach((option) => {
     option.addEventListener("click", (e) => {
       e.stopPropagation();
       const year = option.dataset.year;
 
       selectedYearSpan.textContent = year;
 
-      yearDropdownMenu.querySelectorAll(".year-option").forEach(opt => {
-        opt.classList.remove("active", "bg-[#01af78]/10", "font-medium", "text-emerald-600", "dark:text-emerald-400");
+      yearDropdownMenu.querySelectorAll(".year-option").forEach((opt) => {
+        opt.classList.remove(
+          "active",
+          "bg-[#01af78]/10",
+          "font-medium",
+          "text-emerald-600",
+          "dark:text-emerald-400",
+        );
       });
-      option.classList.add("active", "bg-[#01af78]/10", "font-medium", "text-emerald-600", "dark:text-emerald-400");
+      option.classList.add(
+        "active",
+        "bg-[#01af78]/10",
+        "font-medium",
+        "text-emerald-600",
+        "dark:text-emerald-400",
+      );
 
       yearDropdownMenu.classList.add("hidden");
       yearDropdownIcon.style.transform = "rotate(0deg)";
@@ -866,43 +928,71 @@ setTimeout(() => {
   emergencyChart = new Chart(ctx, {
     type: "line",
     data: {
-      labels: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+      labels: [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ],
       datasets: [
         {
           label: "Fire",
           data: [],
           borderColor: "#ff4444",
           backgroundColor: "rgba(255, 68, 68, 0.1)",
-          tension: 0.4, fill: true, borderWidth: 3,
-          pointRadius: 5, pointHoverRadius: 7,
+          tension: 0.4,
+          fill: true,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointHoverRadius: 7,
           pointBackgroundColor: "#ff4444",
-          pointBorderColor: "#fff", pointBorderWidth: 2,
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
           pointHoverBackgroundColor: "#ff4444",
-          pointHoverBorderColor: "#fff", pointHoverBorderWidth: 3,
+          pointHoverBorderColor: "#fff",
+          pointHoverBorderWidth: 3,
         },
         {
           label: "Flood",
           data: [],
           borderColor: "#3B82F6",
           backgroundColor: "rgba(59, 130, 246, 0.1)",
-          tension: 0.4, fill: true, borderWidth: 3,
-          pointRadius: 5, pointHoverRadius: 7,
+          tension: 0.4,
+          fill: true,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointHoverRadius: 7,
           pointBackgroundColor: "#3B82F6",
-          pointBorderColor: "#fff", pointBorderWidth: 2,
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
           pointHoverBackgroundColor: "#3B82F6",
-          pointHoverBorderColor: "#fff", pointHoverBorderWidth: 3,
+          pointHoverBorderColor: "#fff",
+          pointHoverBorderWidth: 3,
         },
         {
           label: "Crime",
           data: [],
           borderColor: "#FBBF24",
           backgroundColor: "rgba(251, 191, 36, 0.1)",
-          tension: 0.4, fill: true, borderWidth: 3,
-          pointRadius: 5, pointHoverRadius: 7,
+          tension: 0.4,
+          fill: true,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointHoverRadius: 7,
           pointBackgroundColor: "#FBBF24",
-          pointBorderColor: "#fff", pointBorderWidth: 2,
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
           pointHoverBackgroundColor: "#FBBF24",
-          pointHoverBorderColor: "#fff", pointHoverBorderWidth: 3,
+          pointHoverBorderColor: "#fff",
+          pointHoverBorderWidth: 3,
         },
       ],
     },
@@ -914,19 +1004,29 @@ setTimeout(() => {
       plugins: {
         legend: {
           display: true,
-          labels: { usePointStyle: true, pointStyle: "circle", padding: 10, font: { size: 13 } },
+          labels: {
+            usePointStyle: true,
+            pointStyle: "circle",
+            padding: 10,
+            font: { size: 13 },
+          },
         },
         tooltip: {
           backgroundColor: "rgba(0, 0, 0, 0.8)",
-          padding: 12, cornerRadius: 8,
+          padding: 12,
+          cornerRadius: 8,
           titleFont: { size: 14, weight: "600" },
           bodyFont: { size: 13 },
-          displayColors: true, boxWidth: 10, boxHeight: 10, usePointStyle: true,
+          displayColors: true,
+          boxWidth: 10,
+          boxHeight: 10,
+          usePointStyle: true,
         },
       },
       scales: {
         y: {
-          beginAtZero: true, max: 100,
+          beginAtZero: true,
+          max: 100,
           ticks: { stepSize: 25, color: "#94a3b8", font: { size: 12 } },
           grid: { color: "rgba(148, 163, 184, 0.15)", drawBorder: false },
         },
@@ -948,7 +1048,7 @@ setTimeout(() => {
 // YEAR DROPDOWN
 // ============================================
 
-const yearDropdownBtn  = document.getElementById("yearDropdownBtn");
+const yearDropdownBtn = document.getElementById("yearDropdownBtn");
 const yearDropdownMenu = document.getElementById("yearDropdownMenu");
 const yearDropdownIcon = document.getElementById("yearDropdownIcon");
 const selectedYearSpan = document.getElementById("selectedYear");
@@ -956,13 +1056,18 @@ const selectedYearSpan = document.getElementById("selectedYear");
 yearDropdownBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   yearDropdownMenu.classList.toggle("hidden");
-  yearDropdownIcon.style.transform = yearDropdownMenu.classList.contains("hidden")
+  yearDropdownIcon.style.transform = yearDropdownMenu.classList.contains(
+    "hidden",
+  )
     ? "rotate(0deg)"
     : "rotate(180deg)";
 });
 
 document.addEventListener("click", (e) => {
-  if (!yearDropdownBtn.contains(e.target) && !yearDropdownMenu.contains(e.target)) {
+  if (
+    !yearDropdownBtn.contains(e.target) &&
+    !yearDropdownMenu.contains(e.target)
+  ) {
     yearDropdownMenu.classList.add("hidden");
     yearDropdownIcon.style.transform = "rotate(0deg)";
   }
@@ -975,10 +1080,16 @@ document.addEventListener("click", (e) => {
 function updateDateTime() {
   const now = new Date();
   const dateString = now.toLocaleDateString("en-US", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
   const timeString = now.toLocaleTimeString("en-US", {
-    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
   });
 
   const dateTimeElement = document.querySelector(".header p");
@@ -991,12 +1102,12 @@ function updateDateTime() {
 // LORA DEVICE MARKERS
 // ============================================
 
-const loraMarkers   = { gateway: [], repeater: [] };
-const loraCircles   = { gateway: [], repeater: [] };
-const loraVisible   = { gateway: true, repeater: true };
+const loraMarkers = { gateway: [], repeater: [] };
+const loraCircles = { gateway: [], repeater: [] };
+const loraVisible = { gateway: true, repeater: true };
 
 const gatewayIcon = L.divIcon({
-  className: '',
+  className: "",
   html: `<div style="
     width:35px;height:35px;
     background:linear-gradient(141.34deg,#27C291 4.44%,#20A577 95.56%);
@@ -1007,12 +1118,12 @@ const gatewayIcon = L.divIcon({
   ">
     <i class="uil uil-wifi-router" style="color:white;font-size:16px;"></i>
   </div>`,
-  iconSize:   [35, 35],
+  iconSize: [35, 35],
   iconAnchor: [17, 17],
 });
 
 const repeaterIcon = L.divIcon({
-  className: '',
+  className: "",
   html: `<div style="
     width:35px;height:35px;
     background:linear-gradient(141.34deg,#3B82F6 4.44%,#1D4ED8 95.56%);
@@ -1030,40 +1141,40 @@ const repeaterIcon = L.divIcon({
       <path d="M17 6a6.5 6.5 0 0 1 0 10" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none"/>
     </svg>
   </div>`,
-  iconSize:   [35, 35],
+  iconSize: [35, 35],
   iconAnchor: [17, 17],
 });
 
 async function fetchLoraDevices() {
   try {
-    const res    = await fetch('api/devices/index.php?action=list');
-    const json   = await res.json();
+    const res = await fetch("api/devices/index.php?action=list");
+    const json = await res.json();
     if (!json.success) return;
 
     // Clear existing
-    ['gateway', 'repeater'].forEach(type => {
-      loraMarkers[type].forEach(m => map.removeLayer(m));
-      loraCircles[type].forEach(c => map.removeLayer(c));
+    ["gateway", "repeater"].forEach((type) => {
+      loraMarkers[type].forEach((m) => map.removeLayer(m));
+      loraCircles[type].forEach((c) => map.removeLayer(c));
       loraMarkers[type] = [];
       loraCircles[type] = [];
     });
 
-    json.data.lora.forEach(device => {
-      if (!device.lat || !device.lng || device.status !== 'active') return;
+    json.data.lora.forEach((device) => {
+      if (!device.lat || !device.lng || device.status !== "active") return;
 
-      const type   = device.device_type === 'gateway' ? 'gateway' : 'repeater';
-      const icon   = type === 'gateway' ? gatewayIcon : repeaterIcon;
-      const color  = type === 'gateway' ? '#27C291' : '#3B82F6';
+      const type = device.device_type === "gateway" ? "gateway" : "repeater";
+      const icon = type === "gateway" ? gatewayIcon : repeaterIcon;
+      const color = type === "gateway" ? "#27C291" : "#3B82F6";
 
       const marker = L.marker([device.lat, device.lng], { icon });
       marker.bindPopup(`
         <div style="min-width:160px">
           <div style="font-weight:600;font-size:13px;margin-bottom:4px">${device.device_id}</div>
           <div style="font-size:11px;color:#6b7280;margin-bottom:2px">${device.name}</div>
-          <div style="font-size:11px;color:#6b7280">${device.location_label || ''}</div>
+          <div style="font-size:11px;color:#6b7280">${device.location_label || ""}</div>
           <div style="font-size:11px;margin-top:6px">
-            <span style="color:${color};font-weight:500">${type === 'gateway' ? 'Gateway' : 'Repeater'}</span>
-            · ${device.signal || '—'}
+            <span style="color:${color};font-weight:500">${type === "gateway" ? "Gateway" : "Repeater"}</span>
+            · ${device.signal || "—"}
           </div>
         </div>
       `);
@@ -1074,27 +1185,31 @@ async function fetchLoraDevices() {
       // Coverage circle
       if (device.coverage_radius) {
         const circle = L.circle([device.lat, device.lng], {
-          radius:      device.coverage_radius,
+          radius: device.coverage_radius,
           color,
-          weight:       1.5,
-          opacity:      0.6,
-          fillColor:   color,
-          fillOpacity:  0.08,
+          weight: 1.5,
+          opacity: 0.6,
+          fillColor: color,
+          fillOpacity: 0.08,
         });
         if (loraVisible[type]) circle.addTo(map);
         loraCircles[type].push(circle);
       }
     });
   } catch (err) {
-    console.error('[LoRa]', err);
+    console.error("[LoRa]", err);
   }
 }
 
 function toggleLoraLayer(type) {
   loraVisible[type] = !loraVisible[type];
 
-  loraMarkers[type].forEach(m => loraVisible[type] ? m.addTo(map) : map.removeLayer(m));
-  loraCircles[type].forEach(c => loraVisible[type] ? c.addTo(map) : map.removeLayer(c));
+  loraMarkers[type].forEach((m) =>
+    loraVisible[type] ? m.addTo(map) : map.removeLayer(m),
+  );
+  loraCircles[type].forEach((c) =>
+    loraVisible[type] ? c.addTo(map) : map.removeLayer(c),
+  );
 }
 
 // Fetch once on load
