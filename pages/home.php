@@ -121,14 +121,14 @@ if (!AuthChecker::isLoggedIn()) {
                             <p class="font-medium text-nowrap text-xs text-neutral-600 dark:text-neutral-200 p-2">TOGGLE
                                 LORA</p>
                             <button
-                                class="filter-btn active flex items-center px-2 py-1 rounded-lg dark:text-neutral-200"
+                                class="filter-btn flex items-center px-2 py-1 rounded-lg dark:text-neutral-200"
                                 id="toggleGateway" title="LoRa Gateways"
                                 onclick="toggleLoraLayer('gateway'); this.classList.toggle('active');">
                                 <i class="uil uil-wifi-router"></i>
                                 <span class="heatmap-btn-text">Gateway</span>
                             </button>
                             <button
-                                class="filter-btn active flex items-center px-2 py-1 rounded-lg dark:text-neutral-200"
+                                class="filter-btn flex items-center px-2 py-1 rounded-lg dark:text-neutral-200"
                                 id="toggleRepeater" title="LoRa Repeaters"
                                 onclick="toggleLoraLayer('repeater'); this.classList.toggle('active');">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="36" viewBox="0 0 24 24"
