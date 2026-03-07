@@ -26,19 +26,19 @@ match ($method) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /incidents/details.php?id=xxx
-// Joins incidents + residents to get reporter contact
 // ═══════════════════════════════════════════════════════════════════════════
 function handle_get(mysqli $conn, string $id, array $user): void
 {
     $stmt = $conn->prepare("
         SELECT
             i.*,
-            r.contact         AS reporter_contact,
-            r.address         AS reporter_address,
-            r.resident_id     AS reporter_resident_id,
-            f.flag_reason     AS flag_reason,
-            u.name            AS responder_name,
-            u.profile_picture AS responder_avatar
+            r.contact              AS reporter_contact,
+            r.address              AS reporter_address,
+            r.resident_id         AS reporter_resident_id,
+            r.medical_conditions  AS reporter_medical_conditions,
+            f.flag_reason          AS flag_reason,
+            u.name                 AS responder_name,
+            u.profile_picture      AS responder_avatar
         FROM incidents i
         LEFT JOIN residents r ON r.resident_id = i.reporter_id
         LEFT JOIN incident_flags f ON f.incident_id = i.id
@@ -76,8 +76,9 @@ function handle_get(mysqli $conn, string $id, array $user): void
             c.lng,
             c.needs_rescue,
             c.reported_at,
-            res.name    AS name,
-            res.contact AS contact
+            res.name               AS name,
+            res.contact            AS contact,
+            res.medical_conditions AS medical_conditions
         FROM incident_corroborations c
         LEFT JOIN residents res ON res.resident_id = c.resident_id
         WHERE c.incident_id = ?
@@ -91,14 +92,24 @@ function handle_get(mysqli $conn, string $id, array $user): void
     $corroRescueCount = 0;
     while ($corro = $corroResult->fetch_assoc()) {
         if (intval($corro['needs_rescue'])) $corroRescueCount++;
+
+        // medical_conditions is stored as a JSON array string e.g. ["Asthma","Heart Disease"]
+        $rawMedical = $corro['medical_conditions'] ?? null;
+        $medicalConditions = null;
+        if ($rawMedical) {
+            $decoded = json_decode($rawMedical, true);
+            $medicalConditions = is_array($decoded) ? $decoded : null;
+        }
+
         $corroborators[] = [
-            'resident_id'  => $corro['resident_id'],
-            'name'         => $corro['name'] ?? 'Unknown',
-            'contact'      => $corro['contact'] ?? null,
-            'lat'          => $corro['lat'] !== null ? (float) $corro['lat'] : null,
-            'lng'          => $corro['lng'] !== null ? (float) $corro['lng'] : null,
-            'needs_rescue' => (bool) $corro['needs_rescue'],
-            'reported_at'  => $corro['reported_at'],
+            'resident_id'        => $corro['resident_id'],
+            'name'               => $corro['name'] ?? 'Unknown',
+            'contact'            => $corro['contact'] ?? null,
+            'lat'                => $corro['lat'] !== null ? (float) $corro['lat'] : null,
+            'lng'                => $corro['lng'] !== null ? (float) $corro['lng'] : null,
+            'needs_rescue'       => (bool) $corro['needs_rescue'],
+            'reported_at'        => $corro['reported_at'],
+            'medical_conditions' => $medicalConditions,
         ];
     }
     $corroStmt->close();
@@ -115,33 +126,42 @@ function handle_get(mysqli $conn, string $id, array $user): void
 
 function format_detail(array $row, array $corroborators = [], int $rescueCount = 0): array
 {
+    // Parse reporter's medical_conditions JSON string → array or null
+    $rawMedical = $row['reporter_medical_conditions'] ?? null;
+    $reporterMedical = null;
+    if ($rawMedical) {
+        $decoded = json_decode($rawMedical, true);
+        $reporterMedical = is_array($decoded) && count($decoded) > 0 ? $decoded : null;
+    }
+
     return [
-        'id'               => $row['id'],
-        'type'             => $row['type'],
-        'location'         => $row['location'],
-        'latitude'         => $row['latitude'] !== null ? (float) $row['latitude'] : null,
-        'longitude'        => $row['longitude'] !== null ? (float) $row['longitude'] : null,
-        'device_id'        => $row['device_id'],
-        'reporter'         => $row['reporter'],
-        'reporter_id'      => $row['reporter_id'],
-        'reporter_contact' => $row['reporter_contact'] ?? null,
-        'reporter_address' => $row['reporter_address'] ?? null,
-        'date_time'        => $row['date_time'],
-        'status'           => $row['status'],
-        'dispatched_to'    => $row['dispatched_to'],
-        'dispatched_at'    => $row['dispatched_at'],
-        'dispatched_by'    => $row['dispatched_by'],
-        'is_archived'      => (bool) $row['is_archived'],
-        'archived_at'      => $row['archived_at'],
-        'created_at'       => $row['created_at'],
-        'updated_at'       => $row['updated_at'],
-        'is_false_alarm'   => (bool) $row['is_false_alarm'],
-        'flag_reason'      => $row['flag_reason'] ?? null,
-        'responder_name'   => $row['responder_name'] ?? null,
-        'responder_avatar' => $row['responder_avatar'] ?? null,
-        'confidence_score' => intval($row['confidence_score'] ?? 1),
-        'needs_rescue'     => (bool) ($row['needs_rescue'] ?? false),
-        'rescue'           => ['count' => $rescueCount],
-        'corroborators'    => $corroborators,
+        'id'                          => $row['id'],
+        'type'                        => $row['type'],
+        'location'                    => $row['location'],
+        'latitude'                    => $row['latitude'] !== null ? (float) $row['latitude'] : null,
+        'longitude'                   => $row['longitude'] !== null ? (float) $row['longitude'] : null,
+        'device_id'                   => $row['device_id'],
+        'reporter'                    => $row['reporter'],
+        'reporter_id'                 => $row['reporter_id'],
+        'reporter_contact'            => $row['reporter_contact'] ?? null,
+        'reporter_address'            => $row['reporter_address'] ?? null,
+        'reporter_medical_conditions' => $reporterMedical,   // ← NEW: null or string[]
+        'date_time'                   => $row['date_time'],
+        'status'                      => $row['status'],
+        'dispatched_to'               => $row['dispatched_to'],
+        'dispatched_at'               => $row['dispatched_at'],
+        'dispatched_by'               => $row['dispatched_by'],
+        'is_archived'                 => (bool) $row['is_archived'],
+        'archived_at'                 => $row['archived_at'],
+        'created_at'                  => $row['created_at'],
+        'updated_at'                  => $row['updated_at'],
+        'is_false_alarm'              => (bool) $row['is_false_alarm'],
+        'flag_reason'                 => $row['flag_reason'] ?? null,
+        'responder_name'              => $row['responder_name'] ?? null,
+        'responder_avatar'            => $row['responder_avatar'] ?? null,
+        'confidence_score'            => intval($row['confidence_score'] ?? 1),
+        'needs_rescue'                => (bool) ($row['needs_rescue'] ?? false),
+        'rescue'                      => ['count' => $rescueCount],
+        'corroborators'               => $corroborators,    // each now has medical_conditions
     ];
 }
