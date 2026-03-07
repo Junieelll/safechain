@@ -99,6 +99,14 @@ try {
 
     // Commit transaction
     $conn->commit();
+    
+    // Send push notification to all users
+    require_once '../fcm/send_push.php';
+    
+    $title = "New Announcement";
+    $body = !empty($content) ? $content : "A new announcement was posted.";
+    
+    sendPushToAll($title, $body, ['type' => 'announcement']);
 
     // Fetch the created announcement with media
     $stmt = $conn->prepare("
