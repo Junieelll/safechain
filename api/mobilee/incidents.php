@@ -45,9 +45,9 @@ function get_allowed_types(string $role): array
     };
 }
 
-function format_incident(array $row): array
+function format_incident(array $row, array $extra = []): array
 {
-    return [
+    return array_merge([
         'id' => $row['id'],
         'type' => $row['type'],
         'location' => $row['location'],
@@ -65,9 +65,29 @@ function format_incident(array $row): array
         'archived_at' => $row['archived_at'],
         'created_at' => $row['created_at'],
         'updated_at' => $row['updated_at'],
-    ];
+        'confidence_score' => intval($row['confidence_score'] ?? 1),
+        'needs_rescue' => (bool) ($row['needs_rescue'] ?? false),
+    ], $extra);
 }
 
+function get_rescue_data(mysqli $conn, string $incident_id): array
+{
+    $stmt = $conn->prepare("
+        SELECT COALESCE(SUM(needs_rescue), 0) AS rescue_count
+        FROM incident_corroborations
+        WHERE incident_id = ?
+    ");
+    $stmt->bind_param('s', $incident_id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return [
+        'rescue' => [
+            'count' => intval($row['rescue_count']),
+        ],
+    ];
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /incidents.php — paginated list filtered by responder role
@@ -143,6 +163,7 @@ function handle_get_list(mysqli $conn, array $allowed_types): void
     $incidents = [];
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {
+        $extra = get_rescue_data($conn, $row['id']);
         $incidents[] = format_incident($row);
     }
     $stmt->close();
@@ -179,7 +200,8 @@ function handle_get_single(mysqli $conn, string $id, array $allowed_types): void
         ResponseHelper::forbidden('You do not have access to this incident type');
     }
 
-    ResponseHelper::success(format_incident($row), 'Incident fetched successfully');
+    $extra = get_rescue_data($conn, $row['id']);
+    ResponseHelper::success(format_incident($row, $extra), 'Incident fetched successfully');
 }
 
 
