@@ -204,14 +204,16 @@ function handleNewIncident($conn, $data, $resident)
             ");
         }
 
-        // ── 4. Bump confidence score on parent incident ───────
-        mysqli_query($conn, "
-            UPDATE incidents SET
-                confidence_score = confidence_score + 1,
-                corroborated_by  = corroborated_by  + 1,
-                updated_at       = NOW()
-            WHERE id = '$incident_id'
-        ");
+        // ── 4. Bump confidence score ONLY for new corroborators ──────
+if (!$alreadyReported) {
+    mysqli_query($conn, "
+        UPDATE incidents SET
+            confidence_score = confidence_score + 1,
+            corroborated_by  = corroborated_by  + 1,
+            updated_at       = NOW()
+        WHERE id = '$incident_id'
+    ");
+}
 
         // ── 5. Timeline entry ─────────────────────────────────
         $rescueNote    = $needs_rescue

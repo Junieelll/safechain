@@ -33,11 +33,11 @@ function handle_get(mysqli $conn, string $id, array $user): void
     $stmt = $conn->prepare("
         SELECT
             i.*,
-            r.contact      AS reporter_contact,
-            r.address      AS reporter_address,
-            r.resident_id  AS reporter_resident_id,
-            f.flag_reason  AS flag_reason,
-            u.name         AS responder_name,
+            r.contact         AS reporter_contact,
+            r.address         AS reporter_address,
+            r.resident_id     AS reporter_resident_id,
+            f.flag_reason     AS flag_reason,
+            u.name            AS responder_name,
             u.profile_picture AS responder_avatar
         FROM incidents i
         LEFT JOIN residents r ON r.resident_id = i.reporter_id
@@ -58,44 +58,90 @@ function handle_get(mysqli $conn, string $id, array $user): void
     }
 
     $role_types = [
-        'bpso' => ['crime'],
-        'bhert' => ['flood'],
-        'firefighter' => ['fire'],
-        'admin' => ['fire', 'flood', 'crime'],
+        'bpso'        => ['crime'],
+        'bhert'       => ['flood'],
+        'firefighter' => ['fire', 'flood'],
+        'admin'       => ['fire', 'flood', 'crime'],
     ];
     $allowed = $role_types[strtolower($user['role'] ?? '')] ?? [];
     if (!empty($allowed) && !in_array($row['type'], $allowed, true)) {
         ResponseHelper::forbidden('You do not have access to this incident type');
     }
 
-    ResponseHelper::success(format_detail($row), 'Incident fetched successfully');
+    // ── Fetch corroborators ───────────────────────────────────────────────
+    $corroStmt = $conn->prepare("
+        SELECT
+            c.resident_id,
+            c.lat,
+            c.lng,
+            c.needs_rescue,
+            c.reported_at,
+            res.name    AS name,
+            res.contact AS contact
+        FROM incident_corroborations c
+        LEFT JOIN residents res ON res.resident_id = c.resident_id
+        WHERE c.incident_id = ?
+        ORDER BY c.reported_at ASC
+    ");
+    $corroStmt->bind_param('s', $id);
+    $corroStmt->execute();
+    $corroResult = $corroStmt->get_result();
+
+    $corroborators = [];
+    $corroRescueCount = 0;
+    while ($corro = $corroResult->fetch_assoc()) {
+        if (intval($corro['needs_rescue'])) $corroRescueCount++;
+        $corroborators[] = [
+            'resident_id'  => $corro['resident_id'],
+            'name'         => $corro['name'] ?? 'Unknown',
+            'contact'      => $corro['contact'] ?? null,
+            'lat'          => $corro['lat'] !== null ? (float) $corro['lat'] : null,
+            'lng'          => $corro['lng'] !== null ? (float) $corro['lng'] : null,
+            'needs_rescue' => (bool) $corro['needs_rescue'],
+            'reported_at'  => $corro['reported_at'],
+        ];
+    }
+    $corroStmt->close();
+
+    // ── Rescue totals ─────────────────────────────────────────────────────
+    $reporterRescue = intval($row['needs_rescue'] ?? 0);
+    $totalRescue    = $reporterRescue + $corroRescueCount;
+
+    ResponseHelper::success(
+        format_detail($row, $corroborators, $totalRescue),
+        'Incident fetched successfully'
+    );
 }
 
-function format_detail(array $row): array
+function format_detail(array $row, array $corroborators = [], int $rescueCount = 0): array
 {
     return [
-        'id' => $row['id'],
-        'type' => $row['type'],
-        'location' => $row['location'],
-        'latitude' => $row['latitude'] !== null ? (float) $row['latitude'] : null,
-        'longitude' => $row['longitude'] !== null ? (float) $row['longitude'] : null,
-        'device_id' => $row['device_id'],
-        'reporter' => $row['reporter'],
-        'reporter_id' => $row['reporter_id'],
+        'id'               => $row['id'],
+        'type'             => $row['type'],
+        'location'         => $row['location'],
+        'latitude'         => $row['latitude'] !== null ? (float) $row['latitude'] : null,
+        'longitude'        => $row['longitude'] !== null ? (float) $row['longitude'] : null,
+        'device_id'        => $row['device_id'],
+        'reporter'         => $row['reporter'],
+        'reporter_id'      => $row['reporter_id'],
         'reporter_contact' => $row['reporter_contact'] ?? null,
         'reporter_address' => $row['reporter_address'] ?? null,
-        'date_time' => $row['date_time'],
-        'status' => $row['status'],
-        'dispatched_to' => $row['dispatched_to'],
-        'dispatched_at' => $row['dispatched_at'],
-        'dispatched_by' => $row['dispatched_by'],
-        'is_archived' => (bool) $row['is_archived'],
-        'archived_at' => $row['archived_at'],
-        'created_at' => $row['created_at'],
-        'updated_at' => $row['updated_at'],
-        'is_false_alarm' => (bool) $row['is_false_alarm'],
-        'flag_reason' => $row['flag_reason'] ?? null,
-        'responder_name' => $row['responder_name'] ?? null,
+        'date_time'        => $row['date_time'],
+        'status'           => $row['status'],
+        'dispatched_to'    => $row['dispatched_to'],
+        'dispatched_at'    => $row['dispatched_at'],
+        'dispatched_by'    => $row['dispatched_by'],
+        'is_archived'      => (bool) $row['is_archived'],
+        'archived_at'      => $row['archived_at'],
+        'created_at'       => $row['created_at'],
+        'updated_at'       => $row['updated_at'],
+        'is_false_alarm'   => (bool) $row['is_false_alarm'],
+        'flag_reason'      => $row['flag_reason'] ?? null,
+        'responder_name'   => $row['responder_name'] ?? null,
         'responder_avatar' => $row['responder_avatar'] ?? null,
+        'confidence_score' => intval($row['confidence_score'] ?? 1),
+        'needs_rescue'     => (bool) ($row['needs_rescue'] ?? false),
+        'rescue'           => ['count' => $rescueCount],
+        'corroborators'    => $corroborators,
     ];
 }

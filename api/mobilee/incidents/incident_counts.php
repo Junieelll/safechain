@@ -17,7 +17,7 @@ $role          = strtolower($user['role'] ?? '');
 $allowed_types = match ($role) {
     'bpso'        => ['crime'],
     'bhert'       => ['flood'],
-    'firefighter' => ['fire'],
+    'firefighter' => ['fire', 'flood'],
     'admin'       => ['fire', 'flood', 'crime'],
     default       => [],
 };

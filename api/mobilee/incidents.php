@@ -39,7 +39,7 @@ function get_allowed_types(string $role): array
     return match ($role) {
         'bpso' => ['crime'],
         'bhert' => ['flood'],
-        'firefighter' => ['fire'],
+        'firefighter' => ['fire', 'flood'],
         'admin' => ['fire', 'flood', 'crime'],
         default => [],
     };
@@ -72,6 +72,19 @@ function format_incident(array $row, array $extra = []): array
 
 function get_rescue_data(mysqli $conn, string $incident_id): array
 {
+    // ── Check reporter rescue (stored on incident itself) ─────
+    $stmt = $conn->prepare("
+        SELECT COALESCE(needs_rescue, 0) AS reporter_rescue
+        FROM incidents
+        WHERE id = ?
+        LIMIT 1
+    ");
+    $stmt->bind_param('s', $incident_id);
+    $stmt->execute();
+    $reporterRescue = intval($stmt->get_result()->fetch_assoc()['reporter_rescue'] ?? 0);
+    $stmt->close();
+
+    // ── Check corroborator rescues ────────────────────────────
     $stmt = $conn->prepare("
         SELECT COALESCE(SUM(needs_rescue), 0) AS rescue_count
         FROM incident_corroborations
@@ -79,16 +92,17 @@ function get_rescue_data(mysqli $conn, string $incident_id): array
     ");
     $stmt->bind_param('s', $incident_id);
     $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
+    $corroRescue = intval($stmt->get_result()->fetch_assoc()['rescue_count'] ?? 0);
     $stmt->close();
+
+    $totalRescue = $reporterRescue + $corroRescue;
 
     return [
         'rescue' => [
-            'count' => intval($row['rescue_count']),
+            'count' => $totalRescue,
         ],
     ];
 }
-
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /incidents.php — paginated list filtered by responder role
 // ═══════════════════════════════════════════════════════════════════════════
