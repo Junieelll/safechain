@@ -157,8 +157,6 @@ function renderDevices() {
 
   container.style.opacity = "0";
 
-  setTimeout(() => showLoadingSkeleton(), 300);
-
   setTimeout(() => {
     if (currentView === "grid") {
       container.className =
@@ -345,13 +343,21 @@ function gridCard(d) {
           </div>
         </div>
       </div>
-      <div class="flex gap-3">
-        <button onclick="viewDevice(decodeURIComponent('${data}'))"
-          class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-emerald-600 hover:border-emerald-400 transition-colors">
-          <i class="uil uil-eye"></i><span class="text-xs font-medium">View</span>
-        </button>
-       ${actionBtn}
-      </div>
+        <div class="flex gap-3">
+          <button onclick="viewDevice(decodeURIComponent('${data}'))"
+            class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-emerald-600 hover:border-emerald-400 transition-colors">
+            <i class="uil uil-eye"></i><span class="text-xs font-medium">View</span>
+          </button>
+          ${
+            !isNode
+              ? `
+          <button onclick="openEditLoraModal(decodeURIComponent('${data}'))"
+            class="flex-1 flex items-center justify-center gap-2 py-1.5 px-3 bg-transparent border-2 border-neutral-400 rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-blue-600 hover:border-blue-400 transition-colors">
+            <i class="uil uil-edit"></i><span class="text-xs font-medium">Edit</span>
+          </button>`
+              : actionBtn
+          }
+        </div>
     </div>`;
 }
 
@@ -404,6 +410,389 @@ async function doReactivateLora(id) {
   } catch {
     showToast("error", "Network error");
     modalManager.setButtonLoading("reactivateModal", "primary", false);
+  }
+}
+
+function openEditLoraModal(raw) {
+  const d = typeof raw === "string" ? JSON.parse(raw) : raw;
+
+  pickedLat = d.lat ? parseFloat(d.lat) : null;
+  pickedLng = d.lng ? parseFloat(d.lng) : null;
+
+  const customDropdown = (id, options, defaultVal) => {
+    const activeOpt = options.find((o) => o.value === defaultVal) || options[0];
+    return `
+      <div class="relative" id="${id}Wrapper">
+        <button type="button" id="${id}Btn"
+          class="w-full bg-[#F1F5F9] dark:bg-neutral-700 h-[43.2px] rounded-xl px-3 py-2.5 border-2 border-transparent text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-emerald-400 transition">
+          <span id="${id}Text" class="text-sm text-gray-700 dark:text-neutral-300 flex items-center gap-2">
+            ${activeOpt.label}
+          </span>
+          <i id="${id}Icon" class="uil uil-angle-down text-xl text-gray-400 dark:text-gray-300 transition-transform duration-200"></i>
+        </button>
+        <div id="${id}Menu"
+          class="hidden absolute z-[99999] w-full mt-1 bg-white dark:bg-neutral-700 border border-gray-200 dark:border-neutral-600 rounded-xl shadow-lg overflow-hidden">
+          <div class="py-1">
+            ${options
+              .map(
+                (o) => `
+              <button type="button"
+                class="${id}-option text-sm w-full text-left px-4 py-2.5 flex items-center gap-2
+                       text-gray-700 dark:text-white/85
+                       hover:bg-emerald-50 dark:hover:bg-emerald-700/20 hover:text-emerald-600 transition
+                       ${o.value === defaultVal ? "bg-emerald-50 dark:bg-emerald-700/20 text-emerald-600 dark:text-emerald-300 font-medium" : ""}"
+                data-value="${o.value}">
+                ${o.label}
+              </button>`,
+              )
+              .join("")}
+          </div>
+        </div>
+        <input type="hidden" id="${id}Val" value="${defaultVal}" />
+      </div>`;
+  };
+
+  const typeOptions = [
+    { value: "gateway", label: "Gateway" },
+    { value: "repeater", label: "Repeater" },
+  ];
+  const freqOptions = [
+    { value: "433 MHz", label: "433 MHz" },
+    { value: "868 MHz", label: "868 MHz" },
+    { value: "915 MHz", label: "915 MHz" },
+    { value: "923 MHz", label: "923 MHz" },
+  ];
+
+  modalManager.create({
+    id: "editLoraModal",
+    icon: "uil-edit",
+    iconColor: "text-blue-600",
+    iconBg: "bg-blue-100 dark:bg-blue-900/60",
+    title: "Edit LoRa Device",
+    subtitle: d.device_id,
+    body: `
+      <div class="space-y-4">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Device Type *</label>
+            ${customDropdown("editLoraType", typeOptions, d.device_type || "gateway")}
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Device Name *</label>
+            <input id="editLoraName" type="text" value="${d.name || ""}"
+              class="w-full px-3 py-2.5 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-xl text-sm border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div>
+          <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">
+            Pin Location *
+            <span class="normal-case font-normal text-gray-400 ml-1">— tap to move pin</span>
+          </label>
+          <div class="w-full h-72 rounded-2xl overflow-hidden border-2 border-[#D5E7F9] dark:border-neutral-600 relative">
+            <div id="editLoraMapEl" class="w-full h-full"></div>
+            <div class="absolute top-3 right-3 z-[1000] flex flex-col gap-0.5 overflow-hidden p-0.5">
+              <button id="editLoraZoomIn" type="button"
+                class="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md border border-white/20 text-white hover:bg-black/45 transition-all duration-200 rounded-t-full shadow-md">
+                <i class="uil uil-plus text-xl"></i>
+              </button>
+              <button id="editLoraZoomOut" type="button"
+                class="w-10 h-10 flex items-center justify-center bg-black/30 backdrop-blur-md border border-white/20 text-white hover:bg-black/45 transition-all duration-200 rounded-b-full shadow-md">
+                <i class="uil uil-minus text-xl"></i>
+              </button>
+            </div>
+          </div>
+          <div class="mt-2 relative">
+            <i class="uil uil-map-marker absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg pointer-events-none"></i>
+            <input id="editLoraLabel" type="text" value="${d.location_label || ""}"
+              class="w-full pl-9 pr-3 py-2.5 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-xl text-sm border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+          </div>
+          <p id="editLoraCoords" class="text-xs text-gray-400 dark:text-neutral-500 mt-1 pl-1 h-4">
+            ${d.lat && d.lng ? `${parseFloat(d.lat).toFixed(6)}, ${parseFloat(d.lng).toFixed(6)}` : ""}
+          </p>
+        </div>
+
+        <!-- Coverage -->
+        <div>
+          <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Coverage Radius (m)</label>
+          <input id="editLoraCoverage" type="number" value="${d.coverage_radius || 300}" min="50" max="2000"
+            class="w-full px-3 py-2.5 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-xl text-sm border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Frequency</label>
+            ${customDropdown("editLoraFreq", freqOptions, d.frequency || "915 MHz")}
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Firmware</label>
+            <input id="editLoraFirmware" type="text" value="${d.firmware || ""}"
+              class="w-full px-3 py-2.5 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-xl text-sm border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Notes</label>
+          <textarea id="editLoraNotes" rows="2"
+            class="w-full px-3 py-2.5 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-xl text-sm border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none">${d.notes || ""}</textarea>
+        </div>
+
+      </div>`,
+    primaryButton: { text: "Save Changes", icon: "uil-check" },
+    secondaryButton: { text: "Cancel" },
+    onPrimary: () => {
+      const name = document.getElementById("editLoraName")?.value.trim();
+      if (!name) {
+        showToast("error", "Device name is required");
+        modalManager.setButtonLoading("editLoraModal", "primary", false);
+        return false;
+      }
+      if (pickedLat === null || pickedLng === null) {
+        showToast("error", "Please pin a location on the map");
+        modalManager.setButtonLoading("editLoraModal", "primary", false);
+        return false;
+      }
+      submitEditLora(d.id);
+      return false;
+    },
+    onSecondary: () => {
+      destroyLoraMap();
+      modalManager.close("editLoraModal");
+    },
+  });
+
+  modalManager.show("editLoraModal");
+  setTimeout(() => {
+    initEditLoraMap(d);
+    initEditModalDropdowns();
+  }, 200);
+}
+
+function initEditLoraMap(d) {
+  const el = document.getElementById("editLoraMapEl");
+  if (!el) return;
+
+  const build = () => {
+    buildMap(el); // reuses your existing buildMap()
+
+    const startLat = d.lat ? parseFloat(d.lat) : 14.7142;
+    const startLng = d.lng ? parseFloat(d.lng) : 121.0414;
+    loraMap.setView([startLat, startLng], 16);
+
+    // Override onMapClick to target edit fields
+    loraMap.off("click", onMapClick);
+    loraMap.on("click", onEditMapClick);
+
+    document
+      .getElementById("editLoraZoomIn")
+      ?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        loraMap.zoomIn();
+      });
+    document
+      .getElementById("editLoraZoomOut")
+      ?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        loraMap.zoomOut();
+      });
+
+    // Place existing pin
+    if (d.lat && d.lng) {
+      const pinIcon = L.divIcon({
+        html: `<div style="width:22px;height:22px;background:#EF4444;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,.3);position:relative;">
+          <div style="width:7px;height:7px;background:white;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg);opacity:0.9;"></div>
+        </div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 22],
+        className: "",
+      });
+      loraMarker = L.marker([parseFloat(d.lat), parseFloat(d.lng)], {
+        icon: pinIcon,
+      }).addTo(loraMap);
+    }
+  };
+
+  if (typeof L !== "undefined") {
+    build();
+  } else {
+    if (!document.getElementById("leaflet-css")) {
+      const link = Object.assign(document.createElement("link"), {
+        id: "leaflet-css",
+        rel: "stylesheet",
+        href: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css",
+      });
+      document.head.appendChild(link);
+    }
+    const s = document.createElement("script");
+    s.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    s.onload = build;
+    document.head.appendChild(s);
+  }
+}
+
+async function onEditMapClick(e) {
+  const { lat, lng } = e.latlng;
+  pickedLat = lat;
+  pickedLng = lng;
+
+  const pinIcon = L.divIcon({
+    html: `<div style="width:22px;height:22px;background:#EF4444;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,.3);position:relative;">
+      <div style="width:7px;height:7px;background:white;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg);opacity:0.9;"></div>
+    </div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 22],
+    className: "",
+  });
+
+  if (loraMarker) {
+    loraMarker.setLatLng([lat, lng]);
+  } else {
+    loraMarker = L.marker([lat, lng], { icon: pinIcon }).addTo(loraMap);
+  }
+
+  const coordsEl = document.getElementById("editLoraCoords");
+  if (coordsEl) coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+  const labelEl = document.getElementById("editLoraLabel");
+  if (labelEl) {
+    labelEl.value = "Looking up address…";
+    labelEl.disabled = true;
+  }
+
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      { headers: { "Accept-Language": "en", "User-Agent": "SafeChain/1.0" } },
+    );
+    const data = await res.json();
+    const addr = data.address || {};
+    const parts = [
+      addr.road,
+      addr.suburb || addr.village || addr.neighbourhood,
+      addr.city || addr.town || addr.municipality,
+      addr.country,
+    ].filter(Boolean);
+    if (labelEl)
+      labelEl.value = parts.length ? parts.join(", ") : data.display_name || "";
+  } catch {
+    if (labelEl) labelEl.value = "";
+  } finally {
+    if (labelEl) labelEl.disabled = false;
+  }
+}
+
+function initEditModalDropdowns() {
+  const initOne = (id) => {
+    const btn = document.getElementById(`${id}Btn`);
+    const menu = document.getElementById(`${id}Menu`);
+    const icon = document.getElementById(`${id}Icon`);
+    const text = document.getElementById(`${id}Text`);
+    const hidden = document.getElementById(`${id}Val`);
+    if (!btn) return;
+
+    const activeOn = [
+      "bg-emerald-50",
+      "dark:bg-emerald-700/20",
+      "text-emerald-600",
+      "dark:text-emerald-300",
+      "font-medium",
+    ];
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      ["editLoraType", "editLoraFreq"].forEach((other) => {
+        if (other !== id) {
+          document.getElementById(`${other}Menu`)?.classList.add("hidden");
+          const oi = document.getElementById(`${other}Icon`);
+          if (oi) oi.style.transform = "rotate(0deg)";
+        }
+      });
+      const isHidden = menu.classList.contains("hidden");
+      menu.classList.toggle("hidden", !isHidden);
+      icon.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
+    });
+
+    menu.querySelectorAll(`.${id}-option`).forEach((opt) => {
+      opt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        hidden.value = opt.dataset.value;
+        text.innerHTML = opt.dataset.value;
+        menu
+          .querySelectorAll(`.${id}-option`)
+          .forEach((o) => o.classList.remove(...activeOn));
+        opt.classList.add(...activeOn);
+        menu.classList.add("hidden");
+        icon.style.transform = "rotate(0deg)";
+      });
+    });
+  };
+
+  initOne("editLoraType");
+  initOne("editLoraFreq");
+
+  document.addEventListener("click", function closeEditDropdowns(e) {
+    ["editLoraType", "editLoraFreq"].forEach((id) => {
+      const wrapper = document.getElementById(`${id}Wrapper`);
+      if (wrapper && !wrapper.contains(e.target)) {
+        document.getElementById(`${id}Menu`)?.classList.add("hidden");
+        const icon = document.getElementById(`${id}Icon`);
+        if (icon) icon.style.transform = "rotate(0deg)";
+      }
+    });
+    if (!document.getElementById("editLoraTypBtn")) {
+      document.removeEventListener("click", closeEditDropdowns);
+    }
+  });
+}
+
+async function submitEditLora(id) {
+  const name = document.getElementById("editLoraName")?.value.trim();
+  const type = document.getElementById("editLoraTypeVal")?.value;
+  const label = document.getElementById("editLoraLabel")?.value.trim();
+  const coverage = parseInt(
+    document.getElementById("editLoraCoverage")?.value || "300",
+  );
+  const freq = document.getElementById("editLoraFreqVal")?.value.trim();
+  const firmware = document.getElementById("editLoraFirmware")?.value.trim();
+  const notes = document.getElementById("editLoraNotes")?.value.trim();
+
+  try {
+    const res = await fetch(`${API}?action=edit-lora`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id,
+        name,
+        device_type: type,
+        location_label: label,
+        lat: pickedLat,
+        lng: pickedLng,
+        coverage_radius: coverage,
+        frequency: freq,
+        firmware,
+        notes,
+      }),
+    });
+    const json = await res.json();
+
+    if (json.success) {
+      destroyLoraMap();
+      modalManager.close("editLoraModal");
+      showToast("success", "Device updated successfully");
+      fetchDevices();
+    } else {
+      const msg = json.errors
+        ? json.errors.join(", ")
+        : json.message || "Failed to update";
+      showToast("error", msg);
+      modalManager.setButtonLoading("editLoraModal", "primary", false);
+    }
+  } catch {
+    showToast("error", "Network error — please try again");
+    modalManager.setButtonLoading("editLoraModal", "primary", false);
   }
 }
 

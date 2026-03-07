@@ -155,10 +155,12 @@
       <!-- Device Cards Container -->
       <div id="devicesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
-    </div>
+      <div class="flex items-center justify-center gap-2 mt-6" id="devicePagination">
 
-    <!-- Toast -->
-    <div id="toastContainer" class="fixed top-4 right-4 z-[99999] space-y-3 max-w-md w-full"></div>
+      </div>
+
+      <!-- Toast -->
+      <div id="toastContainer" class="fixed top-4 right-4 z-[99999] space-y-3 max-w-md w-full"></div>
   </main>
 
   <script src="assets/js/sidebar.js"></script>
