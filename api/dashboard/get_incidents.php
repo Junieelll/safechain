@@ -1,20 +1,16 @@
 <?php
-/**
- * SafeChain - Get Incidents API
- * Returns live incidents and heatmap data for dashboard
- * Place in: api/get_incidents.php
- */
-
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
 require_once '../../config/conn.php';
 
-// Get filter parameters
 $type = isset($_GET['type']) ? mysqli_real_escape_string($conn, $_GET['type']) : 'all';
 $since = isset($_GET['since']) ? mysqli_real_escape_string($conn, $_GET['since']) : null;
 
-// Build query
+// ============================================================
+// LIVE INCIDENTS QUERY
+// Now includes confidence_score, corroborated_by, and rescue data
+// ============================================================
 $sql = "SELECT 
     i.id,
     i.type,
@@ -24,28 +20,39 @@ $sql = "SELECT
     i.device_id,
     i.date_time,
     i.status,
-    i.latitude as lat,
-    i.longitude as lng,
+    i.latitude  AS lat,
+    i.longitude AS lng,
     i.created_at,
+    i.confidence_score,
+    i.corroborated_by,
     r.contact,
     r.resident_id,
-    r.address
+    r.address,
+    COUNT(c.id)                                         AS corroboration_count,
+    COALESCE(SUM(c.needs_rescue), 0)                    AS rescue_needed_count,
+    GROUP_CONCAT(
+        CASE WHEN c.needs_rescue = 1 
+        THEN res.name END 
+        ORDER BY c.reported_at ASC
+        SEPARATOR ', '
+    )                                                   AS rescue_needed_names
 FROM incidents i
-LEFT JOIN residents r ON i.reporter_id = r.resident_id
-WHERE i.is_archived = 0
-AND i.status != 'resolved'";
+LEFT JOIN residents r   ON i.reporter_id  = r.resident_id
+LEFT JOIN incident_corroborations c ON c.incident_id = i.id
+LEFT JOIN residents res ON c.resident_id  = res.resident_id
+WHERE i.is_archived     = 0
+  AND i.status         != 'resolved'
+  AND i.status         != 'false_alarm'
+  AND (i.is_false_alarm = 0 OR i.is_false_alarm IS NULL)";
 
-// Filter by type
 if ($type !== 'all' && in_array($type, ['fire', 'crime', 'flood'])) {
     $sql .= " AND i.type = '$type'";
 }
-
-// Filter by timestamp (for polling - only get new incidents)
 if ($since) {
     $sql .= " AND i.created_at > '$since'";
 }
 
-$sql .= " ORDER BY i.created_at DESC LIMIT 100";
+$sql .= " GROUP BY i.id ORDER BY i.created_at DESC LIMIT 100";
 
 $result = mysqli_query($conn, $sql);
 
@@ -54,141 +61,190 @@ if (!$result) {
     exit;
 }
 
-// Format incidents - keep both formats for compatibility
-$formatted = [
-    'fire' => [],
-    'crime' => [],
-    'flood' => []
-];
-
-$allIncidents = []; // New flat array for proper sorting
+$formatted = ['fire' => [], 'crime' => [], 'flood' => []];
+$allIncidents = [];
 
 while ($incident = mysqli_fetch_assoc($result)) {
     $incidentType = $incident['type'];
-    
+    $confidenceScore = intval($incident['confidence_score'] ?? 1);
+    $rescueCount = intval($incident['rescue_needed_count'] ?? 0);
+    $rescueNames = $incident['rescue_needed_names'] ?? '';
+
+    // Confidence label
+    if ($confidenceScore >= 5) {
+        $confidenceLabel = 'Very High';
+        $confidenceColor = 'critical';
+    } elseif ($confidenceScore >= 3) {
+        $confidenceLabel = 'High';
+        $confidenceColor = 'high';
+    } elseif ($confidenceScore >= 2) {
+        $confidenceLabel = 'Moderate';
+        $confidenceColor = 'moderate';
+    } else {
+        $confidenceLabel = 'Unverified';
+        $confidenceColor = 'low';
+    }
+
     $formattedIncident = [
         'id' => $incident['id'],
         'type' => ucfirst($incidentType) . ' Emergency',
-        'icon' => $incidentType === 'fire' ? 'uil-fire' : 
-                  ($incidentType === 'crime' ? 'uil-shield-plus' : 'uil-water'),
-        'color' => $incidentType === 'fire' ? 'red' : 
-                   ($incidentType === 'crime' ? 'yellow' : 'blue'),
+        'icon' => $incidentType === 'fire' ? 'uil-fire' :
+            ($incidentType === 'crime' ? 'uil-shield-plus' : 'uil-water'),
+        'color' => $incidentType === 'fire' ? 'red' :
+            ($incidentType === 'crime' ? 'yellow' : 'blue'),
         'time' => date('g:i A', strtotime($incident['date_time'])),
-        'datetime' => $incident['date_time'], // Add full datetime for sorting
+        'datetime' => $incident['date_time'],
         'user' => [
             'name' => $incident['reporter'],
             'contact' => $incident['contact'] ?? 'N/A',
-            'id' => $incident['resident_id'] ?? $incident['reporter_id'] ?? 'N/A'
+            'id' => $incident['resident_id'] ?? $incident['reporter_id'] ?? 'N/A',
         ],
         'location' => [
             'address' => $incident['address'] ?? $incident['location'],
             'barangay' => 'Gulod',
             'city' => 'Quezon City',
-            'coords' => sprintf("%.4f° N, %.4f° E", $incident['lat'], $incident['lng'])
+            'coords' => sprintf("%.4f° N, %.4f° E", $incident['lat'], $incident['lng']),
         ],
         'lat' => floatval($incident['lat']),
         'lng' => floatval($incident['lng']),
         'status' => $incident['status'],
         'device_id' => $incident['device_id'],
+
+        // ── New corroboration fields ──
+        'confidence' => [
+            'score' => $confidenceScore,
+            'label' => $confidenceLabel,
+            'color' => $confidenceColor,
+        ],
+        'rescue' => [
+            'count' => $rescueCount,
+            'names' => $rescueNames ? explode(', ', $rescueNames) : [],
+        ],
+
         'timeline' => [
             [
                 'time' => date('g:i A', strtotime($incident['date_time'])),
-                'event' => 'Emergency reported by ' . $incident['reporter']
+                'event' => 'Emergency reported by ' . $incident['reporter'],
             ],
             [
                 'time' => date('g:i A', strtotime($incident['date_time']) + 60),
-                'event' => 'Location verified'
+                'event' => 'Location verified',
             ],
             [
                 'time' => date('g:i A', strtotime($incident['date_time']) + 120),
-                'event' => $incident['status'] === 'pending' ? 'Awaiting response' : 
-                          ($incident['status'] === 'responding' ? 'Response team dispatched' : 'Incident resolved'),
-                'pending' => $incident['status'] === 'pending'
-            ]
-        ]
+                'event' => $incident['status'] === 'pending' ? 'Awaiting response' :
+                    ($incident['status'] === 'responding' ? 'Response team dispatched' : 'Incident resolved'),
+                'pending' => $incident['status'] === 'pending',
+            ],
+        ],
     ];
-    
-    // Add to both formats
+
     $formatted[$incidentType][] = $formattedIncident;
     $allIncidents[] = $formattedIncident;
 }
 
-// Get heatmap data with severity from incident_reports
+// ============================================================
+// HEATMAP QUERY — now also boosts intensity by confidence_score
+// ============================================================
 $heatmapQuery = "SELECT 
-    i.type, 
-    i.latitude, 
+    i.type,
+    i.latitude,
     i.longitude,
     i.status,
-    DATEDIFF(NOW(), i.date_time) as days_ago,
-    ir.severity_level,
-    ir.casualties,
-    ir.injuries
+    i.confidence_score,
+    TIMESTAMPDIFF(HOUR, i.date_time, NOW()) AS hours_ago,
+    ir.severity_level
 FROM incidents i
 LEFT JOIN incident_reports ir ON ir.incident_id = i.id
-WHERE i.latitude IS NOT NULL 
-  AND i.longitude IS NOT NULL
-  AND i.latitude != 0
-  AND i.longitude != 0
-  AND i.is_archived = 0
-  AND i.date_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+WHERE i.latitude      IS NOT NULL
+  AND i.longitude     IS NOT NULL
+  AND i.latitude       != 0
+  AND i.longitude      != 0
+  AND i.is_archived    = 0
+  AND (i.is_false_alarm = 0 OR i.is_false_alarm IS NULL)
+  AND i.date_time     >= DATE_SUB(NOW(), INTERVAL 30 DAY)
 ORDER BY i.date_time DESC
 LIMIT 500";
 
 $heatResult = mysqli_query($conn, $heatmapQuery);
-$heatmapData = [
-    'fire' => [],
-    'crime' => [],
-    'flood' => []
-];
+$heatmapData = ['fire' => [], 'crime' => [], 'flood' => []];
 
 if ($heatResult) {
     while ($heat = mysqli_fetch_assoc($heatResult)) {
-        $daysAgo = intval($heat['days_ago']);
+        $hoursAgo = intval($heat['hours_ago']);
+        $confidenceScore = intval($heat['confidence_score'] ?? 1);
 
-        // If incident has a report, use severity_level for intensity
+        // Base intensity from severity_level
         if (!empty($heat['severity_level'])) {
             switch ($heat['severity_level']) {
-                case 'critical': $intensity = 1.0; break;
-                case 'major':    $intensity = 0.85; break;
-                case 'moderate': $intensity = 0.65; break;
-                case 'minor':    $intensity = 0.45; break;
-                default:         $intensity = 0.5;
+                case 'critical':
+                    $intensity = 1.00;
+                    break;
+                case 'severe':
+                    $intensity = 0.85;
+                    break;
+                case 'moderate':
+                    $intensity = 0.70;
+                    break;
+                case 'minor':
+                    $intensity = 0.55;
+                    break;
+                default:
+                    $intensity = 0.65;
             }
         } else {
-            // No report yet (pending/responding) — use type-based default
             switch ($heat['type']) {
-                case 'fire':  $intensity = 0.6; break;
-                case 'crime': $intensity = 0.5; break;
-                case 'flood': $intensity = 0.5; break;
-                default:      $intensity = 0.4;
+                case 'fire':
+                    $intensity = 0.85;
+                    break;
+                case 'crime':
+                    $intensity = 0.75;
+                    break;
+                case 'flood':
+                    $intensity = 0.75;
+                    break;
+                default:
+                    $intensity = 0.70;
             }
         }
 
-        // Apply age decay — older incidents fade (min 20% of original)
-        $decayFactor = max(0.2, 1.0 - ($daysAgo / 30) * 0.8);
+        // Boost intensity based on confidence (corroborated incidents burn hotter)
+        // Caps at 1.0 — each additional report adds 5% up to +25%
+        $confidenceBoost = min(0.25, ($confidenceScore - 1) * 0.05);
+        $intensity = min(1.0, $intensity + $confidenceBoost);
+
+        // Age decay
+        if ($heat['status'] === 'resolved') {
+            $decayFactor = max(0.20, 1.0 - ($hoursAgo / 48) * 0.80);
+        } else {
+            $daysAgo = $hoursAgo / 24;
+            $decayFactor = max(0.40, 1.0 - ($daysAgo / 30) * 0.60);
+        }
+
         $intensity = round($intensity * $decayFactor, 3);
+        if ($intensity < 0.10)
+            continue;
 
         $heatmapData[$heat['type']][] = [
             'lat' => floatval($heat['latitude']),
             'lng' => floatval($heat['longitude']),
-            'intensity' => $intensity
+            'intensity' => $intensity,
         ];
     }
 }
 
-// Response with both formats
 echo json_encode([
     'success' => true,
-    'data' => $formatted, // Keep for backward compatibility
-    'all_incidents' => $allIncidents, // New flat array already sorted by date
+    'data' => $formatted,
+    'all_incidents' => $allIncidents,
     'heatmap' => $heatmapData,
     'timestamp' => date('Y-m-d H:i:s'),
     'count' => [
         'fire' => count($formatted['fire']),
         'crime' => count($formatted['crime']),
         'flood' => count($formatted['flood']),
-        'total' => count($allIncidents)
-    ]
+        'total' => count($allIncidents),
+    ],
 ]);
 
 mysqli_close($conn);

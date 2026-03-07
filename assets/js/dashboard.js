@@ -43,48 +43,42 @@ const heatmapVisible = {
 
 const heatmapConfigs = {
   fire: {
-    radius: 30,
-    blur: 20,
-    maxZoom: 17,
-    max: 1.0,
+    radius: 28, // Smaller radius for precise location
+    blur: 20, // Smoother edges
+    maxZoom: 15, // Helps intensity scale naturally when zooming
+    max: 2.0, // Requires overlapping points to reach full intensity
     minOpacity: 0.3,
     gradient: {
-      0.0: "rgba(255, 68, 68, 0)",
-      0.3: "rgba(255, 68, 68, 0.35)",
-      0.5: "rgba(220, 40, 40, 0.55)",
-      0.7: "rgba(200, 30, 30, 0.75)",
-      0.9: "rgba(170, 20, 20, 0.9)",
-      1.0: "rgba(140, 10, 10, 1)",
+      0.2: "rgba(255, 255, 0, 0.4)", // Outer: Yellow
+      0.5: "rgba(255, 128, 0, 0.7)", // Mid: Orange
+      0.8: "rgba(220, 38, 38, 0.9)", // Core: Red
+      1.0: "rgba(100, 0, 0, 1.0)", // Extreme: Dark Red
     },
   },
   crime: {
     radius: 28,
-    blur: 18,
-    maxZoom: 17,
-    max: 1.0,
+    blur: 20,
+    maxZoom: 15,
+    max: 2.0,
     minOpacity: 0.3,
     gradient: {
-      0.0: "rgba(251, 191, 36, 0)",
-      0.3: "rgba(251, 191, 36, 0.35)",
-      0.5: "rgba(245, 158, 11, 0.55)",
-      0.7: "rgba(217, 119, 6, 0.75)",
-      0.9: "rgba(180, 83, 9, 0.9)",
-      1.0: "rgba(120, 50, 5, 1)",
+      0.2: "rgba(255, 240, 120, 0.4)",
+      0.5: "rgba(251, 191, 36, 0.7)",
+      0.8: "rgba(217, 119, 6, 0.9)",
+      1.0: "rgba(100, 40, 0, 1.0)",
     },
   },
   flood: {
-    radius: 32,
-    blur: 22,
-    maxZoom: 17,
-    max: 1.0,
+    radius: 35,
+    blur: 25,
+    maxZoom: 15,
+    max: 2.0,
     minOpacity: 0.3,
     gradient: {
-      0.0: "rgba(59, 130, 246, 0)",
-      0.3: "rgba(59, 130, 246, 0.3)",
-      0.5: "rgba(37, 99, 235, 0.5)",
-      0.7: "rgba(29, 78, 216, 0.7)",
-      0.9: "rgba(30, 64, 175, 0.85)",
-      1.0: "rgba(23, 37, 84, 1)",
+      0.2: "rgba(150, 200, 255, 0.4)",
+      0.5: "rgba(59, 130, 246, 0.7)",
+      0.8: "rgba(29, 78, 216, 0.9)",
+      1.0: "rgba(8, 15, 60, 1.0)",
     },
   },
 };
@@ -160,70 +154,65 @@ async function fetchLiveIncidents() {
 function generateHeatmapData(type) {
   const heatData = [];
 
-  // Current active incidents (high intensity)
-  if (incidentData[type]) {
-    incidentData[type].forEach((incident) => {
-      const intensity = type === "fire" ? 1.0 : type === "crime" ? 0.8 : 0.7;
-      heatData.push([incident.lat, incident.lng, intensity]);
-    });
-  }
+  // Your PHP file already pulls both active and historical incidents
+  // into the 'heatmap' array and calculates the perfect intensity weight
+  // based on severity level and age decay. We just need to plot it.
 
-  // Historical incidents from database (varied intensity based on age)
   if (historicalIncidents[type]) {
     historicalIncidents[type].forEach((incident) => {
-      heatData.push([incident.lat, incident.lng, incident.intensity]);
+      if (incident.lat && incident.lng && incident.intensity) {
+        // Leaflet.heat accepts format: [lat, lng, intensity]
+        heatData.push([incident.lat, incident.lng, incident.intensity]);
+      }
     });
   }
 
   return heatData;
 }
 
-function getZoomAdjustedConfig(type) {
-  const zoom = map.getZoom();
-  const config = { ...heatmapConfigs[type] };
-
-  // Fixed real-world radius in meters per type
-  const metersRadius = { fire: 150, crime: 120, flood: 180 };
-
-  // Convert meters → pixels at current zoom
-  // At zoom Z, 1 pixel = (156543.03392 * cos(lat)) / 2^Z meters
-  // We use barangay latitude (~14.7158) as reference
-  const lat = 14.7158;
-  const metersPerPixel =
-    (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
-
-  config.radius = Math.round(metersRadius[type] / metersPerPixel);
-  config.radius = Math.max(8, Math.min(60, config.radius));
-  config.blur = Math.round(config.radius * 0.5);
-
-  // Opacity stays consistent regardless of zoom
-  config.minOpacity = 0.35;
-  config.max = 1.0;
-
-  return config;
-}
+// ============================================
+// DYNAMIC HEATMAP RENDERING
+// ============================================
 
 function updateAllHeatmaps() {
+  const currentZoom = map.getZoom();
+  const dynamicRadius = Math.max(10, (currentZoom - 12) * 8);
+  const dynamicBlur = Math.max(10, dynamicRadius - 5);
+
+  // Higher max at low zoom prevents saturation on dense clusters
+  const dynamicMax = currentZoom >= 17 ? 1.5 : currentZoom >= 15 ? 2.5 : 4.0;
+
   ["fire", "crime", "flood"].forEach((type) => {
     if (heatmapLayers[type]) map.removeLayer(heatmapLayers[type]);
-
     if (heatmapVisible[type]) {
       const heatData = generateHeatmapData(type);
-      heatmapLayers[type] = L.heatLayer(
-        heatData,
-        getZoomAdjustedConfig(type),
-      ).addTo(map);
+      const config = {
+        ...heatmapConfigs[type],
+        radius: dynamicRadius,
+        blur: dynamicBlur,
+        max: dynamicMax,
+      };
+      heatmapLayers[type] = L.heatLayer(heatData, config).addTo(map);
     }
   });
 }
 
 function updateHeatmapsForTheme(isDark) {
+  const currentZoom = map.getZoom();
+  const dynamicRadius = Math.max(10, (currentZoom - 12) * 8);
+  const dynamicBlur = Math.max(10, dynamicRadius - 5);
+
   Object.keys(heatmapLayers).forEach((type) => {
     if (heatmapLayers[type] && heatmapVisible[type]) {
       const heatData = generateHeatmapData(type);
       map.removeLayer(heatmapLayers[type]);
 
-      const config = { ...heatmapConfigs[type] };
+      const config = {
+        ...heatmapConfigs[type],
+        radius: dynamicRadius,
+        blur: dynamicBlur,
+      };
+
       if (isDark) {
         config.minOpacity = 0.4;
       }
@@ -275,64 +264,125 @@ const markerFiltersActive = {
   flood: true,
 };
 
+const coverageCircles = { fire: [], crime: [], flood: [] };
+
 function updateMapMarkers() {
-  // Clear existing markers
+  // Clear existing markers AND coverage circles
   Object.keys(markers).forEach((type) => {
-    markers[type].forEach((marker) => map.removeLayer(marker));
+    markers[type].forEach((m) => map.removeLayer(m));
     markers[type] = [];
+    coverageCircles[type].forEach((c) => map.removeLayer(c));
+    coverageCircles[type] = [];
   });
 
   let incidentsToProcess = { fire: [], crime: [], flood: [] };
 
   if (incidentData.all && Array.isArray(incidentData.all)) {
     incidentData.all.forEach((incident) => {
-      const typeString = incident.type.toLowerCase();
-      if (typeString.includes("fire")) {
-        incidentsToProcess.fire.push(incident);
-      } else if (typeString.includes("crime")) {
-        incidentsToProcess.crime.push(incident);
-      } else if (typeString.includes("flood")) {
-        incidentsToProcess.flood.push(incident);
-      }
+      const t = incident.type.toLowerCase();
+      if (t.includes("fire")) incidentsToProcess.fire.push(incident);
+      else if (t.includes("crime")) incidentsToProcess.crime.push(incident);
+      else if (t.includes("flood")) incidentsToProcess.flood.push(incident);
     });
   } else {
     incidentsToProcess = incidentData;
   }
 
+  const circleColors = {
+    fire: "#dc2626",
+    crime: "#FBBF24",
+    flood: "#3B82F6",
+  };
+
   Object.keys(incidentsToProcess).forEach((type) => {
-    if (incidentsToProcess[type] && Array.isArray(incidentsToProcess[type])) {
-      incidentsToProcess[type].forEach((incident) => {
-        const marker = L.marker([incident.lat, incident.lng], {
-          icon: iconMap[type],
-        });
+    if (!incidentsToProcess[type] || !Array.isArray(incidentsToProcess[type]))
+      return;
 
-        if (markerFiltersActive[type]) {
-          marker.addTo(map);
-        }
+    incidentsToProcess[type].forEach((incident) => {
+      if (
+        !incident.lat ||
+        !incident.lng ||
+        (incident.lat === 0 && incident.lng === 0)
+      )
+        return;
 
-        marker.bindPopup(`
-          <div class="p-2">
-            <strong class="text-sm">${incident.type}</strong><br>
-            <span class="text-xs">${incident.user.name}</span><br>
-            <span class="text-xs text-gray-600">${incident.time}</span>
-          </div>
-        `);
-
-        marker.on("click", () => {
-          if (
-            typeof incidentContent !== "undefined" &&
-            typeof renderIncidentDetails === "function"
-          ) {
-            incidentContent.innerHTML = renderIncidentDetails(incident);
-            if (isRightPanelCollapsed) {
-              rightPanelToggle.click();
-            }
-          }
-        });
-
-        markers[type].push(marker);
+      const marker = L.marker([incident.lat, incident.lng], {
+        icon: iconMap[type],
       });
-    }
+
+      if (markerFiltersActive[type]) marker.addTo(map);
+
+      marker.bindPopup(`
+                <div class="p-2">
+                    <strong class="text-sm">${incident.type}</strong><br>
+                    <span class="text-xs">${incident.user.name}</span><br>
+                    <span class="text-xs text-gray-600">${incident.time}</span>
+                    ${
+                      incident.confidence?.score > 1
+                        ? `<br><span class="text-xs font-semibold">${incident.confidence.score} reports</span>`
+                        : ""
+                    }
+                </div>
+            `);
+
+      marker.on("click", () => {
+        if (
+          typeof incidentContent !== "undefined" &&
+          typeof renderIncidentDetails === "function"
+        ) {
+          incidentContent.innerHTML = renderIncidentDetails(incident);
+          if (isRightPanelCollapsed) rightPanelToggle.click();
+        }
+      });
+
+      markers[type].push(marker);
+
+      // ── Coverage circle — realistic neighborhood scale ──────
+      // ── Coverage circle — same logic as incident details map ──────────
+      const hasRescue = incident.rescue?.count > 0;
+      const color = circleColors[type];
+
+      const reporterPoints = [[incident.lat, incident.lng]];
+
+      (incident.corroborator_locations || [])
+        .filter((c) => c.lat != 0 && c.lng != 0)
+        .forEach((c) =>
+          reporterPoints.push([parseFloat(c.lat), parseFloat(c.lng)]),
+        );
+
+      const centroid = reporterPoints
+        .reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]], [0, 0])
+        .map((v) => v / reporterPoints.length);
+
+      const maxDistMeters = Math.max(
+        ...reporterPoints.map((p) => {
+          const R = 6371000;
+          const dLat = ((p[0] - centroid[0]) * Math.PI) / 180;
+          const dLng = ((p[1] - centroid[1]) * Math.PI) / 180;
+          const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos((centroid[0] * Math.PI) / 180) *
+              Math.cos((p[0] * Math.PI) / 180) *
+              Math.sin(dLng / 2) ** 2;
+          return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }),
+      );
+
+      const radius = Math.max(25, maxDistMeters + 10);
+
+      const circle = L.circle(centroid, {
+        color: hasRescue ? "#ef4444" : color,
+        fillColor: hasRescue ? "#ef4444" : color,
+        fillOpacity: hasRescue ? 0.25 : 0.15,
+        opacity: hasRescue ? 0.7 : 0.5,
+        radius,
+        dashArray: hasRescue ? "6, 4" : null,
+        weight: hasRescue ? 2 : 1.5,
+      });
+
+      if (markerFiltersActive[type]) circle.addTo(map);
+      coverageCircles[type].push(circle);
+    });
   });
 }
 
@@ -491,41 +541,118 @@ function renderEmergencyList() {
       "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
   };
 
+  // Confidence badge styles
+  const confidenceStyles = {
+    critical:
+      "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border border-red-300",
+    high: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 border border-orange-300",
+    moderate:
+      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 border border-yellow-300",
+    low: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 border border-gray-300",
+  };
+
+  const confidenceIcons = {
+    critical: "uil-fire",
+    high: "uil-exclamation-triangle",
+    moderate: "uil-users-alt",
+    low: "uil-user",
+  };
   return `
     <div class="space-y-4">
       ${allIncidents
-        .map(
-          (incident) => `
-        <div onclick="focusIncidentOnMap('${incident.id}', ${incident.lat}, ${incident.lng}, '${incident.type}')"
-          class="bg-[#FFFFFF] border border-neutral-300 dark:border-neutral-700 rounded-2xl p-4 space-y-3 text-sm dark:bg-neutral-700 cursor-pointer hover:shadow-lg hover:border-emerald-400 transition-all duration-200">
-          <div class="inline-flex items-center gap-2 ${colorClasses[incident.color]} px-3 py-2 rounded-lg">
-            <i class="uil ${incident.icon} text-lg"></i>
-            <span class="text-sm font-medium">${incident.type}</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <p class="text-gray-500 dark:text-gray-300 text-xs">Emergency Status</p>
-            <span class="text-xs px-2 py-1 rounded-full font-medium ${statusColors[incident.status] || statusColors.pending}">
-              ${incident.status ? incident.status.charAt(0).toUpperCase() + incident.status.slice(1) : "Pending"}
-            </span>
-          </div>
-          <div class="flex justify-between">
-            <p class="text-gray-500 dark:text-gray-300 text-xs">Time Reported</p>
-            <p class="font-medium text-gray-800 dark:text-white/90 text-xs">${incident.time}</p>
-          </div>
-          <div class="flex justify-between">
-            <p class="text-gray-500 dark:text-gray-300 text-xs">Reporter</p>
-            <p class="font-medium text-gray-800 dark:text-white/90 text-xs">${incident.user.name}</p>
-          </div>
-          <div class="flex flex-col gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-            <button
-              onclick="event.stopPropagation(); viewIncidentDetails('${incident.id}')"
-              class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium py-2.5 px-3 rounded-xl transition">
-              <i class="uil uil-eye"></i> View Details
-            </button>
-          </div>
-        </div>
-      `,
-        )
+        .map((incident) => {
+          const confidence = incident.confidence || {
+            score: 1,
+            label: "Unverified",
+            color: "low",
+          };
+          const rescue = incident.rescue || { count: 0, names: [] };
+          const hasRescue = rescue.count > 0;
+          const isHighConfidence = confidence.score >= 3;
+
+          const cardClass = hasRescue
+            ? "bg-red-50 dark:bg-red-950/30 border-2 border-red-500 dark:border-red-600 shadow-lg shadow-red-100 dark:shadow-red-900/30"
+            : isHighConfidence
+              ? "bg-white dark:bg-neutral-700 border-2 border-orange-400 dark:border-orange-600"
+              : "bg-white dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-700";
+
+          // Rescue banner — shown at the very top of the card if anyone needs rescue
+          const rescueBanner = hasRescue
+            ? `
+  <div class="flex items-center gap-2 bg-red-500 text-white rounded-xl px-3 py-2">
+    <i class="uil uil-ambulance text-lg shrink-0 animate-bounce"></i>
+    <div class="flex-1 min-w-0">
+      <p class="text-xs font-bold tracking-wide uppercase"> Rescue Needed</p>
+      ${
+        rescue.names.length > 0
+          ? `
+        <p class="text-xs text-red-100 truncate">${rescue.names.join(", ")}</p>
+      `
+          : ""
+      }
+    </div>
+    <span class="shrink-0 bg-white text-red-600 text-xs font-black px-2 py-0.5 rounded-full">
+      ${rescue.count}
+    </span>
+  </div>
+`
+            : "";
+
+          const confidenceBadge = hasRescue
+            ? `
+  <div class="flex items-center gap-1.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border border-red-400 px-2 py-1 rounded-lg text-xs font-bold">
+    <i class="uil uil-redo text-sm"></i>
+    <span>SOS</span>
+  </div>
+`
+            : `
+  <div class="flex items-center gap-1.5 ${confidenceStyles[confidence.color]} px-2 py-1 rounded-lg text-xs font-medium">
+    <i class="uil ${confidenceIcons[confidence.color]} text-sm"></i>
+    <span>${confidence.score} report${confidence.score > 1 ? "s" : ""}</span>
+  </div>
+`;
+
+          return `
+  <div onclick="focusIncidentOnMap('${incident.id}', ${incident.lat}, ${incident.lng}, '${incident.type}')"
+    class="${cardClass} rounded-2xl p-4 space-y-3 text-sm cursor-pointer hover:shadow-lg transition-all duration-200">
+
+    ${rescueBanner}
+
+    <div class="flex items-start justify-between gap-2">
+      <div class="inline-flex items-center gap-2 ${colorClasses[incident.color]} px-3 py-2 rounded-lg">
+        <i class="uil ${incident.icon} text-lg"></i>
+        <span class="text-sm font-medium">${incident.type}</span>
+      </div>
+      ${confidenceBadge}
+    </div>
+
+    <div class="flex justify-between items-center">
+      <p class="text-gray-500 dark:text-gray-300 text-xs">Emergency Status</p>
+      <span class="text-xs px-2 py-1 rounded-full font-medium ${statusColors[incident.status] || statusColors.pending}">
+        ${incident.status ? incident.status.charAt(0).toUpperCase() + incident.status.slice(1) : "Pending"}
+      </span>
+    </div>
+
+    <div class="flex justify-between">
+      <p class="text-gray-500 dark:text-gray-300 text-xs">Time Reported</p>
+      <p class="font-medium text-gray-800 dark:text-white/90 text-xs">${incident.time}</p>
+    </div>
+
+    <div class="flex justify-between">
+      <p class="text-gray-500 dark:text-gray-300 text-xs">Reporter</p>
+      <p class="font-medium text-gray-800 dark:text-white/90 text-xs">${incident.user.name}</p>
+    </div>
+
+    <div class="flex flex-col gap-2 mt-3 pt-3 border-t ${hasRescue ? "border-red-200 dark:border-red-800" : "border-gray-200 dark:border-gray-600"}">
+  <button
+    onclick="event.stopPropagation(); viewIncidentDetails('${incident.id}')"
+    class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium py-2.5 px-3 rounded-xl transition">
+    <i class="uil uil-eye"></i> View Details
+  </button>
+</div>
+  </div>
+`;
+        })
         .join("")}
     </div>
   `;
@@ -572,7 +699,9 @@ let isRightPanelCollapsed = false;
 
 var map = L.map("map", { maxZoom: 21 }).setView([14.7158532, 121.0403842], 16);
 
-map.on("zoomend", updateAllHeatmaps);
+map.on("zoomend", () => {
+  updateAllHeatmaps();
+});
 
 const isOnline = navigator.onLine;
 
@@ -1104,7 +1233,7 @@ function updateDateTime() {
 
 const loraMarkers = { gateway: [], repeater: [] };
 const loraCircles = { gateway: [], repeater: [] };
-const loraVisible = { gateway: true, repeater: true };
+const loraVisible = { gateway: false, repeater: false };
 
 const gatewayIcon = L.divIcon({
   className: "",
@@ -1204,12 +1333,17 @@ async function fetchLoraDevices() {
 function toggleLoraLayer(type) {
   loraVisible[type] = !loraVisible[type];
 
+  // Toggle markers and circles
   loraMarkers[type].forEach((m) =>
     loraVisible[type] ? m.addTo(map) : map.removeLayer(m),
   );
   loraCircles[type].forEach((c) =>
     loraVisible[type] ? c.addTo(map) : map.removeLayer(c),
   );
+
+  // Toggle button active visual state
+  const btn = document.getElementById(`${type}Toggle`);
+  if (btn) btn.classList.toggle("active", loraVisible[type]);
 }
 
 // Fetch once on load

@@ -808,55 +808,168 @@ function populateResponderBanner(incident) {
 function updateIncidentMap(incident) {
   const incidentLocation = [parseFloat(incident.lat), parseFloat(incident.lng)];
 
-  // Update map view
   map.setView(incidentLocation, 16);
 
-  // Remove existing incident marker
-  if (incidentMarker) {
-    map.removeLayer(incidentMarker);
+  if (incidentMarker) map.removeLayer(incidentMarker);
+
+  if (window.corroboratorMarkers) {
+    window.corroboratorMarkers.forEach((m) => map.removeLayer(m));
   }
+  if (window.corroboratorCircles) {
+    window.corroboratorCircles.forEach((c) => map.removeLayer(c));
+  }
+  window.corroboratorMarkers = [];
+  window.corroboratorCircles = [];
 
-  // Get the appropriate icon based on incident type
-  const iconMap = {
-    fire: fireIcon,
-    flood: floodIcon,
-    crime: crimeIcon,
-  };
-
-  const markerIcon = iconMap[incident.type] || fireIcon;
-
-  // Add new marker with correct icon
-  incidentMarker = L.marker(incidentLocation, { icon: markerIcon })
-    .addTo(map)
-    .bindPopup(
-      `<b>${getIncidentTypeLabel(incident.type)}</b><br>${incident.location}`,
-    );
-
-  // Remove existing circles
   map.eachLayer((layer) => {
-    if (layer instanceof L.Circle) {
-      map.removeLayer(layer);
-    }
+    if (layer instanceof L.Circle) map.removeLayer(layer);
   });
 
-  // Get circle color based on incident type
-  const circleColors = {
-    fire: "#dc2626",
-    flood: "#3B82F6",
-    crime: "#FBBF24",
-  };
-
+  const iconMap = { fire: fireIcon, flood: floodIcon, crime: crimeIcon };
+  const circleColors = { fire: "#dc2626", flood: "#3B82F6", crime: "#FBBF24" };
   const circleColor = circleColors[incident.type] || "#dc2626";
+  const hasRescue = incident.rescue?.count > 0;
 
-  // Add new circle at incident location
-  L.circle(incidentLocation, {
-    color: circleColor,
-    fillColor: circleColor,
-    fillOpacity: 0.3,
-    radius: 40,
-  }).addTo(map);
+  // ── Main incident marker ──────────────────────────────────────────
+  incidentMarker = L.marker(incidentLocation, {
+    icon: iconMap[incident.type] || fireIcon,
+  }).addTo(map).bindPopup(`
+            <div class="p-1">
+                <p class="font-bold text-sm">${getIncidentTypeLabel(incident.type)}</p>
+                <p class="text-xs text-gray-500">${incident.reporter} — Original Report</p>
+                <p class="text-xs text-gray-400">${incident.location}</p>
+            </div>
+        `);
 
-  // Update the barangay hall start marker position if needed
+  // ── Corroborator markers ──────────────────────────────────────────
+  const corroborators = (incident.corroborator_locations || []).filter(
+    (c) => c.lat != 0 && c.lng != 0,
+  );
+
+  corroborators.forEach((c) => {
+    const pos = [parseFloat(c.lat), parseFloat(c.lng)];
+    const isRescue = c.needs_rescue == 1;
+
+    const corroIcon = L.divIcon({
+      className: "",
+      html: `
+                <div style="
+                    position: relative;
+                    width: 32px; height: 32px;
+                ">
+                    ${
+                      isRescue
+                        ? `
+                        <div style="
+                            position: absolute; top: 0; left: 0;
+                            width: 32px; height: 32px;
+                            border-radius: 50%;
+                            background: rgba(239,68,68,0.3);
+                            animation: ping 1s cubic-bezier(0,0,0.2,1) infinite;
+                        "></div>
+                    `
+                        : ""
+                    }
+                    <div style="
+                        position: absolute; top: 0; left: 0;
+                        width: 32px; height: 32px;
+                        background: ${isRescue ? "#ef4444" : "#6b7280"};
+                        border-radius: 50%;
+                        display: flex; align-items: center; justify-content: center;
+                        border: 3px solid white;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    ">
+                        <i class="uil ${isRescue ? "uil-ambulance" : "uil-user"}"
+                           style="color:white; font-size:14px;"></i>
+                    </div>
+                </div>
+            `,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+    });
+
+    const medConditions =
+      c.medical_conditions?.length > 0
+        ? `<p class="text-xs text-amber-600 mt-1">⚠️ ${c.medical_conditions.join(", ")}</p>`
+        : "";
+
+    const marker = L.marker(pos, { icon: corroIcon }).addTo(map).bindPopup(`
+                <div class="p-1">
+                    <p class="font-bold text-sm ${isRescue ? "text-red-600" : ""}">${c.name}</p>
+                    ${
+                      isRescue
+                        ? '<p class="text-xs font-semibold text-red-500">🆘 Needs Rescue</p>'
+                        : '<p class="text-xs text-gray-500">Corroborating Reporter</p>'
+                    }
+                    ${c.contact ? `<p class="text-xs text-gray-400">${c.contact}</p>` : ""}
+                    ${medConditions}
+                </div>
+            `);
+
+    window.corroboratorMarkers.push(marker);
+  });
+
+  // ── Coverage circle based on ACTUAL spread between all reporters ──
+  if (corroborators.length > 0) {
+    // Collect all reporter coordinates including original
+    const allPoints = [
+      incidentLocation,
+      ...corroborators.map((c) => [parseFloat(c.lat), parseFloat(c.lng)]),
+    ];
+
+    // Find centroid (average of all points)
+    const centroid = allPoints
+      .reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]], [0, 0])
+      .map((v) => v / allPoints.length);
+
+    // Find max distance from centroid to any reporter (in meters)
+    const maxDistMeters = Math.max(
+      ...allPoints.map((p) => {
+        const R = 6371000; // Earth radius in meters
+        const dLat = ((p[0] - centroid[0]) * Math.PI) / 180;
+        const dLng = ((p[1] - centroid[1]) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos((centroid[0] * Math.PI) / 180) *
+            Math.cos((p[0] * Math.PI) / 180) *
+            Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }),
+    );
+
+    // Add a small buffer (10m) so the circle isn't edge-to-edge tight
+    // Also enforce a minimum of 25m so single-location corroborations
+    // still show a visible circle
+    const radius = Math.max(25, maxDistMeters + 10);
+
+    const coverageCircle = L.circle(centroid, {
+      color: hasRescue ? "#ef4444" : circleColor,
+      fillColor: hasRescue ? "#ef4444" : circleColor,
+      fillOpacity: hasRescue ? 0.25 : 0.15,
+      opacity: hasRescue ? 0.7 : 0.5,
+      radius,
+      dashArray: hasRescue ? "6, 4" : null,
+      weight: hasRescue ? 2 : 1.5,
+    }).addTo(map);
+
+    window.corroboratorCircles.push(coverageCircle);
+
+    // Fit map to show all markers with padding
+    map.fitBounds(L.latLngBounds(allPoints).pad(0.3));
+  } else {
+    // Only original reporter — small fixed circle
+    const coverageCircle = L.circle(incidentLocation, {
+      color: hasRescue ? "#ef4444" : circleColor,
+      fillColor: hasRescue ? "#ef4444" : circleColor,
+      fillOpacity: 0.15,
+      opacity: 0.5,
+      radius: 25,
+      weight: 1.5,
+    }).addTo(map);
+
+    window.corroboratorCircles.push(coverageCircle);
+  }
+
   startMarker.setLatLng(barangayHall);
 }
 

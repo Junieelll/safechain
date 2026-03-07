@@ -1,5 +1,7 @@
 <?php
-define('BASE_URL', 'https://safechain.site');
+if (!defined('BASE_URL')) {
+    define('BASE_URL', 'https://safechain.site');
+}
 date_default_timezone_set('Asia/Manila');
 
 // Load secure config
