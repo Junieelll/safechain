@@ -333,7 +333,7 @@ function playNotificationSound() {
 }
 
 async function checkNewIncidents() {
-  // If dashboard.js is active, it handles everything — skip to avoid duplicates
+  if (isInitialLoad) isInitialLoad = false;
   if (window.__dashboardActive) return;
 
   try {
@@ -341,6 +341,15 @@ async function checkNewIncidents() {
     const result = await response.json();
 
     if (result.success) {
+      // ── Sync knownIncidentIds — remove IDs no longer in DB ──
+      const activeIds = new Set(
+        ["fire", "crime", "flood"].flatMap(t => (result.data[t] || []).map(i => i.id))
+      );
+      knownIncidentIds.forEach(id => {
+        if (!activeIds.has(id)) knownIncidentIds.delete(id);
+      });
+      localStorage.setItem("knownIncidentIds", JSON.stringify([...knownIncidentIds]));
+
       ["fire", "crime", "flood"].forEach((type) => {
         if (result.data[type]) {
           result.data[type].forEach((incident) => {
@@ -350,7 +359,6 @@ async function checkNewIncidents() {
                 "knownIncidentIds",
                 JSON.stringify([...knownIncidentIds])
               );
-
               if (!isInitialLoad && typeof showToast === "function") {
                 showToast("info", `New ${type} incident: ${incident.user.name}`);
                 playNotificationSound();
@@ -359,8 +367,6 @@ async function checkNewIncidents() {
           });
         }
       });
-
-      if (isInitialLoad) isInitialLoad = false;
     }
   } catch (error) {
     console.error("Sidebar polling error:", error);

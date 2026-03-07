@@ -112,6 +112,15 @@ async function fetchLiveIncidents() {
       if (result.heatmap) historicalIncidents = result.heatmap;
       lastUpdateTime = result.timestamp;
 
+      const activeIds = new Set((result.all_incidents || []).map((i) => i.id));
+      knownIncidentIds.forEach((id) => {
+        if (!activeIds.has(id)) knownIncidentIds.delete(id);
+      });
+      localStorage.setItem(
+        "knownIncidentIds",
+        JSON.stringify([...knownIncidentIds]),
+      );
+
       // Rebuild markers if count OR corroborations changed
       if (newCount !== prevCount || newCorroSum !== prevCorroSum) {
         updateMapMarkers();
@@ -1315,6 +1324,7 @@ async function fetchLoraDevices() {
           <div style="font-weight:600;font-size:13px;margin-bottom:4px">${device.device_id}</div>
           <div style="font-size:11px;color:#6b7280;margin-bottom:2px">${device.name}</div>
           <div style="font-size:11px;color:#6b7280">${device.location_label || ""}</div>
+          <div style="font-size:11px;color:#6b7280">${device.coverage_radius || ""}m</div>
           <div style="font-size:11px;margin-top:6px">
             <span style="color:${color};font-weight:500">${type === "gateway" ? "Gateway" : "Repeater"}</span>
             · ${device.signal || "—"}
