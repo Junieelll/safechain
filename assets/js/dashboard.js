@@ -93,21 +93,30 @@ async function fetchLiveIncidents() {
     const result = await response.json();
 
     if (result.success) {
-      // Update incident data
+      const newCount = result.count.total;
+      const prevCount = (incidentData.all || []).length;
+
+      // ── Also check if any corroborator counts changed ──────
+      const prevCorroSum = (incidentData.all || []).reduce(
+        (sum, i) => sum + (i.confidence?.score ?? 1),
+        0,
+      );
+      const newCorroSum = (result.all_incidents || []).reduce(
+        (sum, i) => sum + (i.confidence?.score ?? 1),
+        0,
+      );
+
+      // Update data FIRST
       incidentData = result.data;
-
-      if (result.all_incidents) {
-        incidentData.all = result.all_incidents;
-      }
-
-      if (result.heatmap) {
-        historicalIncidents = result.heatmap;
-      }
-
+      if (result.all_incidents) incidentData.all = result.all_incidents;
+      if (result.heatmap) historicalIncidents = result.heatmap;
       lastUpdateTime = result.timestamp;
 
-      // Update map UI
-      updateMapMarkers();
+      // Rebuild markers if count OR corroborations changed
+      if (newCount !== prevCount || newCorroSum !== prevCorroSum) {
+        updateMapMarkers();
+      }
+
       updateAllHeatmaps();
       incidentContent.innerHTML = renderEmergencyList();
 
@@ -338,7 +347,6 @@ function updateMapMarkers() {
       markers[type].push(marker);
 
       // ── Coverage circle — realistic neighborhood scale ──────
-      // ── Coverage circle — same logic as incident details map ──────────
       const hasRescue = incident.rescue?.count > 0;
       const color = circleColors[type];
 
@@ -349,6 +357,40 @@ function updateMapMarkers() {
         .forEach((c) =>
           reporterPoints.push([parseFloat(c.lat), parseFloat(c.lng)]),
         );
+
+      // ── Corroborator markers ──────────────────────────────────
+      const corroIcon = L.divIcon({
+        className: "",
+        html: `<div style="
+    width:28px; height:28px;
+    background: rgba(255,255,255,0.9);
+    border: 2.5px solid ${circleColors[type]};
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  ">
+    <i class="uil uil-user" style="color:${circleColors[type]}; font-size:13px;"></i>
+  </div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
+
+      (incident.corroborator_locations || []).forEach((corro) => {
+        const corroMarker = L.marker([corro.lat, corro.lng], {
+          icon: corroIcon,
+        });
+
+        corroMarker.bindPopup(`
+    <div class="p-2">
+      <strong class="text-xs">Corroborator</strong><br>
+      <span class="text-xs">${corro.name}</span><br>
+      <span class="text-xs text-gray-500">${incident.type}</span>
+    </div>
+  `);
+
+        if (markerFiltersActive[type]) corroMarker.addTo(map);
+        markers[type].push(corroMarker); // tracked so filters/clear still work
+      });
 
       const centroid = reporterPoints
         .reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]], [0, 0])
@@ -368,13 +410,22 @@ function updateMapMarkers() {
         }),
       );
 
-      const radius = Math.max(25, maxDistMeters + 10);
+      const circleSizing = {
+        fire: { minRadius: 30, padding: 10 },
+        crime: { minRadius: 12, padding: 5 },
+        flood: { minRadius: 60, padding: 30 },
+      };
+      const { minRadius, padding } = circleSizing[type] || {
+        minRadius: 25,
+        padding: 10,
+      };
+      const radius = Math.max(minRadius, maxDistMeters + padding);
 
       const circle = L.circle(centroid, {
         color: hasRescue ? "#ef4444" : color,
         fillColor: hasRescue ? "#ef4444" : color,
-        fillOpacity: hasRescue ? 0.25 : 0.15,
-        opacity: hasRescue ? 0.7 : 0.5,
+        fillOpacity: hasRescue ? 0.25 : type === "crime" ? 0.08 : 0.15, // ← dimmer for crime
+        opacity: hasRescue ? 0.7 : type === "crime" ? 0.35 : 0.5, // ← thinner border
         radius,
         dashArray: hasRescue ? "6, 4" : null,
         weight: hasRescue ? 2 : 1.5,
@@ -583,13 +634,7 @@ function renderEmergencyList() {
     <i class="uil uil-ambulance text-lg shrink-0 animate-bounce"></i>
     <div class="flex-1 min-w-0">
       <p class="text-xs font-bold tracking-wide uppercase"> Rescue Needed</p>
-      ${
-        rescue.names.length > 0
-          ? `
-        <p class="text-xs text-red-100 truncate">${rescue.names.join(", ")}</p>
-      `
-          : ""
-      }
+      <p class="text-xs text-red-100">Still on scene — re-triggered device</p>
     </div>
     <span class="shrink-0 bg-white text-red-600 text-xs font-black px-2 py-0.5 rounded-full">
       ${rescue.count}
@@ -770,37 +815,6 @@ function switchMapTheme(isDark) {
   }
   updateHeatmapsForTheme(isDark);
 }
-
-// Staggered marker animation on initial load
-setTimeout(() => {
-  ["fire", "crime", "flood"].forEach((type, typeIndex) => {
-    const incidents = incidentData[type] || [];
-    incidents.forEach((incident, incidentIndex) => {
-      setTimeout(
-        () => {
-          const marker = L.marker([incident.lat, incident.lng], {
-            icon: iconMap[type],
-            opacity: 0,
-          })
-            .addTo(map)
-            .bindPopup(
-              `<strong>${incident.type}</strong><br>${incident.user.name}`,
-            );
-
-          setTimeout(() => marker.setOpacity(1), 50);
-
-          marker.on("click", () => {
-            map.setView([incident.lat, incident.lng], 17);
-            marker.openPopup();
-          });
-
-          markers[type].push(marker);
-        },
-        typeIndex * 300 + incidentIndex * 150,
-      );
-    });
-  });
-}, 1000);
 
 // ============================================
 // HEATMAP TOGGLE BUTTONS
