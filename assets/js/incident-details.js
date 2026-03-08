@@ -539,10 +539,23 @@ function renderTimeline(timelineItems) {
 
 function updateActionButtons(status, hasReport) {
   const generateReportBtn = document.getElementById("generateReportBtn");
-  if (!hasReport) {
-    generateReportBtn.classList.add("hidden");
-  } else {
+  const forceResolveBtn = document.getElementById("forceResolveBtn");
+  const quickActionsCard = document.getElementById("quickActionsCard");
+
+  const reportVisible = !!hasReport;
+  const forceResolveVisible = !forceResolveBtn?.classList.contains("hidden");
+
+  if (reportVisible) {
     generateReportBtn.classList.remove("hidden");
+  } else {
+    generateReportBtn.classList.add("hidden");
+  }
+
+  // Hide the entire card if no buttons are visible
+  if (!reportVisible && !forceResolveVisible) {
+    quickActionsCard?.classList.add("hidden");
+  } else {
+    quickActionsCard?.classList.remove("hidden");
   }
 }
 
