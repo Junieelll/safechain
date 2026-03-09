@@ -14,7 +14,7 @@ require_once 'helpers/fcm_helper.php';
 
 // Get JSON data from Python script
 $input = file_get_contents('php://input');
-$data  = json_decode($input, true);
+$data = json_decode($input, true);
 
 // Validate input
 if (!$data) {
@@ -33,11 +33,11 @@ foreach ($required as $field) {
 
 // Get resident info from device_id
 $device_id = mysqli_real_escape_string($conn, $data['device_id']);
-$query     = "SELECT resident_id, name, address, contact 
+$query = "SELECT resident_id, name, address, contact 
               FROM residents 
               WHERE device_id = '$device_id' AND is_archived = 0 
               LIMIT 1";
-$result    = mysqli_query($conn, $query);
+$result = mysqli_query($conn, $query);
 
 if (!$result || mysqli_num_rows($result) == 0) {
     echo json_encode([
@@ -65,17 +65,17 @@ if ($data['type'] === 'INCIDENT') {
  */
 function reverseGeocode($lat, $lng): string
 {
-    $url      = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng";
-    $opts     = ['http' => ['header' => "User-Agent: SafeChain/1.0\r\n"]];
+    $url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng";
+    $opts = ['http' => ['header' => "User-Agent: SafeChain/1.0\r\n"]];
     $response = @file_get_contents($url, false, stream_context_create($opts));
 
     if ($response) {
-        $json  = json_decode($response, true);
-        $a     = $json['address'] ?? [];
+        $json = json_decode($response, true);
+        $a = $json['address'] ?? [];
         $parts = array_filter([
-            $a['road']         ?? $a['pedestrian'] ?? $a['path']         ?? null,
-            $a['suburb']       ?? $a['village']    ?? $a['neighbourhood'] ?? $a['quarter'] ?? null,
-            $a['city']         ?? $a['town']       ?? $a['municipality']  ?? null,
+            $a['road'] ?? $a['pedestrian'] ?? $a['path'] ?? null,
+            $a['suburb'] ?? $a['village'] ?? $a['neighbourhood'] ?? $a['quarter'] ?? null,
+            $a['city'] ?? $a['town'] ?? $a['municipality'] ?? null,
         ]);
         return implode(', ', $parts) ?: "$lat, $lng";
     }
@@ -89,11 +89,11 @@ function reverseGeocode($lat, $lng): string
 
 function handleNewIncident($conn, $data, $resident)
 {
-    $type          = mysqli_real_escape_string($conn, $data['button'] ?? 'fire');
-    $lat           = floatval($data['lat']);
-    $lng           = floatval($data['lng']);
-    $reporter_id   = mysqli_real_escape_string($conn, $resident['resident_id']);
-    $device_id     = mysqli_real_escape_string($conn, $data['device_id']);
+    $type = mysqli_real_escape_string($conn, $data['button'] ?? 'fire');
+    $lat = floatval($data['lat']);
+    $lng = floatval($data['lng']);
+    $reporter_id = mysqli_real_escape_string($conn, $resident['resident_id']);
+    $device_id = mysqli_real_escape_string($conn, $data['device_id']);
     $reporter_name = mysqli_real_escape_string($conn, $resident['name']);
 
     // Validate type
@@ -105,7 +105,7 @@ function handleNewIncident($conn, $data, $resident)
 
     // ── Type-specific proximity thresholds ────────────────────
     $proximityThresholds = [
-        'fire'  => 0.00045,  // ~50 m
+        'fire' => 0.00045,  // ~50 m
         'flood' => 0.0018,   // ~200 m
         'crime' => 0.00027,  // ~30 m
     ];
@@ -113,7 +113,7 @@ function handleNewIncident($conn, $data, $resident)
 
     // ── Type-specific time windows ────────────────────────────
     $timeWindows = [
-        'fire'  => 15,
+        'fire' => 15,
         'flood' => 30,
         'crime' => 5,
     ];
@@ -141,7 +141,7 @@ function handleNewIncident($conn, $data, $resident)
     if ($nearbyResult && mysqli_num_rows($nearbyResult) > 0) {
 
         // ── CORROBORATION PATH ────────────────────────────────
-        $existing    = mysqli_fetch_assoc($nearbyResult);
+        $existing = mysqli_fetch_assoc($nearbyResult);
         $incident_id = mysqli_real_escape_string($conn, $existing['id']);
 
         // ── 2. Check if this resident already reported / corroborated ──
@@ -160,11 +160,11 @@ function handleNewIncident($conn, $data, $resident)
             LIMIT 1
         ";
 
-        $alreadyResult   = mysqli_query($conn, $alreadyQuery);
+        $alreadyResult = mysqli_query($conn, $alreadyQuery);
         // Fetch the row immediately — num_rows check then fetch_assoc both advance cursor
-        $alreadyRow      = ($alreadyResult && mysqli_num_rows($alreadyResult) > 0)
-                           ? mysqli_fetch_assoc($alreadyResult)
-                           : null;
+        $alreadyRow = ($alreadyResult && mysqli_num_rows($alreadyResult) > 0)
+            ? mysqli_fetch_assoc($alreadyResult)
+            : null;
         $alreadyReported = $alreadyRow !== null;
 
         // Rescue = only when they re-trigger (already reported before)
@@ -173,8 +173,8 @@ function handleNewIncident($conn, $data, $resident)
         // ── 3. INSERT or UPDATE corroboration record ──────────
         if ($alreadyReported) {
             if ($alreadyRow['source'] === 'original') {
-    // Update GPS + flag rescue directly on the incident
-    mysqli_query($conn, "
+                // Update GPS + flag rescue directly on the incident
+                mysqli_query($conn, "
         UPDATE incidents SET
             latitude     = $lat,
             longitude    = $lng,
@@ -182,7 +182,7 @@ function handleNewIncident($conn, $data, $resident)
             updated_at   = NOW()
         WHERE id = '$incident_id'
     ");
-} else {
+            } else {
                 // Corroborator re-triggered — update their corroboration GPS
                 mysqli_query($conn, "
                     UPDATE incident_corroborations SET
@@ -205,76 +205,57 @@ function handleNewIncident($conn, $data, $resident)
         }
 
         // ── 4. Bump confidence score ONLY for new corroborators ──────
-if (!$alreadyReported) {
-    mysqli_query($conn, "
+        if (!$alreadyReported) {
+            mysqli_query($conn, "
         UPDATE incidents SET
             confidence_score = confidence_score + 1,
             corroborated_by  = corroborated_by  + 1,
             updated_at       = NOW()
         WHERE id = '$incident_id'
     ");
-}
-
-        // ── 5. Timeline entry ─────────────────────────────────
-        $rescueNote    = $needs_rescue
-                         ? ' — ⚠️ RESIDENT MAY NEED RESCUE'
-                         : '';
-        $timelineDesc  = mysqli_real_escape_string($conn,
-            "Corroborated by {$resident['name']} via device {$data['device_id']}{$rescueNote}"
-        );
-        $timelineTitle = mysqli_real_escape_string($conn,
-            $needs_rescue ? '⚠️ Rescue signal received' : 'Additional report received'
-        );
-
-        mysqli_query($conn, "
-            INSERT INTO incident_timeline
-                (incident_id, title, description, actor, user_id)
-            VALUES (
-                '$incident_id',
-                '$timelineTitle',
-                '$timelineDesc',
-                '$reporter_name',
-                '$reporter_id'
-            )
-        ");
+        }
 
         // ── 6. FCM notifications ──────────────────────────────
         $newConfidence = intval($existing['confidence_score']) + 1;
 
         if ($needs_rescue) {
             sendFCMToAllResponders($conn, [
-                'id'       => $incident_id,
-                'type'     => $type,
+                'id' => $incident_id,
+                'type' => $type,
                 'location' => "$lat, $lng",
-                'extra'    => "⚠️ RESCUE NEEDED: {$resident['name']} (Device: {$data['device_id']})",
+                'extra' => "⚠️ RESCUE NEEDED: {$resident['name']} (Device: {$data['device_id']})",
             ]);
             error_log(sprintf(
                 "[SafeChain] ⚠️ RESCUE SIGNAL: %s needs rescue at incident %s (%.6f, %.6f)",
-                $resident['name'], $incident_id, $lat, $lng
+                $resident['name'],
+                $incident_id,
+                $lat,
+                $lng
             ));
         } elseif ($newConfidence === 3) {
             sendFCMToAllResponders($conn, [
-                'id'       => $incident_id,
-                'type'     => $type,
+                'id' => $incident_id,
+                'type' => $type,
                 'location' => "$lat, $lng",
-                'extra'    => "🔴 HIGH CONFIDENCE: {$newConfidence} residents reporting",
+                'extra' => " HIGH CONFIDENCE: {$newConfidence} residents reporting",
             ]);
             error_log(sprintf(
-                "[SafeChain] 🔴 HIGH CONFIDENCE: Incident %s now has %d reports",
-                $incident_id, $newConfidence
+                "[SafeChain]  HIGH CONFIDENCE: Incident %s now has %d reports",
+                $incident_id,
+                $newConfidence
             ));
         }
 
         // ── 7. Response ───────────────────────────────────────
         echo json_encode([
-            'success'          => true,
-            'action'           => $alreadyReported ? 'rescue_signal' : 'corroborated',
-            'incident_id'      => $incident_id,
+            'success' => true,
+            'action' => $alreadyReported ? 'rescue_signal' : 'corroborated',
+            'incident_id' => $incident_id,
             'confidence_score' => $newConfidence,
-            'needs_rescue'     => (bool) $needs_rescue,
-            'reporter'         => $resident['name'],
-            'reporter_id'      => $reporter_id,
-            'timestamp'        => date('Y-m-d H:i:s'),
+            'needs_rescue' => (bool) $needs_rescue,
+            'reporter' => $resident['name'],
+            'reporter_id' => $reporter_id,
+            'timestamp' => date('Y-m-d H:i:s'),
         ]);
         return;
     }
@@ -300,7 +281,7 @@ if (!$alreadyReported) {
 
     // ── 9. Reverse geocode ────────────────────────────────────
     $geocodedAddress = reverseGeocode($lat, $lng);
-    $location        = mysqli_real_escape_string($conn, $geocodedAddress);
+    $location = mysqli_real_escape_string($conn, $geocodedAddress);
 
     // ── 10. Insert new incident ───────────────────────────────
     $insertQuery = "
@@ -323,7 +304,8 @@ if (!$alreadyReported) {
     }
 
     // ── 11. Initial timeline entry ────────────────────────────
-    $initDesc = mysqli_real_escape_string($conn,
+    $initDesc = mysqli_real_escape_string(
+        $conn,
         "Emergency reported by {$resident['name']} via device {$data['device_id']}"
     );
     mysqli_query($conn, "
@@ -340,32 +322,36 @@ if (!$alreadyReported) {
 
     // ── 12. Notify responders ─────────────────────────────────
     sendFCMToAllResponders($conn, [
-        'id'       => $incidentId,
-        'type'     => $type,
+        'id' => $incidentId,
+        'type' => $type,
         'location' => $geocodedAddress,
     ]);
 
     error_log(sprintf(
         "[SafeChain] New %s: %s by %s (%s) at (%.6f, %.6f) — %s",
-        strtoupper($type), $incidentId,
-        $resident['name'], $reporter_id,
-        $lat, $lng, $geocodedAddress
+        strtoupper($type),
+        $incidentId,
+        $resident['name'],
+        $reporter_id,
+        $lat,
+        $lng,
+        $geocodedAddress
     ));
 
     // ── 13. Response ──────────────────────────────────────────
     echo json_encode([
-        'success'          => true,
-        'action'           => 'created',
-        'incident_id'      => $incidentId,
-        'type'             => $type,
+        'success' => true,
+        'action' => 'created',
+        'incident_id' => $incidentId,
+        'type' => $type,
         'confidence_score' => 1,
-        'needs_rescue'     => false,
-        'reporter'         => $resident['name'],
-        'reporter_id'      => $reporter_id,
-        'device_id'        => $device_id,
-        'location'         => [
-            'lat'     => $lat,
-            'lng'     => $lng,
+        'needs_rescue' => false,
+        'reporter' => $resident['name'],
+        'reporter_id' => $reporter_id,
+        'device_id' => $device_id,
+        'location' => [
+            'lat' => $lat,
+            'lng' => $lng,
             'address' => $geocodedAddress,
         ],
         'timestamp' => date('Y-m-d H:i:s'),
@@ -379,7 +365,7 @@ if (!$alreadyReported) {
 function handleGPSUpdate($conn, $data, $resident)
 {
     $reporter_id = mysqli_real_escape_string($conn, $resident['resident_id']);
-    $device_id   = mysqli_real_escape_string($conn, $data['device_id']);
+    $device_id = mysqli_real_escape_string($conn, $data['device_id']);
 
     $query = "SELECT id FROM incidents
               WHERE reporter_id = '$reporter_id'
@@ -392,10 +378,10 @@ function handleGPSUpdate($conn, $data, $resident)
     $result = mysqli_query($conn, $query);
 
     if ($result && mysqli_num_rows($result) > 0) {
-        $incident    = mysqli_fetch_assoc($result);
+        $incident = mysqli_fetch_assoc($result);
         $incident_id = mysqli_real_escape_string($conn, $incident['id']);
-        $lat         = floatval($data['lat']);
-        $lng         = floatval($data['lng']);
+        $lat = floatval($data['lat']);
+        $lng = floatval($data['lng']);
 
         // Only update coordinates — location string stays as initial geocoded address
         $updateQuery = "UPDATE incidents SET
@@ -406,12 +392,12 @@ function handleGPSUpdate($conn, $data, $resident)
 
         if (mysqli_query($conn, $updateQuery)) {
             echo json_encode([
-                'success'     => true,
-                'type'        => 'GPS_UPDATE',
+                'success' => true,
+                'type' => 'GPS_UPDATE',
                 'incident_id' => $incident_id,
                 'reporter_id' => $reporter_id,
-                'location'    => ['lat' => $lat, 'lng' => $lng],
-                'timestamp'   => date('Y-m-d H:i:s'),
+                'location' => ['lat' => $lat, 'lng' => $lng],
+                'timestamp' => date('Y-m-d H:i:s'),
             ]);
         } else {
             echo json_encode([

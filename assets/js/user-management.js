@@ -686,7 +686,7 @@ function generateUsernameFromName(fullName) {
     .replace(/[^a-z\s]/g, "")
     .replace(/\s+/g, ".");
 
-  return "@" + cleaned;
+  return cleaned;
 }
 
 // Handle when user finishes typing full name
@@ -713,11 +713,6 @@ async function handleFullNameBlur() {
 
 // Find an available username by adding numbers if needed
 async function findAvailableUsername(baseUsername) {
-  // Ensure @ is at the start
-  if (!baseUsername.startsWith("@")) {
-    baseUsername = "@" + baseUsername;
-  }
-
   let username = baseUsername;
   let suffix = 1;
   let isAvailable = false;
@@ -755,37 +750,18 @@ async function checkIfUsernameExists(username) {
 // Debounce timer for username checking
 let usernameCheckTimeout;
 
-// Enforce @ symbol at the start
-function enforceAtSymbol(inputElement) {
-  let value = inputElement.value;
-
-  // Remove all @ symbols first
-  value = value.replace(/@/g, "");
-
-  // Add @ at the start
-  inputElement.value = "@" + value;
-
-  // Move cursor after @ if at position 0
-  if (inputElement.selectionStart === 0) {
-    inputElement.setSelectionRange(1, 1);
-  }
-}
-
 // Check username availability with visual feedback
 function checkUsernameAvailability(inputId = "createUsername") {
   const usernameInput = document.getElementById(inputId);
   const statusDiv = document.getElementById("usernameStatus");
   const helpText = document.getElementById("usernameHelp");
 
-  // Enforce @ symbol
-  enforceAtSymbol(usernameInput);
-
   const username = usernameInput.value.trim();
 
   // Clear previous timeout
   clearTimeout(usernameCheckTimeout);
 
-  if (!username || username === "@") {
+  if (!username) {
     statusDiv.classList.add("hidden");
     helpText.innerHTML = `
       <i class="uil uil-info-circle"></i>
