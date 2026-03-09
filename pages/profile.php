@@ -735,22 +735,108 @@ $avatarUrl = !empty($user['profile_picture'])
                 title: 'Delete Account?',
                 subtitle: 'This action cannot be undone',
                 showWarning: true,
-                warningText: 'All admin data, settings, and access will be permanently erased from SafeChain.',
-                body: `<p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    You are about to permanently delete your administrator account.
-                    Once deleted, you will lose access to the SafeChain dashboard and all associated data.
-                </p>`,
+                warningText: 'All your data, settings, and access will be permanently erased from SafeChain.',
+                body: `
+            <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
+                To confirm, please enter your current password.
+            </p>
+            <div class="relative">
+                <input
+                    id="deleteConfirmPassword"
+                    type="password"
+                    placeholder="Enter your password"
+                    class="focus-brand w-full rounded-xl px-4 py-3 pr-11 text-sm font-medium
+                           text-slate-800 dark:text-slate-100
+                           bg-slate-50 dark:bg-neutral-700/60
+                           border border-slate-200 dark:border-neutral-600
+                           placeholder-slate-300 dark:placeholder-neutral-500
+                           transition-all duration-200"
+                />
+                <button type="button"
+                    onclick="
+                        const inp = document.getElementById('deleteConfirmPassword');
+                        const ico = this.querySelector('i');
+                        if (inp.type === 'password') {
+                            inp.type = 'text';
+                            ico.className = 'uil uil-eye-slash text-lg';
+                        } else {
+                            inp.type = 'password';
+                            ico.className = 'uil uil-eye text-lg';
+                        }
+                    "
+                    class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-neutral-500
+                           hover:text-slate-600 dark:hover:text-neutral-300 transition-colors duration-150">
+                    <i class="uil uil-eye text-lg"></i>
+                </button>
+            </div>
+            <p id="deletePasswordError" class="hidden text-red-400 text-xs font-medium mt-1.5 flex items-center gap-1">
+                <i class="uil uil-exclamation-circle"></i>
+                <span></span>
+            </p>
+        `,
                 primaryButton: {
-                    text: 'Delete Account',
+                    text: 'Delete My Account',
                     icon: 'uil-trash-alt',
                     class: 'bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700',
                 },
                 secondaryButton: { text: 'Cancel' },
-                onPrimary: async () => {
-                    showToast('error', 'Account deletion has been flagged.');
+
+                onSecondary: () => {
+                    // Clear password field on cancel
+                    const inp = document.getElementById('deleteConfirmPassword');
+                    if (inp) inp.value = '';
+                },
+
+                onPrimary: () => {
+                    return new Promise(async (resolve, reject) => {
+                        const password = document.getElementById('deleteConfirmPassword')?.value?.trim();
+                        const errEl = document.getElementById('deletePasswordError');
+                        const errMsg = errEl?.querySelector('span');
+
+                        // Clear previous error
+                        errEl?.classList.add('hidden');
+
+                        if (!password) {
+                            errMsg.textContent = 'Please enter your password.';
+                            errEl.classList.remove('hidden');
+                            reject(new Error('No password'));
+                            return;
+                        }
+
+                        try {
+                            const res = await fetch('api/profile/delete-account.php', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ password }),
+                            });
+                            const data = await res.json();
+
+                            if (data.success) {
+                                resolve();
+                                // Brief delay so user sees the modal close before redirect
+                                setTimeout(() => {
+                                    window.location.href = '/auth/login';
+                                }, 400);
+                            } else {
+                                errMsg.textContent = data.message || 'Incorrect password.';
+                                errEl.classList.remove('hidden');
+                                reject(new Error(data.message));
+                            }
+                        } catch (err) {
+                            errMsg.textContent = 'Something went wrong. Please try again.';
+                            errEl.classList.remove('hidden');
+                            reject(err);
+                        }
+                    });
                 },
             });
+
             modalManager.show('deleteAccountModal');
+
+            // Auto-focus password field after modal animates in
+            setTimeout(() => {
+                document.getElementById('deleteConfirmPassword')?.focus();
+            }, 350);
         }
     </script>
 
