@@ -485,15 +485,6 @@ $userName = AuthChecker::getName();
                         </div>
                     </div>
 
-                    <div class="tip-box rounded-2xl p-4 mb-5">
-                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-1">
-                            <i class="uil uil-map brand"></i> Heatmap is on the Dashboard
-                        </p>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            The incident heatmap and live incident markers on the map are located on the <strong>Dashboard</strong>, not in Analytics. The Analytics page focuses on historical data, trends, and reports.
-                        </p>
-                    </div>
-
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
                         <?php
                         $analytics = [
@@ -547,8 +538,6 @@ $userName = AuthChecker::getName();
                             ['uil-user-circle',  'Update Profile',     'Go to Profile Settings to change your display name, username, and profile picture.'],
                             ['uil-lock-alt',     'Change Password',    'Use a strong password: 8+ characters, an uppercase letter, a number, and a symbol. Update it regularly to keep your account secure.'],
                             ['uil-image-upload', 'Profile Picture',    'Click the avatar on the Profile page to upload a photo. A crop tool will appear so you can frame it before saving. Images are saved as 400×400 JPEG.'],
-                            ['uil-signout',      'Logging Out',        'Use the Logout option in the sidebar user menu. Your JWT session token will be invalidated.'],
-                            ['uil-users-alt',    'User Management',    'As admin, you can create, suspend, or delete responder accounts from the User Management page. You can also invalidate another user\'s session tokens.'],
                             ['uil-trash-alt',    'Delete Account',     'Account deletion is permanent and requires password confirmation. All data tied to your account will be permanently removed.'],
                         ];
                         foreach ($accountItems as $a): ?>
