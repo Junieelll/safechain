@@ -1,6 +1,7 @@
 <?php
 // pages/profile.php
-if (session_status() === PHP_SESSION_NONE) session_start();
+if (session_status() === PHP_SESSION_NONE)
+    session_start();
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/includes/auth_helper.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/includes/user_functions.php';
@@ -24,7 +25,8 @@ if (!$user) {
 
 // ── Helpers ──────────────────────────────────────────────
 // Initials from name
-function getProfileInitials(string $name): string {
+function getProfileInitials(string $name): string
+{
     $parts = explode(' ', trim($name));
     if (count($parts) >= 2) {
         return strtoupper(substr($parts[0], 0, 1) . substr($parts[1], 0, 1));
@@ -33,36 +35,45 @@ function getProfileInitials(string $name): string {
 }
 
 // Format datetime nicely, returns '—' if null
-function formatDate(?string $datetime, string $format = 'M j, Y'): string {
-    if (!$datetime) return '—';
+function formatDate(?string $datetime, string $format = 'M j, Y'): string
+{
+    if (!$datetime)
+        return '—';
     return date($format, strtotime($datetime));
 }
 
-function formatDateTime(?string $datetime): string {
-    if (!$datetime) return 'Never';
-    $ts   = strtotime($datetime);
+function formatDateTime(?string $datetime): string
+{
+    if (!$datetime)
+        return 'Never';
+    $ts = strtotime($datetime);
     $diff = time() - $ts;
-    if ($diff < 60)         return 'Just now';
-    if ($diff < 3600)       return floor($diff / 60) . 'm ago';
-    if ($diff < 86400)      return floor($diff / 3600) . 'h ago';
-    if ($diff < 172800)     return 'Yesterday';
+    if ($diff < 60)
+        return 'Just now';
+    if ($diff < 3600)
+        return floor($diff / 60) . 'm ago';
+    if ($diff < 86400)
+        return floor($diff / 3600) . 'h ago';
+    if ($diff < 172800)
+        return 'Yesterday';
     return date('M j, Y g:i A', $ts);
 }
 
 // Role badge config
-function getRoleBadge(string $role): array {
-    return match(strtolower($role)) {
+function getRoleBadge(string $role): array
+{
+    return match (strtolower($role)) {
         'superadmin' => ['label' => 'Super Admin', 'bg' => 'bg-purple-100 dark:bg-purple-900/30', 'text' => 'text-purple-700 dark:text-purple-300', 'dot' => 'bg-purple-500'],
-        'admin'      => ['label' => 'Admin',       'bg' => 'bg-emerald-100 dark:bg-emerald-900/30','text' => 'text-emerald-700 dark:text-emerald-300','dot' => 'bg-emerald-500'],
-        default      => ['label' => ucfirst($role), 'bg' => 'bg-slate-100 dark:bg-neutral-700',    'text' => 'text-slate-600 dark:text-slate-300',   'dot' => 'bg-slate-400'],
+        'admin' => ['label' => 'Admin', 'bg' => 'bg-emerald-100 dark:bg-emerald-900/30', 'text' => 'text-emerald-700 dark:text-emerald-300', 'dot' => 'bg-emerald-500'],
+        default => ['label' => ucfirst($role), 'bg' => 'bg-slate-100 dark:bg-neutral-700', 'text' => 'text-slate-600 dark:text-slate-300', 'dot' => 'bg-slate-400'],
     };
 }
 
 // Precompute values used in HTML
-$initials    = getProfileInitials($user['name']);
-$roleBadge   = getRoleBadge($user['role']);
+$initials = getProfileInitials($user['name']);
+$roleBadge = getRoleBadge($user['role']);
 $memberSince = formatDate($user['created_at'], 'M j, Y');
-$avatarSeed  = urlencode($user['name']);
+$avatarSeed = urlencode($user['name']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -85,12 +96,34 @@ $avatarSeed  = urlencode($user['name']);
         };
     </script>
     <style>
-        .focus-brand:focus { outline: none; border-color: #27C291; box-shadow: 0 0 0 3px rgba(39,194,145,0.2); }
-        .btn-brand        { background: #27C291; color: #fff; transition: background .2s, transform .1s; }
-        .btn-brand:hover  { background: #22ae83; }
-        .btn-brand:active { transform: scale(0.96); }
-        .icon-brand       { background: rgba(39,194,145,0.1); border: 1px solid rgba(39,194,145,0.2); }
-        .icon-brand i     { color: #27C291; }
+        .focus-brand:focus {
+            outline: none;
+            border-color: #27C291;
+            box-shadow: 0 0 0 3px rgba(39, 194, 145, 0.2);
+        }
+
+        .btn-brand {
+            background: #27C291;
+            color: #fff;
+            transition: background .2s, transform .1s;
+        }
+
+        .btn-brand:hover {
+            background: #22ae83;
+        }
+
+        .btn-brand:active {
+            transform: scale(0.96);
+        }
+
+        .icon-brand {
+            background: rgba(39, 194, 145, 0.1);
+            border: 1px solid rgba(39, 194, 145, 0.2);
+        }
+
+        .icon-brand i {
+            color: #27C291;
+        }
     </style>
 </head>
 
@@ -107,21 +140,22 @@ $avatarSeed  = urlencode($user['name']);
                 <span>Profile Settings</span>
             </p>
             <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Account Settings</h1>
-            <p class="text-slate-500 dark:text-slate-400 text-sm mt-0.5">Manage your administrator profile and credentials.</p>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mt-0.5">Manage your administrator profile and
+                credentials.</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
             <!-- ── Left: Profile Card ── -->
             <div class="lg:col-span-1">
-                <div class="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-3xl p-6 flex flex-col items-center text-center gap-4">
+                <div
+                    class="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-3xl p-6 flex flex-col items-center text-center gap-4">
 
                     <!-- Avatar -->
                     <div class="relative w-28 h-28 mt-1 group">
                         <img id="avatarPreview"
                             src="https://api.dicebear.com/8.x/initials/svg?seed=<?= $avatarSeed ?>&backgroundColor=27C291&fontFamily=Helvetica&fontSize=38&chars=2"
-                            alt="Profile Photo"
-                            class="w-full h-full rounded-full object-cover"
+                            alt="Profile Photo" class="w-full h-full rounded-full object-cover"
                             style="box-shadow: 0 0 0 4px rgba(39,194,145,0.3);" />
                         <div onclick="document.getElementById('avatarInput').click()"
                             class="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer gap-1">
@@ -133,7 +167,8 @@ $avatarSeed  = urlencode($user['name']);
 
                     <!-- Name & username -->
                     <div>
-                        <div id="displayName" class="font-bold text-lg text-slate-900 dark:text-slate-100 leading-tight">
+                        <div id="displayName"
+                            class="font-bold text-lg text-slate-900 dark:text-slate-100 leading-tight">
                             <?= htmlspecialchars($user['name']) ?>
                         </div>
                         <div id="displayUsername" class="text-slate-400 dark:text-slate-500 text-sm font-medium mt-0.5">
@@ -143,7 +178,8 @@ $avatarSeed  = urlencode($user['name']);
 
                     <!-- Role & Status badges -->
                     <div class="flex items-center gap-2 flex-wrap justify-center">
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold <?= $roleBadge['bg'] ?> <?= $roleBadge['text'] ?>">
+                        <span
+                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold <?= $roleBadge['bg'] ?> <?= $roleBadge['text'] ?>">
                             <span class="w-1.5 h-1.5 rounded-full <?= $roleBadge['dot'] ?>"></span>
                             <?= $roleBadge['label'] ?>
                         </span>
@@ -154,7 +190,8 @@ $avatarSeed  = urlencode($user['name']);
 
 
                         <div class="flex items-center justify-between text-sm">
-                            <span class="flex items-center gap-2 text-slate-400 dark:text-slate-500 text-xs font-medium">
+                            <span
+                                class="flex items-center gap-2 text-slate-400 dark:text-slate-500 text-xs font-medium">
                                 <i class="uil uil-calendar-alt text-base"></i>
                                 Member Since
                             </span>
@@ -164,7 +201,8 @@ $avatarSeed  = urlencode($user['name']);
                         </div>
 
                         <div class="flex items-center justify-between text-sm">
-                            <span class="flex items-center gap-2 text-slate-400 dark:text-slate-500 text-xs font-medium">
+                            <span
+                                class="flex items-center gap-2 text-slate-400 dark:text-slate-500 text-xs font-medium">
                                 <i class="uil uil-postcard text-base"></i>
                                 User ID
                             </span>
@@ -188,40 +226,45 @@ $avatarSeed  = urlencode($user['name']);
             <div class="lg:col-span-2 flex flex-col gap-4">
 
                 <!-- Personal Information -->
-                <div class="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-3xl p-6">
+                <div
+                    class="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-3xl p-6">
                     <div class="flex items-center gap-3 mb-6">
                         <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 icon-brand">
                             <i class="uil uil-user text-lg"></i>
                         </div>
                         <div>
-                            <h2 class="font-semibold text-slate-900 dark:text-slate-100 text-base leading-tight">Personal Information</h2>
-                            <p class="text-slate-400 dark:text-slate-500 text-xs mt-0.5">Update your display identity</p>
+                            <h2 class="font-semibold text-slate-900 dark:text-slate-100 text-base leading-tight">
+                                Personal Information</h2>
+                            <p class="text-slate-400 dark:text-slate-500 text-xs mt-0.5">Update your display identity
+                            </p>
                         </div>
                     </div>
 
                     <div class="flex flex-col gap-5">
                         <!-- Full Name -->
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Full Name</label>
-                            <input id="nameInput" type="text"
-                                placeholder="Enter full name"
-                                value="<?= htmlspecialchars($user['name']) ?>"
-                                oninput="updatePreview(); onInfoChange()"
+                            <label
+                                class="block text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Full
+                                Name</label>
+                            <input id="nameInput" type="text" placeholder="Enter full name"
+                                value="<?= htmlspecialchars($user['name']) ?>" oninput="updatePreview(); onInfoChange()"
                                 class="focus-brand w-full rounded-xl px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-neutral-700/60 border border-slate-200 dark:border-neutral-600 placeholder-slate-300 dark:placeholder-neutral-500 transition-all duration-200" />
                         </div>
 
                         <!-- Username -->
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Username</label>
+                            <label
+                                class="block text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Username</label>
                             <div class="relative">
-                                <input id="usernameInput" type="text"
-                                    placeholder="username"
+                                <input id="usernameInput" type="text" placeholder="username"
                                     value="<?= htmlspecialchars($user['username']) ?>"
                                     oninput="onInfoChange(); checkUsernameUnique(this)"
                                     class="focus-brand w-full rounded-xl px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-neutral-700/60 border border-slate-200 dark:border-neutral-600 placeholder-slate-300 dark:placeholder-neutral-500 transition-all duration-200" />
-                                <span id="usernameCheckIcon" class="absolute right-3.5 top-1/2 -translate-y-1/2 hidden"></span>
+                                <span id="usernameCheckIcon"
+                                    class="absolute right-3.5 top-1/2 -translate-y-1/2 hidden"></span>
                             </div>
-                            <p id="usernameError" class="hidden text-red-400 text-xs font-medium mt-1.5 flex items-center gap-1">
+                            <p id="usernameError"
+                                class="hidden text-red-400 text-xs font-medium mt-1.5 flex items-center gap-1">
                                 <i class="uil uil-exclamation-circle"></i>
                                 <span id="usernameErrorText">Only letters, numbers, and underscores allowed.</span>
                             </p>
@@ -229,7 +272,8 @@ $avatarSeed  = urlencode($user['name']);
                     </div>
 
                     <div id="infoSaveRow" class="hidden justify-end mt-6">
-                        <button onclick="saveProfile()" class="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-medium">
+                        <button onclick="saveProfile()"
+                            class="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-medium">
                             <i class="uil uil-save text-base"></i>
                             Save Changes
                         </button>
@@ -237,14 +281,17 @@ $avatarSeed  = urlencode($user['name']);
                 </div>
 
                 <!-- Change Password -->
-                <div class="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-3xl p-6">
+                <div
+                    class="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-3xl p-6">
                     <div class="flex items-center gap-3 mb-6">
                         <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 icon-brand">
                             <i class="uil uil-lock text-lg"></i>
                         </div>
                         <div>
-                            <h2 class="font-semibold text-slate-900 dark:text-slate-100 text-base leading-tight">Change Password</h2>
-                            <p class="text-slate-400 dark:text-slate-500 text-xs mt-0.5">Choose a strong, unique password</p>
+                            <h2 class="font-semibold text-slate-900 dark:text-slate-100 text-base leading-tight">Change
+                                Password</h2>
+                            <p class="text-slate-400 dark:text-slate-500 text-xs mt-0.5">Choose a strong, unique
+                                password</p>
                         </div>
                     </div>
 
@@ -252,7 +299,9 @@ $avatarSeed  = urlencode($user['name']);
 
                         <!-- Current Password -->
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Current Password</label>
+                            <label
+                                class="block text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Current
+                                Password</label>
                             <div class="relative">
                                 <input id="currentPass" type="password" placeholder="Enter current password"
                                     oninput="onPassChange()"
@@ -266,7 +315,9 @@ $avatarSeed  = urlencode($user['name']);
 
                         <!-- New Password -->
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">New Password</label>
+                            <label
+                                class="block text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">New
+                                Password</label>
                             <div class="relative">
                                 <input id="newPass" type="password" placeholder="Enter new password"
                                     oninput="checkStrength(this.value); onPassChange()"
@@ -280,26 +331,49 @@ $avatarSeed  = urlencode($user['name']);
                             <!-- Strength meter -->
                             <div class="mt-2.5 flex items-center gap-3">
                                 <div class="flex gap-1 flex-1">
-                                    <div class="flex-1 h-1 rounded-full bg-slate-100 dark:bg-neutral-700 overflow-hidden"><div id="s1" class="h-full rounded-full w-0 transition-all duration-300"></div></div>
-                                    <div class="flex-1 h-1 rounded-full bg-slate-100 dark:bg-neutral-700 overflow-hidden"><div id="s2" class="h-full rounded-full w-0 transition-all duration-300"></div></div>
-                                    <div class="flex-1 h-1 rounded-full bg-slate-100 dark:bg-neutral-700 overflow-hidden"><div id="s3" class="h-full rounded-full w-0 transition-all duration-300"></div></div>
-                                    <div class="flex-1 h-1 rounded-full bg-slate-100 dark:bg-neutral-700 overflow-hidden"><div id="s4" class="h-full rounded-full w-0 transition-all duration-300"></div></div>
+                                    <div
+                                        class="flex-1 h-1 rounded-full bg-slate-100 dark:bg-neutral-700 overflow-hidden">
+                                        <div id="s1" class="h-full rounded-full w-0 transition-all duration-300"></div>
+                                    </div>
+                                    <div
+                                        class="flex-1 h-1 rounded-full bg-slate-100 dark:bg-neutral-700 overflow-hidden">
+                                        <div id="s2" class="h-full rounded-full w-0 transition-all duration-300"></div>
+                                    </div>
+                                    <div
+                                        class="flex-1 h-1 rounded-full bg-slate-100 dark:bg-neutral-700 overflow-hidden">
+                                        <div id="s3" class="h-full rounded-full w-0 transition-all duration-300"></div>
+                                    </div>
+                                    <div
+                                        class="flex-1 h-1 rounded-full bg-slate-100 dark:bg-neutral-700 overflow-hidden">
+                                        <div id="s4" class="h-full rounded-full w-0 transition-all duration-300"></div>
+                                    </div>
                                 </div>
-                                <span id="strengthLabel" class="text-xs font-semibold text-slate-400 dark:text-slate-500 w-14 text-right">—</span>
+                                <span id="strengthLabel"
+                                    class="text-xs font-semibold text-slate-400 dark:text-slate-500 w-14 text-right">—</span>
                             </div>
 
                             <!-- Requirements -->
                             <ul class="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5">
-                                <li id="req-len"   class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-neutral-500"><i class="uil uil-circle req-icon text-sm"></i>8+ characters</li>
-                                <li id="req-upper" class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-neutral-500"><i class="uil uil-circle req-icon text-sm"></i>Uppercase letter</li>
-                                <li id="req-num"   class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-neutral-500"><i class="uil uil-circle req-icon text-sm"></i>Number</li>
-                                <li id="req-sym"   class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-neutral-500"><i class="uil uil-circle req-icon text-sm"></i>Symbol</li>
+                                <li id="req-len"
+                                    class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-neutral-500">
+                                    <i class="uil uil-circle req-icon text-sm"></i>8+ characters</li>
+                                <li id="req-upper"
+                                    class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-neutral-500">
+                                    <i class="uil uil-circle req-icon text-sm"></i>Uppercase letter</li>
+                                <li id="req-num"
+                                    class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-neutral-500">
+                                    <i class="uil uil-circle req-icon text-sm"></i>Number</li>
+                                <li id="req-sym"
+                                    class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-neutral-500">
+                                    <i class="uil uil-circle req-icon text-sm"></i>Symbol</li>
                             </ul>
                         </div>
 
                         <!-- Confirm Password -->
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Confirm New Password</label>
+                            <label
+                                class="block text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Confirm
+                                New Password</label>
                             <div class="relative">
                                 <input id="confirmPass" type="password" placeholder="Repeat new password"
                                     oninput="checkMatch(); onPassChange()"
@@ -335,7 +409,8 @@ $avatarSeed  = urlencode($user['name']);
                                 <i class="uil uil-exclamation-triangle text-base"></i>
                                 Danger Zone
                             </h3>
-                            <p class="text-slate-400 dark:text-slate-500 text-xs mt-1">Permanently delete this admin account and all associated data.</p>
+                            <p class="text-slate-400 dark:text-slate-500 text-xs mt-1">Permanently delete this admin
+                                account and all associated data.</p>
                         </div>
                         <button onclick="confirmDelete()"
                             class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-red-500 border border-red-200 dark:border-red-500/30 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors duration-200">
@@ -355,10 +430,10 @@ $avatarSeed  = urlencode($user['name']);
     <script>
         // ── Seed data from PHP ──────────────────────────────────────────
         const currentUser = {
-            userId:   '<?= htmlspecialchars($user['user_id']) ?>',
-            name:     '<?= htmlspecialchars($user['name'],     ENT_QUOTES) ?>',
+            userId: '<?= htmlspecialchars($user['user_id']) ?>',
+            name: '<?= htmlspecialchars($user['name'], ENT_QUOTES) ?>',
             username: '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>',
-            role:     '<?= htmlspecialchars($user['role'],     ENT_QUOTES) ?>',
+            role: '<?= htmlspecialchars($user['role'], ENT_QUOTES) ?>',
         };
 
         // ── Avatar local preview ────────────────────────────────────────
@@ -374,7 +449,7 @@ $avatarSeed  = urlencode($user['name']);
         function updatePreview() {
             const name = document.getElementById('nameInput').value.trim();
             const user = document.getElementById('usernameInput').value.trim();
-            document.getElementById('displayName').textContent     = name || currentUser.name;
+            document.getElementById('displayName').textContent = name || currentUser.name;
             document.getElementById('displayUsername').textContent = user || currentUser.username;
         }
 
@@ -383,13 +458,13 @@ $avatarSeed  = urlencode($user['name']);
         // ══════════════════════════════════════════════════════════════════
 
         let usernameCheckTimer = null;
-        let usernameIsValid    = true; // format valid
-        let usernameIsFree     = true; // not taken
+        let usernameIsValid = true; // format valid
+        let usernameIsFree = true; // not taken
 
         // Show/hide Save Changes based on whether anything actually changed
         function onInfoChange() {
             updatePreview();
-            const nameChanged     = document.getElementById('nameInput').value.trim()     !== currentUser.name;
+            const nameChanged = document.getElementById('nameInput').value.trim() !== currentUser.name;
             const usernameChanged = document.getElementById('usernameInput').value.trim() !== currentUser.username;
             const isDirty = nameChanged || usernameChanged;
             const saveRow = document.getElementById('infoSaveRow');
@@ -404,7 +479,7 @@ $avatarSeed  = urlencode($user['name']);
             if (!/^[a-zA-Z0-9_]*$/.test(val)) {
                 setUsernameError('Only letters, numbers, and underscores allowed.');
                 usernameIsValid = false;
-                usernameIsFree  = false;
+                usernameIsFree = false;
                 onInfoChange();
                 return;
             }
@@ -425,7 +500,7 @@ $avatarSeed  = urlencode($user['name']);
             usernameCheckTimer = setTimeout(async () => {
                 if (!val) { clearUsernameError(); onInfoChange(); return; }
                 try {
-                    const res  = await fetch(`api/profile/check-username.php?username=${encodeURIComponent(val)}`);
+                    const res = await fetch(`api/profile/check-username.php?username=${encodeURIComponent(val)}`);
                     const data = await res.json();
                     if (data.taken) {
                         setUsernameError('That username is already taken.');
@@ -444,22 +519,22 @@ $avatarSeed  = urlencode($user['name']);
 
         function setUsernameError(msg) {
             const input = document.getElementById('usernameInput');
-            const err   = document.getElementById('usernameError');
-            const icon  = document.getElementById('usernameCheckIcon');
+            const err = document.getElementById('usernameError');
+            const icon = document.getElementById('usernameCheckIcon');
             input.style.borderColor = '#f87171';
             err.querySelector('span').textContent = msg;
             err.classList.remove('hidden');
-            icon.innerHTML   = '';
+            icon.innerHTML = '';
             icon.classList.add('hidden');
         }
 
         function setUsernameAvailable() {
             const input = document.getElementById('usernameInput');
-            const err   = document.getElementById('usernameError');
-            const icon  = document.getElementById('usernameCheckIcon');
+            const err = document.getElementById('usernameError');
+            const icon = document.getElementById('usernameCheckIcon');
             input.style.borderColor = '#27C291';
             err.classList.add('hidden');
-            icon.innerHTML   = '<i class="uil uil-check-circle text-base" style="color:#27C291"></i>';
+            icon.innerHTML = '<i class="uil uil-check-circle text-base" style="color:#27C291"></i>';
             icon.classList.remove('hidden');
         }
 
@@ -473,8 +548,8 @@ $avatarSeed  = urlencode($user['name']);
 
         function clearUsernameError() {
             const input = document.getElementById('usernameInput');
-            const err   = document.getElementById('usernameError');
-            const icon  = document.getElementById('usernameCheckIcon');
+            const err = document.getElementById('usernameError');
+            const icon = document.getElementById('usernameCheckIcon');
             input.style.borderColor = '';
             err.classList.add('hidden');
             icon.innerHTML = '';
@@ -487,8 +562,8 @@ $avatarSeed  = urlencode($user['name']);
 
         function onPassChange() {
             const cur = document.getElementById('currentPass').value;
-            const np  = document.getElementById('newPass').value;
-            const cp  = document.getElementById('confirmPass').value;
+            const np = document.getElementById('newPass').value;
+            const cp = document.getElementById('confirmPass').value;
             const btn = document.getElementById('passSaveBtn');
             btn.style.display = (cur && np && cp) ? 'flex' : 'none';
             checkMatch();
@@ -497,24 +572,24 @@ $avatarSeed  = urlencode($user['name']);
         // ── Password strength ───────────────────────────────────────────
         function checkStrength(val) {
             const ok = {
-                len:   val.length >= 8,
+                len: val.length >= 8,
                 upper: /[A-Z]/.test(val),
-                num:   /[0-9]/.test(val),
-                sym:   /[^A-Za-z0-9]/.test(val),
+                num: /[0-9]/.test(val),
+                sym: /[^A-Za-z0-9]/.test(val),
             };
-            const score  = Object.values(ok).filter(Boolean).length;
+            const score = Object.values(ok).filter(Boolean).length;
             const colors = ['#ef4444', '#f97316', '#eab308', '#27C291'];
             const labels = ['Weak', 'Fair', 'Good', 'Strong'];
 
-            setReq('req-len',   ok.len);
+            setReq('req-len', ok.len);
             setReq('req-upper', ok.upper);
-            setReq('req-num',   ok.num);
-            setReq('req-sym',   ok.sym);
+            setReq('req-num', ok.num);
+            setReq('req-sym', ok.sym);
 
-            ['s1','s2','s3','s4'].forEach((id, i) => {
+            ['s1', 's2', 's3', 's4'].forEach((id, i) => {
                 const el = document.getElementById(id);
-                el.style.width      = i < score ? '100%' : '0%';
-                el.style.background = score > 0  ? colors[score - 1] : '';
+                el.style.width = i < score ? '100%' : '0%';
+                el.style.background = score > 0 ? colors[score - 1] : '';
             });
 
             const lbl = document.getElementById('strengthLabel');
@@ -525,7 +600,7 @@ $avatarSeed  = urlencode($user['name']);
         }
 
         function setReq(id, met) {
-            const li   = document.getElementById(id);
+            const li = document.getElementById(id);
             const icon = li.querySelector('.req-icon');
             li.style.color = met ? '#27C291' : '';
             icon.className = met ? 'uil uil-check-circle req-icon text-sm' : 'uil uil-circle req-icon text-sm';
@@ -533,16 +608,16 @@ $avatarSeed  = urlencode($user['name']);
 
         // ── Confirm match ───────────────────────────────────────────────
         function checkMatch() {
-            const np  = document.getElementById('newPass').value;
-            const cp  = document.getElementById('confirmPass').value;
+            const np = document.getElementById('newPass').value;
+            const cp = document.getElementById('confirmPass').value;
             const msg = document.getElementById('matchMsg');
             if (!cp) { msg.classList.add('hidden'); return; }
             msg.classList.remove('hidden');
             if (np === cp) {
-                msg.innerHTML   = '<i class="uil uil-check-circle"></i> Passwords match';
+                msg.innerHTML = '<i class="uil uil-check-circle"></i> Passwords match';
                 msg.style.color = '#27C291';
             } else {
-                msg.innerHTML   = '<i class="uil uil-times-circle"></i> Passwords do not match';
+                msg.innerHTML = '<i class="uil uil-times-circle"></i> Passwords do not match';
                 msg.style.color = '#f87171';
             }
         }
@@ -550,12 +625,12 @@ $avatarSeed  = urlencode($user['name']);
         // ── Toggle password visibility ──────────────────────────────────
         function togglePass(id, btn) {
             const input = document.getElementById(id);
-            const icon  = btn.querySelector('i');
+            const icon = btn.querySelector('i');
             if (input.type === 'password') {
-                input.type     = 'text';
+                input.type = 'text';
                 icon.className = 'uil uil-eye-slash text-lg';
             } else {
-                input.type     = 'password';
+                input.type = 'password';
                 icon.className = 'uil uil-eye text-lg';
             }
         }
@@ -563,15 +638,15 @@ $avatarSeed  = urlencode($user['name']);
         // ── Clear password fields ───────────────────────────────────────
         function clearPassFields() {
             ['currentPass', 'newPass', 'confirmPass'].forEach(id => document.getElementById(id).value = '');
-            ['s1','s2','s3','s4'].forEach(id => {
-                document.getElementById(id).style.width      = '0';
+            ['s1', 's2', 's3', 's4'].forEach(id => {
+                document.getElementById(id).style.width = '0';
                 document.getElementById(id).style.background = '';
             });
             document.getElementById('strengthLabel').textContent = '—';
             document.getElementById('strengthLabel').style.color = '';
             document.getElementById('matchMsg').classList.add('hidden');
             document.getElementById('passSaveBtn').style.display = 'none';
-            ['req-len','req-upper','req-num','req-sym'].forEach(id => setReq(id, false));
+            ['req-len', 'req-upper', 'req-num', 'req-sym'].forEach(id => setReq(id, false));
         }
 
         // ══════════════════════════════════════════════════════════════════
@@ -579,71 +654,71 @@ $avatarSeed  = urlencode($user['name']);
         // ══════════════════════════════════════════════════════════════════
 
         async function saveProfile() {
-            const name     = document.getElementById('nameInput').value.trim();
+            const name = document.getElementById('nameInput').value.trim();
             const username = document.getElementById('usernameInput').value.trim();
 
             if (!name || !username) {
-                showToast('error', 'Missing Fields', 'Name and username are required.');
+                showToast('error', 'Name and username are required.');
                 return;
             }
             if (!usernameIsValid || !usernameIsFree) {
-                showToast('error', 'Invalid Username', 'Fix the username before saving.');
+                showToast('error', 'Fix the username before saving.');
                 return;
             }
 
             try {
-                const res  = await fetch('api/profile/update-info.php', {
-                    method:  'POST',
+                const res = await fetch('api/profile/update-info.php', {
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({ name, username }),
+                    body: JSON.stringify({ name, username }),
                 });
                 const data = await res.json();
 
                 if (data.success) {
-                    showToast('success', 'Profile Updated', 'Your information has been saved.');
-                    currentUser.name     = name;
+                    showToast('success', 'Profile updated successfully.');
+                    currentUser.name = name;
                     currentUser.username = username;
                     clearUsernameError();
                     document.getElementById('infoSaveRow').style.display = 'none';
                 } else {
-                    showToast('error', 'Update Failed', data.error || 'Could not update profile.');
+                    showToast('error', data.error || 'Could not update profile.');
                 }
             } catch (err) {
                 console.error(err);
-                showToast('error', 'Error', 'Something went wrong. Please try again.');
+                showToast('error', 'Something went wrong. Please try again.');
             }
         }
 
         async function savePassword() {
             const cur = document.getElementById('currentPass').value;
-            const np  = document.getElementById('newPass').value;
-            const cp  = document.getElementById('confirmPass').value;
+            const np = document.getElementById('newPass').value;
+            const cp = document.getElementById('confirmPass').value;
 
             if (!cur) { showToast('error', 'Missing Field', 'Enter your current password.'); return; }
-            if (!np)  { showToast('error', 'Missing Field', 'Enter a new password.'); return; }
+            if (!np) { showToast('error', 'Missing Field', 'Enter a new password.'); return; }
             if (np !== cp) { showToast('error', 'Mismatch', 'New passwords do not match.'); return; }
             if (np.length < 8 || !/[A-Z]/.test(np) || !/[0-9]/.test(np)) {
-                showToast('error', 'Weak Password', 'Must be 8+ chars with uppercase & a number.');
+                showToast('error', 'Must be 8+ chars with an uppercase letter & number.');
                 return;
             }
 
             try {
-                const res  = await fetch('api/profile/update-password.php', {
-                    method:  'POST',
+                const res = await fetch('api/profile/update-password.php', {
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({ currentPassword: cur, newPassword: np }),
+                    body: JSON.stringify({ currentPassword: cur, newPassword: np }),
                 });
                 const data = await res.json();
 
                 if (data.success) {
-                    showToast('success', 'Password Changed', 'Your password has been updated.');
+                   showToast('success', 'Password updated successfully.');
                     clearPassFields();
                 } else {
-                    showToast('error', 'Update Failed', data.error || 'Could not update password.');
+                    showToast('error', data.error || 'Could not update password.');
                 }
             } catch (err) {
                 console.error(err);
-                showToast('error', 'Error', 'Something went wrong. Please try again.');
+                showToast('error', 'Something went wrong. Please try again.');
             }
         }
 
@@ -669,7 +744,7 @@ $avatarSeed  = urlencode($user['name']);
                 },
                 secondaryButton: { text: 'Cancel' },
                 onPrimary: async () => {
-                    showToast('error', 'Action Logged', 'Account deletion has been flagged.');
+                    showToast('error', 'Account deletion has been flagged.');
                 },
             });
             modalManager.show('deleteAccountModal');
