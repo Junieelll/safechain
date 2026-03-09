@@ -96,6 +96,8 @@ $avatarUrl = !empty($user['profile_picture'])
     <link rel="stylesheet" href="assets/css/page-load-animation.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
     <link rel="icon" type="image/x-icon" href="assets/img/logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: ["class", '[data-theme="dark"]'],
@@ -444,14 +446,61 @@ $avatarUrl = !empty($user['profile_picture'])
             avatarUrl: '<?= htmlspecialchars($avatarUrl, ENT_QUOTES) ?>',
         };
 
-        // ── Avatar local preview ────────────────────────────────────────
-        document.getElementById('avatarInput').addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => { document.getElementById('avatarPreview').src = ev.target.result; };
-            reader.readAsDataURL(file);
+        document.getElementById('avatarInput').addEventListener('change', async function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Local preview immediately
+    const reader = new FileReader();
+    reader.onload = ev => { document.getElementById('avatarPreview').src = ev.target.result; };
+    reader.readAsDataURL(file);
+
+    // Upload to server
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    // Show uploading state on the button
+    const uploadBtn = document.querySelector('button[onclick*="avatarInput"]');
+    const originalHTML = uploadBtn?.innerHTML;
+    if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<i class="uil uil-spinner-alt animate-spin text-base"></i> Uploading...';
+    }
+
+    try {
+        const res = await fetch('api/profile/upload-avatar.php', {
+            method: 'POST',
+            body: formData,
+            // NOTE: Do NOT set Content-Type header — browser sets it automatically
+            // with the correct multipart boundary for FormData
         });
+
+        const data = await res.json();
+
+        if (data.success) {
+            // Update the avatar src with the real server URL (busts cache)
+            const newUrl = data.data.profile_picture_url + '?t=' + Date.now();
+            document.getElementById('avatarPreview').src = newUrl;
+            currentUser.avatarUrl = newUrl;
+            showToast('success', 'Profile picture updated.');
+        } else {
+            // Revert preview to previous avatar on failure
+            document.getElementById('avatarPreview').src = currentUser.avatarUrl;
+            showToast('error', data.message || 'Failed to upload photo.');
+        }
+    } catch (err) {
+        console.error(err);
+        document.getElementById('avatarPreview').src = currentUser.avatarUrl;
+        showToast('error', 'Something went wrong. Please try again.');
+    } finally {
+        if (uploadBtn) {
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = originalHTML;
+        }
+        // Reset input so the same file can be re-selected if needed
+        e.target.value = '';
+    }
+});
 
         // ── Live card preview (no @ anywhere) ──────────────────────────
         function updatePreview() {
@@ -762,6 +811,7 @@ $avatarUrl = !empty($user['profile_picture'])
     <script src="assets/js/sidebar.js"></script>
     <script src="assets/js/toast.js"></script>
     <script src="assets/js/modal.js"></script>
+    <script src="assets/js/avatar-crop.js"></script>
 </body>
 
 </html>
