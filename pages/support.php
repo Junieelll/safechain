@@ -242,9 +242,9 @@ $userName = AuthChecker::getName();
                         <?php
                         $overview = [
                             ['uil-map-marker',   'Live Incident Map',    'Real-time map with incident markers and a heatmap overlay showing concentration of incidents per area.'],
-                            ['uil-bell',         'Push Notifications',   'Admins receive FCM push alerts whenever a new incident is reported by any resident.'],
-                            ['uil-chart-bar',    'Analytics',            'Incident trends, response times, peak hours, and exportable reports.'],
-                            ['uil-clock',        'Timeline Audit Trail', 'Every incident has a full timeline of actions — who did what and when.'],
+                            ['uil-map', 'Heatmap', 'The heatmap visualizes areas with a high concentration of incidents by using color intensity, helping identify hotspots and patterns of activity.'],
+                            ['uil-chart-line', 'Incident Histogram', 'A monthly chart showing the number of reported emergencies by type, including fire, flood, and crime, to help monitor incident patterns throughout the year.'],
+                            ['uil-list-ol-alt', 'Emergency List', 'Displays the latest reported emergencies with key details such as status, time reported, and reporter information, linked to their location on the map.'],
                         ];
                         foreach ($overview as $o): ?>
                         <div class="flex gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-700/50 border border-slate-100 dark:border-neutral-700">
@@ -498,11 +498,11 @@ $userName = AuthChecker::getName();
                         <?php
                         $analytics = [
                             ['uil-chart-line',    'Incident Trends',
-                             'Line and bar charts showing the number of incidents over time. Filter by incident type (fire, flood, crime) and custom date ranges to spot patterns.'],
+                             'Line charts showing the number of incidents over time. Filter by incident type (fire, flood, crime) and custom date ranges to spot patterns.'],
                             ['uil-stopwatch',     'Response Time',
                              'Average time from when an incident is reported to when a responder accepts it. Broken down per incident type and time period to evaluate team performance.'],
                             ['uil-clock-three',   'Peak Hours',
-                             'Heatmap-style chart showing which hours of the day and days of the week have the highest incident frequency — useful for scheduling responder duty hours.'],
+                             'Bar chart showing which hours of the day have the highest incident frequency — useful for scheduling responder duty hours.'],
                             ['uil-file-download', 'Export Reports',
                              'Generate and download formal incident reports as PDF or CSV. Reports are only available once a responder has submitted their field report for that incident.'],
                         ];
