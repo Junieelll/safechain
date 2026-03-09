@@ -589,8 +589,7 @@ $userName = AuthChecker::getName();
                     <div class="flex flex-col gap-2" id="faqList">
                         <?php
                         $faqs = [
-                            ['Why am I not receiving push notifications for new incidents?',
-                             'Ensure your browser has notifications enabled for SafeChain. Your FCM device token is registered automatically when you log in. If the issue persists, log out and log back in to refresh your token.'],
+                            
                             ['Can the admin change an incident status directly?',
                              'No — under normal circumstances, only the assigned responder can update incident status through the mobile app. The admin can only use Force Resolve, which is available after an incident has been in Responding status for 6 hours or more.'],
                             ['Can I generate a report before the responder submits theirs?',
