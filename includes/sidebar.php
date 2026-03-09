@@ -258,12 +258,12 @@ function isGroupActive($group, $currentRoute)
                         <i class="uil uil-user text-xl text-[#01AF78]"></i>
                         <span class="text-sm font-medium">My Profile</span>
                     </a>
-                    <a href="settings.php"
+                    <a href="/settings"
                         class="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors duration-200 no-underline">
                         <i class="uil uil-setting text-xl text-[#01AF78]"></i>
                         <span class="text-sm font-medium">Settings</span>
                     </a>
-                    <a href="support.php"
+                    <a href="/support"
                         class="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors duration-200 no-underline">
                         <i class="uil uil-question-circle text-xl text-[#01AF78]"></i>
                         <span class="text-sm font-medium">Help & Support</span>
