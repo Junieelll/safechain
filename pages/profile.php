@@ -97,7 +97,7 @@ $avatarUrl = !empty($user['profile_picture'])
     <link rel="stylesheet" href="assets/css/toast.css" />
     <link rel="icon" type="image/x-icon" href="assets/img/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: ["class", '[data-theme="dark"]'],
@@ -161,11 +161,9 @@ $avatarUrl = !empty($user['profile_picture'])
 
                     <!-- Avatar -->
                     <div class="relative w-28 h-28 mt-1 group">
-                        <img id="avatarPreview"
-    src="<?= htmlspecialchars($avatarUrl) ?>"
-    alt="Profile Photo"
-    class="w-full h-full rounded-full object-cover"
-    style="box-shadow: 0 0 0 4px rgba(39,194,145,0.3);" />
+                        <img id="avatarPreview" src="<?= htmlspecialchars($avatarUrl) ?>" alt="Profile Photo"
+                            class="w-full h-full rounded-full object-cover"
+                            style="box-shadow: 0 0 0 4px rgba(39,194,145,0.3);" />
                         <div onclick="document.getElementById('avatarInput').click()"
                             class="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer gap-1">
                             <i class="uil uil-camera text-white text-xl"></i>
@@ -365,16 +363,20 @@ $avatarUrl = !empty($user['profile_picture'])
                             <ul class="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5">
                                 <li id="req-len"
                                     class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-neutral-500">
-                                    <i class="uil uil-circle req-icon text-sm"></i>8+ characters</li>
+                                    <i class="uil uil-circle req-icon text-sm"></i>8+ characters
+                                </li>
                                 <li id="req-upper"
                                     class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-neutral-500">
-                                    <i class="uil uil-circle req-icon text-sm"></i>Uppercase letter</li>
+                                    <i class="uil uil-circle req-icon text-sm"></i>Uppercase letter
+                                </li>
                                 <li id="req-num"
                                     class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-neutral-500">
-                                    <i class="uil uil-circle req-icon text-sm"></i>Number</li>
+                                    <i class="uil uil-circle req-icon text-sm"></i>Number
+                                </li>
                                 <li id="req-sym"
                                     class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-neutral-500">
-                                    <i class="uil uil-circle req-icon text-sm"></i>Symbol</li>
+                                    <i class="uil uil-circle req-icon text-sm"></i>Symbol
+                                </li>
                             </ul>
                         </div>
 
@@ -445,62 +447,6 @@ $avatarUrl = !empty($user['profile_picture'])
             role: '<?= htmlspecialchars($user['role'], ENT_QUOTES) ?>',
             avatarUrl: '<?= htmlspecialchars($avatarUrl, ENT_QUOTES) ?>',
         };
-
-        document.getElementById('avatarInput').addEventListener('change', async function (e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Local preview immediately
-    const reader = new FileReader();
-    reader.onload = ev => { document.getElementById('avatarPreview').src = ev.target.result; };
-    reader.readAsDataURL(file);
-
-    // Upload to server
-    const formData = new FormData();
-    formData.append('avatar', file);
-
-    // Show uploading state on the button
-    const uploadBtn = document.querySelector('button[onclick*="avatarInput"]');
-    const originalHTML = uploadBtn?.innerHTML;
-    if (uploadBtn) {
-        uploadBtn.disabled = true;
-        uploadBtn.innerHTML = '<i class="uil uil-spinner-alt animate-spin text-base"></i> Uploading...';
-    }
-
-    try {
-        const res = await fetch('api/profile/upload-avatar.php', {
-            method: 'POST',
-            body: formData,
-            // NOTE: Do NOT set Content-Type header — browser sets it automatically
-            // with the correct multipart boundary for FormData
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-            // Update the avatar src with the real server URL (busts cache)
-            const newUrl = data.data.profile_picture_url + '?t=' + Date.now();
-            document.getElementById('avatarPreview').src = newUrl;
-            currentUser.avatarUrl = newUrl;
-            showToast('success', 'Profile picture updated.');
-        } else {
-            // Revert preview to previous avatar on failure
-            document.getElementById('avatarPreview').src = currentUser.avatarUrl;
-            showToast('error', data.message || 'Failed to upload photo.');
-        }
-    } catch (err) {
-        console.error(err);
-        document.getElementById('avatarPreview').src = currentUser.avatarUrl;
-        showToast('error', 'Something went wrong. Please try again.');
-    } finally {
-        if (uploadBtn) {
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML = originalHTML;
-        }
-        // Reset input so the same file can be re-selected if needed
-        e.target.value = '';
-    }
-});
 
         // ── Live card preview (no @ anywhere) ──────────────────────────
         function updatePreview() {
@@ -768,7 +714,7 @@ $avatarUrl = !empty($user['profile_picture'])
                 const data = await res.json();
 
                 if (data.success) {
-                   showToast('success', 'Password updated successfully.');
+                    showToast('success', 'Password updated successfully.');
                     clearPassFields();
                 } else {
                     showToast('error', data.error || 'Could not update password.');

@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/auth_helper.php';
+require_once __DIR__ . '/../config/conn.php';
 
 // Ensure user is authenticated
 if (!AuthChecker::isLoggedIn()) {
@@ -26,6 +27,18 @@ if (count($nameParts) >= 2) {
 } else {
     $initials = strtoupper(substr($name, 0, 2));
 }
+
+// Fetch profile picture from DB
+$stmt = $conn->prepare("SELECT profile_picture FROM users WHERE user_id = ?");
+$stmt->bind_param("s", $userId);
+$stmt->execute();
+$row = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+
+$avatarSeed = urlencode($name);
+$sidebarAvatarUrl = !empty(trim($row['profile_picture'] ?? ''))
+    ? rtrim(BASE_URL, '/') . '/' . ltrim($row['profile_picture'], '/')
+    : "https://api.dicebear.com/8.x/initials/svg?seed={$avatarSeed}&backgroundColor=27C291&fontFamily=Helvetica&fontSize=38&chars=2";
 
 // Format role for display
 $roleDisplay = ucfirst($userRole);
@@ -225,9 +238,11 @@ function isGroupActive($group, $currentRoute)
             <li class="relative">
                 <button id="userProfileBtn"
                     class="w-full flex items-center gap-3 py-3 px-3.5 mb-0 rounded-xl text-white no-underline transition-all duration-300 hover:bg-white/15 border-0 cursor-pointer bg-transparent">
-                    <div
-                        class="w-[38px] h-[38px] rounded-full avatar-gradient flex items-center justify-center flex-shrink-0 font-semibold text-[0.95rem] border-2 border-white/30">
-                        <?php echo htmlspecialchars($initials); ?>
+                    <div class="w-[38px] h-[38px] rounded-full flex-shrink-0 overflow-hidden"
+                        style="box-shadow: 0 0 0 3px rgba(39,194,145,0.5);">
+                        <img src="<?php echo htmlspecialchars($sidebarAvatarUrl); ?>"
+                            alt="<?php echo htmlspecialchars($initials); ?>"
+                            class="w-full h-full rounded-full object-cover" />
                     </div>
                     <div id="userInfo" class="flex flex-col transition-opacity duration-300 text-left">
                         <span class="font-semibold text-[0.95rem]"><?php echo htmlspecialchars($name); ?></span>
