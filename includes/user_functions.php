@@ -121,7 +121,7 @@ function createUser($conn, $name, $username, $password, $role) {
  */
 function getUserById($conn, $userId) {
     $stmt = mysqli_prepare($conn, 
-        "SELECT user_id, name, username, role, status, created_at, updated_at, last_login 
+        "SELECT user_id, name, username, role, status, created_at, updated_at, last_login, profile_picture
          FROM users WHERE user_id = ?"
     );
     

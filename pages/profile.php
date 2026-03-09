@@ -23,6 +23,8 @@ if (!$user) {
     exit;
 }
 
+$baseUrl = BASE_URL;
+
 // ── Helpers ──────────────────────────────────────────────
 // Initials from name
 function getProfileInitials(string $name): string
@@ -74,6 +76,10 @@ $initials = getProfileInitials($user['name']);
 $roleBadge = getRoleBadge($user['role']);
 $memberSince = formatDate($user['created_at'], 'M j, Y');
 $avatarSeed = urlencode($user['name']);
+
+$avatarUrl = !empty($user['profile_picture'])
+    ? rtrim(BASE_URL, '/') . '/' . ltrim($user['profile_picture'], '/')
+    : "https://api.dicebear.com/8.x/initials/svg?seed={$avatarSeed}&backgroundColor=27C291&fontFamily=Helvetica&fontSize=38&chars=2";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -154,9 +160,10 @@ $avatarSeed = urlencode($user['name']);
                     <!-- Avatar -->
                     <div class="relative w-28 h-28 mt-1 group">
                         <img id="avatarPreview"
-                            src="https://api.dicebear.com/8.x/initials/svg?seed=<?= $avatarSeed ?>&backgroundColor=27C291&fontFamily=Helvetica&fontSize=38&chars=2"
-                            alt="Profile Photo" class="w-full h-full rounded-full object-cover"
-                            style="box-shadow: 0 0 0 4px rgba(39,194,145,0.3);" />
+    src="<?= htmlspecialchars($avatarUrl) ?>"
+    alt="Profile Photo"
+    class="w-full h-full rounded-full object-cover"
+    style="box-shadow: 0 0 0 4px rgba(39,194,145,0.3);" />
                         <div onclick="document.getElementById('avatarInput').click()"
                             class="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer gap-1">
                             <i class="uil uil-camera text-white text-xl"></i>
@@ -434,6 +441,7 @@ $avatarSeed = urlencode($user['name']);
             name: '<?= htmlspecialchars($user['name'], ENT_QUOTES) ?>',
             username: '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>',
             role: '<?= htmlspecialchars($user['role'], ENT_QUOTES) ?>',
+            avatarUrl: '<?= htmlspecialchars($avatarUrl, ENT_QUOTES) ?>',
         };
 
         // ── Avatar local preview ────────────────────────────────────────
