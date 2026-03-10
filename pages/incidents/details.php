@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../config/conn.php';
 require_once __DIR__ . '/../../includes/auth_helper.php';
 
 // Require authentication - only admin and operator can view incident details
-AuthChecker::requireAuth('/auth/login.php');
+AuthChecker::requireAuth('/auth/login');
 
 // Get current user info
 $currentUserName = AuthChecker::getName();

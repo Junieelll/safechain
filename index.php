@@ -1,14 +1,7 @@
 <?php
 date_default_timezone_set('Asia/Manila');
 session_start();
-// Test auto deployment - 2026-01-24
-// Restore session from cookies if not already set
-if (!isset($_SESSION['user_id']) && isset($_COOKIE['user_id'])) {
-    $_SESSION['user_id'] = $_COOKIE['user_id'];
-    $_SESSION['name'] = $_COOKIE['name'] ?? '';
-    $_SESSION['username'] = $_COOKIE['username'] ?? '';
-    $_SESSION['user_role'] = $_COOKIE['user_role'];
-}
+
 $route = isset($_GET['route']) ? trim($_GET['route'], '/') : '';
 // Handle root/empty route based on authentication
 if ($route === '') {
