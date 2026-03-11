@@ -18,6 +18,7 @@ let exportConfig = {
     summary: true,
     incidents: true,
     charts: false,
+    heatmap: false,
   },
 };
 
@@ -615,42 +616,56 @@ function showExportModal() {
             <i class="uil uil-database mr-1"></i> Select Data to Export
           </label>
           <div class="space-y-2">
-            ${[
-              {
-                key: "summary",
-                label: "Summary Statistics",
-                desc: "Total incidents, response times, resolution rates",
-                icon: "uil-chart-line",
-                checked: true,
-              },
-              {
-                key: "incidents",
-                label: "Incident Details",
-                desc: "Complete incident records with timestamps",
-                icon: "uil-file-info-alt",
-                checked: true,
-              },
-              {
-                key: "charts",
-                label: "Chart Data",
-                desc: "Trend analysis and distribution data",
-                icon: "uil-chart-pie",
-                checked: false,
-              },
-            ]
-              .map(
-                (item) => `
-              <label class="flex items-center p-3 border-2 border-gray-200 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-all">
+           ${[
+             {
+               key: "summary",
+               label: "Summary Statistics",
+               desc: "Total incidents, response times, resolution rates",
+               icon: "uil-chart-line",
+               checked: true,
+               pdfOnly: false,
+             },
+             {
+               key: "incidents",
+               label: "Incident Details",
+               desc: "Complete incident records with timestamps",
+               icon: "uil-file-info-alt",
+               checked: true,
+               pdfOnly: false,
+             },
+             {
+               key: "charts",
+               label: "Chart Data",
+               desc: "Trend analysis and distribution data",
+               icon: "uil-chart-pie",
+               checked: false,
+               pdfOnly: false,
+             },
+             {
+               key: "heatmap",
+               label: "Heatmap Snapshot",
+               desc: "Live incident heatmap captured from dashboard",
+               icon: "uil-map",
+               checked: false,
+               pdfOnly: true,
+             },
+           ]
+             .map(
+               (item) => `
+              <label class="flex items-center p-3 border-2 ${item.pdfOnly ? "border-dashed border-gray-300 dark:border-neutral-500" : "border-gray-200 dark:border-neutral-600"} rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-all">
                 <input type="checkbox" id="export-${item.key}" ${item.checked ? "checked" : ""} onchange="toggleExportData('${item.key}')" class="w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]">
                 <div class="ml-3 flex-1">
-                  <div class="text-sm font-semibold text-gray-800 dark:text-white">${item.label}</div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-sm font-semibold text-gray-800 dark:text-white">${item.label}</span>
+                    ${item.pdfOnly ? `<span class="text-[10px] font-bold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 px-2 py-0.5 rounded-full uppercase tracking-wide">PDF only</span>` : ""}
+                  </div>
                   <div class="text-xs text-gray-500 dark:text-gray-400">${item.desc}</div>
                 </div>
                 <i class="uil ${item.icon} text-xl text-gray-400"></i>
               </label>
             `,
-              )
-              .join("")}
+             )
+             .join("")}
           </div>
         </div>
 
@@ -762,6 +777,64 @@ function updateExportSummary() {
   `;
 }
 
+function captureHeatmapImage() {
+  return new Promise((resolve) => {
+    showToast("info", "Capturing heatmap, please wait...");
+
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText =
+      "position:fixed;top:-9999px;left:-9999px;width:900px;height:600px;visibility:hidden;pointer-events:none;";
+    iframe.src = "dashboard"; // ← adjust this to your exact dashboard URL path
+    document.body.appendChild(iframe);
+
+    const timeout = setTimeout(() => {
+      if (document.body.contains(iframe)) document.body.removeChild(iframe);
+      resolve(null);
+    }, 15000);
+
+    iframe.addEventListener("load", () => {
+      setTimeout(() => {
+        try {
+          const iframeDoc =
+            iframe.contentDocument || iframe.contentWindow.document;
+          const mapEl = iframeDoc.getElementById("map");
+
+          if (!mapEl) {
+            clearTimeout(timeout);
+            if (document.body.contains(iframe))
+              document.body.removeChild(iframe);
+            resolve(null);
+            return;
+          }
+
+          html2canvas(mapEl, {
+            useCORS: true,
+            logging: false,
+            backgroundColor: "#ffffff",
+            allowTaint: false,
+          })
+            .then((canvas) => {
+              clearTimeout(timeout);
+              if (document.body.contains(iframe))
+                document.body.removeChild(iframe);
+              resolve(canvas.toDataURL("image/jpeg", 0.85));
+            })
+            .catch(() => {
+              clearTimeout(timeout);
+              if (document.body.contains(iframe))
+                document.body.removeChild(iframe);
+              resolve(null);
+            });
+        } catch (e) {
+          clearTimeout(timeout);
+          if (document.body.contains(iframe)) document.body.removeChild(iframe);
+          resolve(null);
+        }
+      }, 4000); // wait for map tiles + heatmap layers to render
+    });
+  });
+}
+
 // ============================================================
 // EXPORT EXECUTION
 // ============================================================
@@ -824,8 +897,20 @@ window.executeExport = async function (format) {
         responseDistribution: result.responseDistribution,
       };
 
-    if (format === "csv") downloadCSV(exportData);
-    if (format === "pdf") downloadPDF(exportData);
+    if (format === "csv") {
+      downloadCSV(exportData);
+    } else if (format === "pdf") {
+      if (exportConfig.includeData.heatmap) {
+        exportData.heatmapImage = await captureHeatmapImage();
+        if (!exportData.heatmapImage) {
+          showToast(
+            "warning",
+            "Heatmap capture failed — exporting without it.",
+          );
+        }
+      }
+      downloadPDF(exportData);
+    }
 
     showToast(
       "success",
@@ -980,11 +1065,25 @@ async function downloadPDF(data) {
     });
   }
 
-  contentHTML += `
-    <div class="section-title" style="margin-top:20px;text-align:center;">
-      REPORT CLOSED — ${meta.exportDateFormatted || new Date().toLocaleDateString()}
+  if (data.heatmapImage) {
+    contentHTML += `
+    ${sec("INCIDENT HEATMAP")}
+    <div class="section-content indent">
+      <div class="list-item" style="font-size:10px;color:#6b7280;margin-bottom:6px;">
+        Snapshot captured at time of export — shows fire, crime, and flood hotspot distribution.
+      </div>
+      <img src="${data.heatmapImage}"
+           style="width:100%;border-radius:8px;border:1px solid #e5e7eb;display:block;"
+           alt="Incident Heatmap Snapshot" />
     </div>
   `;
+  }
+
+  contentHTML += `
+  <div class="section-title" style="margin-top:20px;text-align:center;">
+    REPORT CLOSED — ${meta.exportDateFormatted || new Date().toLocaleDateString()}
+  </div>
+`;
 
   sessionStorage.setItem("analyticsReportContent", contentHTML);
   sessionStorage.setItem(

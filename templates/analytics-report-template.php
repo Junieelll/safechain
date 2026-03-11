@@ -13,7 +13,7 @@ AuthChecker::requireAuth('/auth/login.php');
     <link rel="stylesheet" href="assets/css/report-template.css" />
     <link rel="stylesheet" href="assets/unicons/line.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script> 
 </head>
 <body>
     <div id="editBanner">
