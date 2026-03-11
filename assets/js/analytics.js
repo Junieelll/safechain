@@ -784,7 +784,7 @@ function captureHeatmapImage() {
     const iframe = document.createElement("iframe");
     iframe.style.cssText =
       "position:fixed;top:-9999px;left:-9999px;width:900px;height:600px;visibility:hidden;pointer-events:none;";
-    iframe.src = "dashboard"; // ← adjust this to your exact dashboard URL path
+    iframe.src = "home"; // ← adjust this to your exact dashboard URL path
     document.body.appendChild(iframe);
 
     const timeout = setTimeout(() => {
