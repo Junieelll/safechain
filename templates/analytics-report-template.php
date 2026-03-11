@@ -111,7 +111,7 @@ AuthChecker::requireAuth('/auth/login.php');
         const mainContent = document.querySelector("#main-content");
         const firstPage   = document.querySelector("#page-1");
         const container   = document.querySelector(".container");
-        const MAX_CONTENT_HEIGHT = 700;
+        const MAX_CONTENT_HEIGHT = 850;
 
         function createNewPage() {
             const newPage    = firstPage.cloneNode(true);
@@ -124,34 +124,66 @@ AuthChecker::requireAuth('/auth/login.php');
         }
 
         function splitContent() {
-            const allItems = Array.from(mainContent.children);
-            let pages = [[]];
-            let currentPageHeight  = 0;
-            let currentPageIndex   = 0;
+  const allItems = Array.from(mainContent.children);
 
-            allItems.forEach((item) => {
-                const clone = item.cloneNode(true);
-                mainContent.appendChild(clone);
-                const itemHeight = clone.offsetHeight;
-                clone.remove();
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:fixed;top:0;left:-9999px;width:500px;visibility:hidden;";
+  document.body.appendChild(probe);
 
-                if (currentPageHeight + itemHeight > MAX_CONTENT_HEIGHT && currentPageHeight > 0) {
-                    currentPageIndex++;
-                    pages[currentPageIndex] = [];
-                    currentPageHeight = 0;
-                }
+  let pages         = [[]];
+  let currentHeight = 0;
+  let pageIndex     = 0;
 
-                pages[currentPageIndex].push(item.cloneNode(true));
-                currentPageHeight += itemHeight;
-            });
+  for (let i = 0; i < allItems.length; i++) {
+    const el = allItems[i];
 
-            mainContent.innerHTML = "";
-            if (pages[0]) pages[0].forEach((item) => mainContent.appendChild(item));
-            for (let i = 1; i < pages.length; i++) {
-                const newContent = createNewPage();
-                pages[i].forEach((item) => newContent.appendChild(item));
-            }
-        }
+    // Measure current item
+    const clone = el.cloneNode(true);
+    probe.appendChild(clone);
+    const elHeight = clone.offsetHeight + 8;
+    probe.removeChild(clone);
+
+    // If it's a section-title, also measure the NEXT sibling so they
+    // are never separated — if both don't fit, push to next page together
+    if (el.classList.contains("section-title") && allItems[i + 1]) {
+      const nextClone = allItems[i + 1].cloneNode(true);
+      probe.appendChild(nextClone);
+      const nextHeight = nextClone.offsetHeight + 8;
+      probe.removeChild(nextClone);
+
+      const combinedHeight = elHeight + nextHeight;
+
+      if (currentHeight + combinedHeight > MAX_CONTENT_HEIGHT && currentHeight > 0) {
+        pageIndex++;
+        pages[pageIndex] = [];
+        currentHeight    = 0;
+      }
+
+      pages[pageIndex].push(el.cloneNode(true));
+      currentHeight += elHeight;
+    } else {
+      if (currentHeight + elHeight > MAX_CONTENT_HEIGHT && currentHeight > 0) {
+        pageIndex++;
+        pages[pageIndex] = [];
+        currentHeight    = 0;
+      }
+
+      pages[pageIndex].push(el.cloneNode(true));
+      currentHeight += elHeight;
+    }
+  }
+
+  document.body.removeChild(probe);
+
+  // Render pages
+  mainContent.innerHTML = "";
+  pages[0].forEach((el) => mainContent.appendChild(el));
+
+  for (let p = 1; p < pages.length; p++) {
+    const newContent = createNewPage();
+    pages[p].forEach((el) => newContent.appendChild(el));
+  }
+}
 
         // ── FAB toggle ────────────────────────────────────────────
         const fab    = document.querySelector(".fab-container");

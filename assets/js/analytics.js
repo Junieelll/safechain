@@ -466,13 +466,13 @@ window.setTimePeriod = function (period) {
 
   // Clear date range when a preset period is selected
   filterState.fromDate = "";
-  filterState.toDate   = "";
+  filterState.toDate = "";
 
   // Also clear the DOM inputs
   const fromDate = document.getElementById("fromDate");
-  const toDate   = document.getElementById("toDate");
+  const toDate = document.getElementById("toDate");
   if (fromDate) fromDate.value = "";
-  if (toDate)   toDate.value   = "";
+  if (toDate) toDate.value = "";
 
   updateFilterButtons();
 };
@@ -516,7 +516,7 @@ function updateFilterButtons() {
   const fromDate = document.getElementById("fromDate");
   const toDate = document.getElementById("toDate");
   if (fromDate && fromDate.value) filterState.fromDate = fromDate.value;
-  if (toDate && toDate.value)     filterState.toDate   = toDate.value
+  if (toDate && toDate.value) filterState.toDate = toDate.value;
 
   document.querySelectorAll(".time-period-btn").forEach((btn) => {
     const period = btn.getAttribute("data-period");
@@ -537,9 +537,9 @@ function updateFilterButtons() {
 function applyFilters() {
   // Always grab latest date values before applying
   const fromDate = document.getElementById("fromDate");
-  const toDate   = document.getElementById("toDate");
+  const toDate = document.getElementById("toDate");
   if (fromDate) filterState.fromDate = fromDate.value;
-  if (toDate)   filterState.toDate   = toDate.value;
+  if (toDate) filterState.toDate = toDate.value;
 
   // If dates are set, override time period to custom
   if (filterState.fromDate && filterState.toDate) {
@@ -560,9 +560,9 @@ function resetFilters() {
 
   // Clear DOM inputs too
   const fromDate = document.getElementById("fromDate");
-  const toDate   = document.getElementById("toDate");
+  const toDate = document.getElementById("toDate");
   if (fromDate) fromDate.value = "";
-  if (toDate)   toDate.value   = "";
+  if (toDate) toDate.value = "";
 
   fetchAnalytics(filterState);
 }
@@ -889,21 +889,28 @@ function downloadCSV(data) {
 }
 
 async function downloadPDF(data) {
-  const meta      = data.metadata || {};
-  const summary   = data.summary  || {};
+  const meta = data.metadata || {};
+  const summary = data.summary || {};
   const incidents = data.incidents || [];
-  const charts    = data.charts   || {};
+  const charts = data.charts || {};
 
-  const timelineLabel = {
-    last7days:  "Last 7 Days",
-    last30days: "Last 30 Days",
-    last90days: "Last 90 Days",
-    custom: `${meta.fromDate || ""} to ${meta.toDate || ""}`,
-  }[meta.timeline] || meta.timeline || "Selected Period";
+  const timelineLabel =
+    {
+      last7days: "Last 7 Days",
+      last30days: "Last 30 Days",
+      last90days: "Last 90 Days",
+      custom: `${meta.fromDate || ""} to ${meta.toDate || ""}`,
+    }[meta.timeline] ||
+    meta.timeline ||
+    "Selected Period";
 
   let sectionNum = 1;
-  const roman = ["I","II","III","IV","V","VI","VII","VIII"];
-  const sec = (title) => `<div class="section-title">${roman[(sectionNum++) - 1]}. ${title}</div>`;
+  const roman = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+  const sec = (title) =>
+    `<div class="section-title">${roman[sectionNum++ - 1]}. ${title}</div>`;
+  const resolvedIncidents = incidents.filter(
+    (inc) => inc.status === "Resolved",
+  );
 
   let contentHTML = `
     <div class="report-title">
@@ -931,36 +938,46 @@ async function downloadPDF(data) {
       ${sec("INCIDENT TYPE DISTRIBUTION")}
       <div class="section-content indent">
         ${Object.entries(charts.typeDistribution)
-          .map(([type, count]) => `<div class="list-item">${capitalize(type)}: <strong>${count} incident(s)</strong></div>`)
+          .map(
+            ([type, count]) =>
+              `<div class="list-item">${capitalize(type)}: <strong>${count} incident(s)</strong></div>`,
+          )
           .join("")}
       </div>
     `;
   }
 
-  if (charts.responseDistribution && Object.keys(charts.responseDistribution).length) {
+  if (
+    charts.responseDistribution &&
+    Object.keys(charts.responseDistribution).length
+  ) {
     contentHTML += `
       ${sec("RESPONSE TIME DISTRIBUTION")}
       <div class="section-content indent">
         ${Object.entries(charts.responseDistribution)
-          .map(([range, count]) => `<div class="list-item">${range}: <strong>${count} incident(s)</strong></div>`)
+          .map(
+            ([range, count]) =>
+              `<div class="list-item">${range}: <strong>${count} incident(s)</strong></div>`,
+          )
           .join("")}
       </div>
     `;
   }
 
-  if (incidents.length) {
-    contentHTML += `
-      ${sec("INCIDENT DETAILS")}
-      <div class="section-content indent">
-        ${incidents.map((inc, i) => `
-          <div class="list-item">${i + 1}. <strong>${esc(inc.id)}</strong> — ${esc(inc.type)}</div>
-          <div class="list-item">&nbsp;&nbsp;&nbsp;Resident: ${esc(inc.resident)}</div>
-          <div class="list-item">&nbsp;&nbsp;&nbsp;Location: ${esc(inc.location)}</div>
-          <div class="list-item">&nbsp;&nbsp;&nbsp;Time Reported: ${esc(inc.timeReported)} &nbsp;|&nbsp; Response Time: ${esc(inc.responseTime)}</div>
-          <div class="list-item">&nbsp;&nbsp;&nbsp;Status: ${esc(inc.status)}</div>
-        `).join("")}
+  if (resolvedIncidents.length) {
+    contentHTML += sec("INCIDENT DETAILS");
+
+    // Each incident is its own independent div — NOT nested inside a parent wrapper
+    incidents.forEach((inc, i) => {
+      contentHTML += `
+      <div class="list-item">
+        <strong>${i + 1}. ${esc(inc.id)}</strong> — ${esc(inc.type)}<br>
+        &nbsp;&nbsp;&nbsp;Resident: ${esc(inc.resident)}<br>
+        &nbsp;&nbsp;&nbsp;Location: ${esc(inc.location)}<br>
+        &nbsp;&nbsp;&nbsp;Time Reported: ${esc(inc.timeReported)} &nbsp;|&nbsp; Response Time: ${esc(inc.responseTime)}<br>
       </div>
     `;
+    });
   }
 
   contentHTML += `
@@ -970,15 +987,21 @@ async function downloadPDF(data) {
   `;
 
   sessionStorage.setItem("analyticsReportContent", contentHTML);
-  sessionStorage.setItem("analyticsReportFilename", `SafeChain_Analytics_${new Date().toISOString().split("T")[0]}`);
+  sessionStorage.setItem(
+    "analyticsReportFilename",
+    `SafeChain_Analytics_${new Date().toISOString().split("T")[0]}`,
+  );
 
   const win = window.open(
     "templates/analytics-report-template.php?autodownload=1",
-    "_blank"
+    "_blank",
   );
 
   if (!win) {
-    showToast("warning", "Popup was blocked — please allow popups and try again.");
+    showToast(
+      "warning",
+      "Popup was blocked — please allow popups and try again.",
+    );
   }
 }
 
