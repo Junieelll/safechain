@@ -278,7 +278,7 @@ $currentUserRole = AuthChecker::getUserRole();
         <!-- Right Column (1/3) -->
         <div class="space-y-7">
           <!-- Actions Card -->
-          <div class="bg-white dark:bg-neutral-800 rounded-3xl p-7">
+          <div class="bg-white dark:bg-neutral-800 rounded-3xl p-7" id="quickActionsCard">
             <div class="flex justify-between items-center pb-4 mb-5 border-b-2 border-gray-100 dark:border-neutral-600">
               <h2 class="text-base font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-2.5">
                 <i class="uil uil-bolt text-2xl"></i>
@@ -319,6 +319,26 @@ $currentUserRole = AuthChecker::getUserRole();
               </button>
             </div>
           </div>
+
+          <!-- Medical Conditions Card -->
+          <div id="medicalConditionsCard" class="hidden bg-white dark:bg-neutral-800 rounded-3xl p-7">
+            <div class="flex justify-between items-center pb-4 mb-5 border-b-2 border-gray-100 dark:border-neutral-600">
+              <h2 class="text-base font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-2.5">
+                <i class="uil uil-heart-rate text-2xl text-red-500"></i>
+                Reporter Medical Conditions
+              </h2>
+              <span
+                class="text-xs text-red-400 dark:text-red-400 font-semibold bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-full">
+                ⚠ Inform Medical Team
+              </span>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-neutral-400 mb-4">
+              Known medical conditions of the reporter — share with responding medical personnel.
+            </p>
+            <div id="medicalBadgesContainer" class="flex flex-wrap gap-2">
+              <!-- Populated by JS -->
+            </div>
+          </div>  
 
           <!-- Timeline Card -->
           <div class="bg-white dark:bg-neutral-800 rounded-3xl p-7 ">

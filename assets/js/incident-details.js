@@ -632,6 +632,30 @@ async function populateIncidentDetails(incident) {
     descriptionSection?.classList.add("hidden");
   }
 
+  // ── Medical Conditions ────────────────────────────────────────────────────
+  const medCard = document.getElementById("medicalConditionsCard");
+  const medContainer = document.getElementById("medicalBadgesContainer");
+
+  const conditions = incident.medical_conditions;
+
+  if (Array.isArray(conditions) && conditions.length > 0) {
+    medContainer.innerHTML = conditions
+      .map(
+        (condition) => `
+        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold 
+                      bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 
+                      border border-red-200 dark:border-red-800">
+          <i class="uil uil-heartbeat mr-1.5 text-sm"></i>
+          ${condition}
+        </span>
+      `,
+      )
+      .join("");
+    medCard.classList.remove("hidden");
+  } else {
+    medCard.classList.add("hidden");
+  }
+
   const geocodedAddress =
     incident.lat && incident.lng
       ? await getAddressFromCoordinates(incident.lat, incident.lng)
