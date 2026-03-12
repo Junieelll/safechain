@@ -1100,21 +1100,111 @@ async function captureHeatmapImage() {
     // ── 4. Invalidate size so Leaflet renders correctly ──────
     heatmapExportMap.invalidateSize();
 
-    // ── 5. Wait for tiles to load then capture ───────────────
-    setTimeout(async () => {
+    // ── 5. Wait for tiles + heatmap to render, then composite ─
+    setTimeout(() => {
       try {
-        const canvas = await html2canvas(mapEl, {
-          useCORS: true,
-          logging: false,
-          backgroundColor: "#ffffff",
-          allowTaint: false,
+        // Create output canvas at map size
+        const W = mapEl.offsetWidth || 900;
+        const H = mapEl.offsetHeight || 600;
+        const output = document.createElement("canvas");
+        output.width = W;
+        output.height = H;
+        const ctx = output.getContext("2d");
+
+        // White background
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, W, H);
+
+        // ── Draw all tile <img> elements ─────────────────────
+        // Leaflet renders tiles as <img> inside .leaflet-tile-pane
+        const tilePanes = mapEl.querySelectorAll(
+          ".leaflet-tile-pane img.leaflet-tile",
+        );
+        tilePanes.forEach((img) => {
+          if (!img.complete || img.naturalWidth === 0) return;
+          // Get tile's position relative to the map container
+          const tileContainer = img.closest(".leaflet-tile-container");
+          const pane = img.closest(".leaflet-pane");
+
+          // Parse transform from tile container and pane to get absolute position
+          function getTranslate(el) {
+            if (!el) return { x: 0, y: 0 };
+            const t = el.style.transform || "";
+            const m = t.match(/translate3d\(([^,]+)px,\s*([^,]+)px/);
+            if (m) return { x: parseFloat(m[1]), y: parseFloat(m[2]) };
+            const m2 = t.match(/translate\(([^,]+)px,\s*([^,]+)px/);
+            if (m2) return { x: parseFloat(m2[1]), y: parseFloat(m2[2]) };
+            return { x: 0, y: 0 };
+          }
+
+          const panePos = getTranslate(pane);
+          const containerPos = getTranslate(tileContainer);
+          const imgLeft = parseFloat(img.style.left) || 0;
+          const imgTop = parseFloat(img.style.top) || 0;
+
+          const x = panePos.x + containerPos.x + imgLeft;
+          const y = panePos.y + containerPos.y + imgTop;
+
+          try {
+            ctx.drawImage(img, x, y, img.width, img.height);
+          } catch (e) {
+            // Tainted — skip this tile
+          }
         });
-        resolve(canvas.toDataURL("image/jpeg", 0.85));
+
+        // ── Draw heatmap canvas layers ────────────────────────
+        // Leaflet.heat renders onto <canvas> inside .leaflet-heatmap-layer
+        // or directly inside .leaflet-overlay-pane
+        const heatCanvases = mapEl.querySelectorAll("canvas");
+        heatCanvases.forEach((c) => {
+          if (c.width === 0 || c.height === 0) return;
+          const pane = c.closest(".leaflet-pane");
+          const pos = getTranslate(pane); // reuse helper above
+
+          // Also check for canvas own transform
+          function getTranslate(el) {
+            if (!el) return { x: 0, y: 0 };
+            const t = el.style.transform || "";
+            const m = t.match(/translate3d\(([^,]+)px,\s*([^,]+)px/);
+            if (m) return { x: parseFloat(m[1]), y: parseFloat(m[2]) };
+            const m2 = t.match(/translate\(([^,]+)px,\s*([^,]+)px/);
+            if (m2) return { x: parseFloat(m2[1]), y: parseFloat(m2[2]) };
+            return { x: 0, y: 0 };
+          }
+
+          const panePos = getTranslate(c.closest(".leaflet-pane"));
+          ctx.drawImage(c, panePos.x, panePos.y);
+        });
+
+        // ── Draw SVG boundary (GeoJSON) ───────────────────────
+        const svgEl = mapEl.querySelector(".leaflet-overlay-pane svg");
+        if (svgEl) {
+          const svgData = new XMLSerializer().serializeToString(svgEl);
+          const svgBlob = new Blob([svgData], {
+            type: "image/svg+xml;charset=utf-8",
+          });
+          const svgUrl = URL.createObjectURL(svgBlob);
+          const svgImg = new Image();
+          svgImg.onload = () => {
+            const pane = svgEl.closest(".leaflet-pane");
+            const panePos = getTranslate(pane);
+            ctx.drawImage(svgImg, panePos.x, panePos.y);
+            URL.revokeObjectURL(svgUrl);
+            resolve(output.toDataURL("image/jpeg", 0.92));
+          };
+          svgImg.onerror = () => {
+            URL.revokeObjectURL(svgUrl);
+            resolve(output.toDataURL("image/jpeg", 0.92));
+          };
+          svgImg.src = svgUrl;
+        } else {
+          resolve(output.toDataURL("image/jpeg", 0.92));
+        }
       } catch (e) {
-        console.error("Heatmap capture failed:", e);
+        console.error("Canvas composite failed:", e);
         resolve(null);
       }
-    }, 3000); // wait for tiles + heatmap to render
+    }, 3500); // wait for tiles + heatmap to render
   });
 }
 
