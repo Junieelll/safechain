@@ -1384,37 +1384,6 @@ function toggleLoraLayer(type) {
   if (btn) btn.classList.toggle("active", loraVisible[type]);
 }
 
-// ============================================
-// HEATMAP EXPORT CHANNEL
-// ============================================
-
-const heatmapExportChannel = new BroadcastChannel("safechain_heatmap_export");
-
-heatmapExportChannel.addEventListener("message", async (event) => {
-  if (event.data?.type !== "REQUEST_HEATMAP") return;
-
-  const mapEl = document.getElementById("map");
-  if (!mapEl || typeof html2canvas === "undefined") {
-    heatmapExportChannel.postMessage({ type: "HEATMAP_RESULT", image: null });
-    return;
-  }
-
-  try {
-    const canvas = await html2canvas(mapEl, {
-      useCORS: true,
-      logging: false,
-      backgroundColor: "#ffffff",
-      allowTaint: false,
-    });
-    heatmapExportChannel.postMessage({
-      type: "HEATMAP_RESULT",
-      image: canvas.toDataURL("image/jpeg", 0.85),
-    });
-  } catch (e) {
-    heatmapExportChannel.postMessage({ type: "HEATMAP_RESULT", image: null });
-  }
-});
-
 // Fetch once on load
 fetchLoraDevices();
 

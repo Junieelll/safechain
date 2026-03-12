@@ -18,7 +18,6 @@ let exportConfig = {
     summary: true,
     incidents: true,
     charts: false,
-    heatmap: false,
   },
 };
 
@@ -616,56 +615,42 @@ function showExportModal() {
             <i class="uil uil-database mr-1"></i> Select Data to Export
           </label>
           <div class="space-y-2">
-           ${[
-             {
-               key: "summary",
-               label: "Summary Statistics",
-               desc: "Total incidents, response times, resolution rates",
-               icon: "uil-chart-line",
-               checked: true,
-               pdfOnly: false,
-             },
-             {
-               key: "incidents",
-               label: "Incident Details",
-               desc: "Complete incident records with timestamps",
-               icon: "uil-file-info-alt",
-               checked: true,
-               pdfOnly: false,
-             },
-             {
-               key: "charts",
-               label: "Chart Data",
-               desc: "Trend analysis and distribution data",
-               icon: "uil-chart-pie",
-               checked: false,
-               pdfOnly: false,
-             },
-             {
-               key: "heatmap",
-               label: "Heatmap Snapshot",
-               desc: "Gulod incident heatmap — fire, crime & flood hotspots",
-               icon: "uil-map",
-               checked: false,
-               pdfOnly: true,
-             },
-           ]
-             .map(
-               (item) => `
-                <label class="flex items-center p-3 border-2 ${item.pdfOnly ? "border-dashed border-gray-300 dark:border-neutral-500" : "border-gray-200 dark:border-neutral-600"} rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-all">
-                  <input type="checkbox" id="export-${item.key}" ${item.checked ? "checked" : ""} onchange="toggleExportData('${item.key}')" class="w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]">
-                  <div class="ml-3 flex-1">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="text-sm font-semibold text-gray-800 dark:text-white">${item.label}</span>
-                      ${item.pdfOnly ? `<span class="text-[10px] font-bold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 px-2 py-0.5 rounded-full uppercase tracking-wide">PDF only</span>` : ""}
-                    </div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">${item.desc}</div>
-                  </div>
-                  <i class="uil ${item.icon} text-xl text-gray-400"></i>
-                </label>
-              `,
-             )
-             .join("")}
+            ${[
+              {
+                key: "summary",
+                label: "Summary Statistics",
+                desc: "Total incidents, response times, resolution rates",
+                icon: "uil-chart-line",
+                checked: true,
+              },
+              {
+                key: "incidents",
+                label: "Incident Details",
+                desc: "Complete incident records with timestamps",
+                icon: "uil-file-info-alt",
+                checked: true,
+              },
+              {
+                key: "charts",
+                label: "Chart Data",
+                desc: "Trend analysis and distribution data",
+                icon: "uil-chart-pie",
+                checked: false,
+              },
+            ]
+              .map(
+                (item) => `
+              <label class="flex items-center p-3 border-2 border-gray-200 dark:border-neutral-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-all">
+                <input type="checkbox" id="export-${item.key}" ${item.checked ? "checked" : ""} onchange="toggleExportData('${item.key}')" class="w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]">
+                <div class="ml-3 flex-1">
+                  <div class="text-sm font-semibold text-gray-800 dark:text-white">${item.label}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">${item.desc}</div>
+                </div>
+                <i class="uil ${item.icon} text-xl text-gray-400"></i>
+              </label>
+            `,
+              )
+              .join("")}
           </div>
         </div>
 
@@ -777,22 +762,6 @@ function updateExportSummary() {
   `;
 }
 
-let heatmapExportMap = null; // remove this line too if present
-
-async function captureHeatmapImage() {
-  try {
-    const incRes = await fetch("api/dashboard/get_incidents.php");
-    const incJson = await incRes.json();
-    if (incJson.success && incJson.heatmap) {
-      return incJson.heatmap; // return raw data, not an image
-    }
-    return null;
-  } catch (e) {
-    console.error("Heatmap data fetch failed:", e);
-    return null;
-  }
-}
-
 // ============================================================
 // EXPORT EXECUTION
 // ============================================================
@@ -855,17 +824,8 @@ window.executeExport = async function (format) {
         responseDistribution: result.responseDistribution,
       };
 
-    if (format === "csv") {
-      downloadCSV(exportData);
-    } else if (format === "pdf") {
-      if (exportConfig.includeData.heatmap) {
-        const heatData = await captureHeatmapImage();
-        if (heatData) {
-          exportData.heatmapData = heatData; // raw data, template will render it
-        }
-      }
-      downloadPDF(exportData);
-    }
+    if (format === "csv") downloadCSV(exportData);
+    if (format === "pdf") downloadPDF(exportData);
 
     showToast(
       "success",
@@ -1020,28 +980,11 @@ async function downloadPDF(data) {
     });
   }
 
-  if (data.heatmapData) {
-    contentHTML += `
-    ${sec("INCIDENT HEATMAP — BARANGAY GULOD")}
-    <div class="section-content indent">
-      <div class="list-item" style="font-size:10px;color:#6b7280;margin-bottom:6px;">
-        Heatmap generated at time of export. Shows fire, crime, and flood incident density within Barangay Gulod boundaries.
-      </div>
-      <div id="heatmapReportContainer" style="width:100%;height:380px;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;"></div>
+  contentHTML += `
+    <div class="section-title" style="margin-top:20px;text-align:center;">
+      REPORT CLOSED — ${meta.exportDateFormatted || new Date().toLocaleDateString()}
     </div>
   `;
-    // Store heatmap data separately for the template to pick up
-    sessionStorage.setItem(
-      "analyticsHeatmapData",
-      JSON.stringify(data.heatmapData),
-    );
-  }
-
-  contentHTML += `
-  <div class="section-title" style="margin-top:20px;text-align:center;">
-    REPORT CLOSED — ${meta.exportDateFormatted || new Date().toLocaleDateString()}
-  </div>
-`;
 
   sessionStorage.setItem("analyticsReportContent", contentHTML);
   sessionStorage.setItem(
