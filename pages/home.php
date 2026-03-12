@@ -36,6 +36,7 @@ if (!AuthChecker::isLoggedIn()) {
     </script>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 
 <body class="min-h-screen flex transition-all duration-300 dark:bg-neutral-900">

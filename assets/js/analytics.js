@@ -779,59 +779,21 @@ function updateExportSummary() {
 
 function captureHeatmapImage() {
   return new Promise((resolve) => {
-    showToast("info", "Capturing heatmap, please wait...");
-
-    const iframe = document.createElement("iframe");
-    iframe.style.cssText =
-      "position:fixed;top:-9999px;left:-9999px;width:900px;height:600px;visibility:hidden;pointer-events:none;";
-    iframe.src = "home"; // ← adjust this to your exact dashboard URL path
-    document.body.appendChild(iframe);
+    const channel = new BroadcastChannel("safechain_heatmap_export");
 
     const timeout = setTimeout(() => {
-      if (document.body.contains(iframe)) document.body.removeChild(iframe);
+      channel.close();
       resolve(null);
-    }, 15000);
+    }, 10000);
 
-    iframe.addEventListener("load", () => {
-      setTimeout(() => {
-        try {
-          const iframeDoc =
-            iframe.contentDocument || iframe.contentWindow.document;
-          const mapEl = iframeDoc.getElementById("map");
-
-          if (!mapEl) {
-            clearTimeout(timeout);
-            if (document.body.contains(iframe))
-              document.body.removeChild(iframe);
-            resolve(null);
-            return;
-          }
-
-          html2canvas(mapEl, {
-            useCORS: true,
-            logging: false,
-            backgroundColor: "#ffffff",
-            allowTaint: false,
-          })
-            .then((canvas) => {
-              clearTimeout(timeout);
-              if (document.body.contains(iframe))
-                document.body.removeChild(iframe);
-              resolve(canvas.toDataURL("image/jpeg", 0.85));
-            })
-            .catch(() => {
-              clearTimeout(timeout);
-              if (document.body.contains(iframe))
-                document.body.removeChild(iframe);
-              resolve(null);
-            });
-        } catch (e) {
-          clearTimeout(timeout);
-          if (document.body.contains(iframe)) document.body.removeChild(iframe);
-          resolve(null);
-        }
-      }, 4000); // wait for map tiles + heatmap layers to render
+    channel.addEventListener("message", (event) => {
+      if (event.data?.type !== "HEATMAP_RESULT") return;
+      clearTimeout(timeout);
+      channel.close();
+      resolve(event.data.image || null);
     });
+
+    channel.postMessage({ type: "REQUEST_HEATMAP" });
   });
 }
 
@@ -901,12 +863,15 @@ window.executeExport = async function (format) {
       downloadCSV(exportData);
     } else if (format === "pdf") {
       if (exportConfig.includeData.heatmap) {
+        showToast("info", "Requesting heatmap from dashboard tab...");
         exportData.heatmapImage = await captureHeatmapImage();
         if (!exportData.heatmapImage) {
           showToast(
             "warning",
-            "Heatmap capture failed — exporting without it.",
+            "Heatmap unavailable — make sure the dashboard is open in another tab.",
           );
+        } else {
+          showToast("success", "Heatmap captured!");
         }
       }
       downloadPDF(exportData);
