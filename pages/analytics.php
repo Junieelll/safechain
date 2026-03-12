@@ -380,18 +380,7 @@
       </div>
     </div>
 
-    <div id="heatmapExportContainer" style="
-      position: fixed;
-      top: -9999px;
-      left: -9999px;
-      width: 900px;
-      height: 600px;
-      visibility: hidden;
-      pointer-events: none;
-      z-index: -1;
-    ">
-      <div id="heatmapExportMap" style="width: 100%; height: 100%;"></div>
-    </div>
+   
     <!-- Toast Container -->
     <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-3 max-w-md w-full"></div>
   </main>

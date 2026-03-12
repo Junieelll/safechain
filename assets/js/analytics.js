@@ -777,25 +777,15 @@ function updateExportSummary() {
   `;
 }
 
-let heatmapExportMap = null;
+let heatmapExportMap = null; // remove this line too if present
 
 async function captureHeatmapImage() {
   return new Promise(async (resolve) => {
-    // ── 1. Fetch heatmap data from the same API ──────────────
+
+    // ── 1. Fetch heatmap data ─────────────────────────────────
     let heatData = { fire: [], crime: [], flood: [] };
     try {
-      const params = new URLSearchParams({
-        period: exportConfig.timeline,
-        from: exportConfig.fromDate,
-        to: exportConfig.toDate,
-        types: "all",
-        status: "all",
-      });
-      const res = await fetch(`api/analytics/get_analytics.php?${params}`);
-      const json = await res.json();
-
-      // get_analytics doesn't return heatmap points — reuse get_incidents
-      const incRes = await fetch("api/dashboard/get_incidents.php");
+      const incRes  = await fetch("api/dashboard/get_incidents.php");
       const incJson = await incRes.json();
       if (incJson.success && incJson.heatmap) {
         heatData = incJson.heatmap;
@@ -806,405 +796,164 @@ async function captureHeatmapImage() {
       return;
     }
 
-    // ── 2. Init or reuse the hidden Leaflet map ──────────────
-    const container = document.getElementById("heatmapExportContainer");
-    const mapEl = document.getElementById("heatmapExportMap");
+    // ── 2. Canvas setup ───────────────────────────────────────
+    const W = 900, H = 600;
+    const canvas = document.createElement("canvas");
+    canvas.width  = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
 
-    container.style.visibility = "hidden";
-    container.style.top = "-9999px";
+    // ── 3. Boundary coordinates ───────────────────────────────
+    const boundaryCoords = [[121.0334848,14.711682],[121.0334957,14.7115454],[121.0335308,14.7114846],[121.0335862,14.7114333],[121.0337882,14.7112641],[121.0339523,14.7111092],[121.0340751,14.7109148],[121.0341028,14.7108099],[121.0340604,14.7106753],[121.0339774,14.7105621],[121.0338543,14.7105114],[121.0336751,14.7104859],[121.0335323,14.710492],[121.033562,14.7101886],[121.0338342,14.709774],[121.0339713,14.7095436],[121.0345597,14.7094757],[121.0350814,14.7094277],[121.0362553,14.7093446],[121.0363582,14.7092669],[121.0364442,14.709162],[121.0366244,14.7089794],[121.036688,14.7089056],[121.03699,14.7091458],[121.0372903,14.7091637],[121.0375888,14.709336],[121.0382147,14.7094565],[121.0384845,14.709263],[121.03848,14.7091378],[121.0384375,14.7090308],[121.0387608,14.708583],[121.0387662,14.7084187],[121.0389081,14.7083563],[121.0396347,14.7080226],[121.0400809,14.7080861],[121.0401844,14.7080705],[121.0415248,14.7075016],[121.0415217,14.7066561],[121.0418078,14.7058151],[121.0419812,14.7052453],[121.0440479,14.7052824],[121.0454888,14.7052707],[121.0455003,14.704594],[121.0468975,14.7050443],[121.0474573,14.7053168],[121.0472436,14.7061441],[121.0472437,14.7061633],[121.0471759,14.7063696],[121.047172,14.7070541],[121.0468812,14.7074933],[121.0468267,14.7079836],[121.0467387,14.7084147],[121.0466027,14.7087975],[121.0465728,14.7088616],[121.0465237,14.708988],[121.0465472,14.7090729],[121.0466418,14.7091216],[121.0467319,14.7091885],[121.0467944,14.7093433],[121.0467645,14.709431],[121.0466762,14.7095276],[121.0464922,14.709637],[121.0459681,14.7097706],[121.0459465,14.7098262],[121.0459745,14.7099749],[121.0459659,14.7100253],[121.0460252,14.7100798],[121.045984,14.7102054],[121.0460574,14.7104115],[121.046219,14.7105981],[121.046361,14.7107014],[121.0467486,14.7109051],[121.0469001,14.7110597],[121.0470558,14.7112651],[121.0470603,14.7113701],[121.0468657,14.7118121],[121.04668,14.7120473],[121.0463628,14.7122458],[121.0461321,14.7125295],[121.0459071,14.712751],[121.04565,14.7128774],[121.0452638,14.7129189],[121.0449875,14.7128681],[121.0446371,14.7126643],[121.0444294,14.7125356],[121.0441094,14.7122657],[121.0436705,14.7119655],[121.0434184,14.7119718],[121.0432508,14.7120946],[121.0431034,14.7122324],[121.0429966,14.7123962],[121.0429383,14.7125755],[121.0429079,14.7127791],[121.0429966,14.7130402],[121.0431543,14.7133731],[121.0432095,14.7135],[121.0432103,14.7136163],[121.0430658,14.7139198],[121.0428879,14.7146356],[121.0428612,14.7148887],[121.0429258,14.7150544],[121.0430697,14.7151967],[121.0434241,14.7154815],[121.0438905,14.7157166],[121.0442338,14.7158245],[121.0443492,14.7159932],[121.0443099,14.7161024],[121.0441341,14.7162898],[121.0440041,14.7165224],[121.0438154,14.7173538],[121.0437188,14.717601],[121.0436498,14.7178396],[121.0434931,14.7184845],[121.0434293,14.7185908],[121.0433855,14.7186606],[121.0433491,14.718696],[121.0432445,14.7187068],[121.0430669,14.7186606],[121.0427013,14.7184907],[121.042527,14.7184298],[121.0421883,14.7183594],[121.0420877,14.7183753],[121.0418588,14.7185368],[121.0416664,14.7186873],[121.0414534,14.7188422],[121.0411207,14.7190733],[121.0409713,14.7190759],[121.0404672,14.7188598],[121.0401682,14.7187086],[121.039773,14.7184233],[121.0391703,14.7176617],[121.0390905,14.7175646],[121.0389286,14.7174147],[121.0388499,14.7173238],[121.0387788,14.7172294],[121.0387494,14.7171469],[121.0387334,14.7170159],[121.0387279,14.7168797],[121.0387239,14.7167954],[121.0386924,14.7167398],[121.0386199,14.7166645],[121.0383958,14.7164802],[121.0374912,14.7159739],[121.0374116,14.7159302],[121.0373821,14.7159069],[121.0373667,14.7158693],[121.0373533,14.7158368],[121.0373462,14.7157973],[121.0373377,14.7157255],[121.0373544,14.715513],[121.0373727,14.7153563],[121.0373694,14.7152856],[121.0373586,14.7152214],[121.0373378,14.7151652],[121.0372433,14.71503],[121.0370918,14.7148582],[121.0369087,14.7146629],[121.0368524,14.7146156],[121.0368115,14.7145884],[121.0367752,14.7145735],[121.0367116,14.7145637],[121.0366505,14.7145624],[121.0365533,14.7145683],[121.0361651,14.714615],[121.0357641,14.7146798],[121.0351744,14.7147687],[121.0351244,14.7147602],[121.0350697,14.7147391],[121.035004,14.7146952],[121.0348887,14.7145509],[121.0344099,14.7140667],[121.0342536,14.7138862],[121.0341839,14.7136913],[121.0341969,14.7135132],[121.0342312,14.7133827],[121.0342965,14.7132461],[121.0344816,14.7130565],[121.0345607,14.7129008],[121.0345812,14.7127621],[121.0345279,14.712633],[121.0341479,14.7122626],[121.0339345,14.712102],[121.0335527,14.7118143],[121.0334848,14.711682]];
 
-    if (!heatmapExportMap) {
-      heatmapExportMap = L.map("heatmapExportMap", {
-        zoomControl: false,
-        attributionControl: false,
-        dragging: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
-        boxZoom: false,
-        keyboard: false,
-      }).setView([14.7158532, 121.0403842], 15);
+    // ── 4. Bounding box with padding ──────────────────────────
+    const lngs   = boundaryCoords.map(c => c[0]);
+    const lats   = boundaryCoords.map(c => c[1]);
+    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+    const padLng = (maxLng - minLng) * 0.08;
+    const padLat = (maxLat - minLat) * 0.08;
+    const bMinLng = minLng - padLng, bMaxLng = maxLng + padLng;
+    const bMinLat = minLat - padLat, bMaxLat = maxLat + padLat;
 
-      L.tileLayer(
-        "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
-        { maxZoom: 21 },
-      ).addTo(heatmapExportMap);
-
-      // ── Gulod boundary ───────────────────────────────────
-      const gulodBoundary = {
-        type: "Feature",
-        properties: { name: "Gulod" },
-        geometry: {
-          type: "Polygon",
-          coordinates: [
-            [
-              [121.0334848, 14.711682],
-              [121.0334957, 14.7115454],
-              [121.0335308, 14.7114846],
-              [121.0335862, 14.7114333],
-              [121.0337882, 14.7112641],
-              [121.0339523, 14.7111092],
-              [121.0340751, 14.7109148],
-              [121.0341028, 14.7108099],
-              [121.0340604, 14.7106753],
-              [121.0339774, 14.7105621],
-              [121.0338543, 14.7105114],
-              [121.0336751, 14.7104859],
-              [121.0335323, 14.710492],
-              [121.033562, 14.7101886],
-              [121.0338342, 14.709774],
-              [121.0339713, 14.7095436],
-              [121.0345597, 14.7094757],
-              [121.0350814, 14.7094277],
-              [121.0362553, 14.7093446],
-              [121.0363582, 14.7092669],
-              [121.0364442, 14.709162],
-              [121.0366244, 14.7089794],
-              [121.036688, 14.7089056],
-              [121.03699, 14.7091458],
-              [121.0372903, 14.7091637],
-              [121.0375888, 14.709336],
-              [121.0382147, 14.7094565],
-              [121.0384845, 14.709263],
-              [121.03848, 14.7091378],
-              [121.0384375, 14.7090308],
-              [121.0387608, 14.708583],
-              [121.0387662, 14.7084187],
-              [121.0389081, 14.7083563],
-              [121.0396347, 14.7080226],
-              [121.0400809, 14.7080861],
-              [121.0401844, 14.7080705],
-              [121.0415248, 14.7075016],
-              [121.0415217, 14.7066561],
-              [121.0418078, 14.7058151],
-              [121.0419812, 14.7052453],
-              [121.0440479, 14.7052824],
-              [121.0454888, 14.7052707],
-              [121.0455003, 14.704594],
-              [121.0468975, 14.7050443],
-              [121.0474573, 14.7053168],
-              [121.0472436, 14.7061441],
-              [121.0472437, 14.7061633],
-              [121.0471759, 14.7063696],
-              [121.047172, 14.7070541],
-              [121.0468812, 14.7074933],
-              [121.0468267, 14.7079836],
-              [121.0467387, 14.7084147],
-              [121.0466027, 14.7087975],
-              [121.0465728, 14.7088616],
-              [121.0465237, 14.708988],
-              [121.0465472, 14.7090729],
-              [121.0466418, 14.7091216],
-              [121.0467319, 14.7091885],
-              [121.0467944, 14.7093433],
-              [121.0467645, 14.709431],
-              [121.0466762, 14.7095276],
-              [121.0464922, 14.709637],
-              [121.0459681, 14.7097706],
-              [121.0459465, 14.7098262],
-              [121.0459745, 14.7099749],
-              [121.0459659, 14.7100253],
-              [121.0460252, 14.7100798],
-              [121.045984, 14.7102054],
-              [121.0460574, 14.7104115],
-              [121.046219, 14.7105981],
-              [121.046361, 14.7107014],
-              [121.0467486, 14.7109051],
-              [121.0469001, 14.7110597],
-              [121.0470558, 14.7112651],
-              [121.0470603, 14.7113701],
-              [121.0468657, 14.7118121],
-              [121.04668, 14.7120473],
-              [121.0463628, 14.7122458],
-              [121.0461321, 14.7125295],
-              [121.0459071, 14.712751],
-              [121.04565, 14.7128774],
-              [121.0452638, 14.7129189],
-              [121.0449875, 14.7128681],
-              [121.0446371, 14.7126643],
-              [121.0444294, 14.7125356],
-              [121.0441094, 14.7122657],
-              [121.0436705, 14.7119655],
-              [121.0434184, 14.7119718],
-              [121.0432508, 14.7120946],
-              [121.0431034, 14.7122324],
-              [121.0429966, 14.7123962],
-              [121.0429383, 14.7125755],
-              [121.0429079, 14.7127791],
-              [121.0429966, 14.7130402],
-              [121.0431543, 14.7133731],
-              [121.0432095, 14.7135],
-              [121.0432103, 14.7136163],
-              [121.0430658, 14.7139198],
-              [121.0428879, 14.7146356],
-              [121.0428612, 14.7148887],
-              [121.0429258, 14.7150544],
-              [121.0430697, 14.7151967],
-              [121.0434241, 14.7154815],
-              [121.0438905, 14.7157166],
-              [121.0442338, 14.7158245],
-              [121.0443492, 14.7159932],
-              [121.0443099, 14.7161024],
-              [121.0441341, 14.7162898],
-              [121.0440041, 14.7165224],
-              [121.0438154, 14.7173538],
-              [121.0437188, 14.717601],
-              [121.0436498, 14.7178396],
-              [121.0434931, 14.7184845],
-              [121.0434293, 14.7185908],
-              [121.0433855, 14.7186606],
-              [121.0433491, 14.718696],
-              [121.0432445, 14.7187068],
-              [121.0430669, 14.7186606],
-              [121.0427013, 14.7184907],
-              [121.042527, 14.7184298],
-              [121.0421883, 14.7183594],
-              [121.0420877, 14.7183753],
-              [121.0418588, 14.7185368],
-              [121.0416664, 14.7186873],
-              [121.0414534, 14.7188422],
-              [121.0411207, 14.7190733],
-              [121.0409713, 14.7190759],
-              [121.0404672, 14.7188598],
-              [121.0401682, 14.7187086],
-              [121.039773, 14.7184233],
-              [121.0391703, 14.7176617],
-              [121.0390905, 14.7175646],
-              [121.0389286, 14.7174147],
-              [121.0388499, 14.7173238],
-              [121.0387788, 14.7172294],
-              [121.0387494, 14.7171469],
-              [121.0387334, 14.7170159],
-              [121.0387279, 14.7168797],
-              [121.0387239, 14.7167954],
-              [121.0386924, 14.7167398],
-              [121.0386199, 14.7166645],
-              [121.0383958, 14.7164802],
-              [121.0374912, 14.7159739],
-              [121.0374116, 14.7159302],
-              [121.0373821, 14.7159069],
-              [121.0373667, 14.7158693],
-              [121.0373533, 14.7158368],
-              [121.0373462, 14.7157973],
-              [121.0373377, 14.7157255],
-              [121.0373544, 14.715513],
-              [121.0373727, 14.7153563],
-              [121.0373694, 14.7152856],
-              [121.0373586, 14.7152214],
-              [121.0373378, 14.7151652],
-              [121.0372433, 14.71503],
-              [121.0370918, 14.7148582],
-              [121.0369087, 14.7146629],
-              [121.0368524, 14.7146156],
-              [121.0368115, 14.7145884],
-              [121.0367752, 14.7145735],
-              [121.0367116, 14.7145637],
-              [121.0366505, 14.7145624],
-              [121.0365533, 14.7145683],
-              [121.0361651, 14.714615],
-              [121.0357641, 14.7146798],
-              [121.0351744, 14.7147687],
-              [121.0351244, 14.7147602],
-              [121.0350697, 14.7147391],
-              [121.035004, 14.7146952],
-              [121.0348887, 14.7145509],
-              [121.0344099, 14.7140667],
-              [121.0342536, 14.7138862],
-              [121.0341839, 14.7136913],
-              [121.0341969, 14.7135132],
-              [121.0342312, 14.7133827],
-              [121.0342965, 14.7132461],
-              [121.0344816, 14.7130565],
-              [121.0345607, 14.7129008],
-              [121.0345812, 14.7127621],
-              [121.0345279, 14.712633],
-              [121.0341479, 14.7122626],
-              [121.0339345, 14.712102],
-              [121.0335527, 14.7118143],
-              [121.0334848, 14.711682],
-            ],
-          ],
-        },
-      };
-
-      L.geoJSON(gulodBoundary, {
-        style: {
-          color: "#1c7b5d",
-          weight: 2,
-          opacity: 0.8,
-          fillColor: "#27C291",
-          fillOpacity: 0.05,
-          dashArray: "6 4",
-        },
-        interactive: false,
-      }).addTo(heatmapExportMap);
+    // ── 5. Projection function ────────────────────────────────
+    function project(lng, lat) {
+      const x = ((lng - bMinLng) / (bMaxLng - bMinLng)) * W;
+      const y = H - ((lat - bMinLat) / (bMaxLat - bMinLat)) * H;
+      return [x, y];
     }
 
-    // ── 3. Clear old heatmap layers then re-add fresh ones ───
-    heatmapExportMap.eachLayer((layer) => {
-      if (layer._heat) heatmapExportMap.removeLayer(layer);
-    });
+    // ── 6. Background ─────────────────────────────────────────
+    ctx.fillStyle = "#e8ede9";
+    ctx.fillRect(0, 0, W, H);
 
-    const heatmapConfigs = {
+    // Subtle grid
+    ctx.strokeStyle = "rgba(255,255,255,0.6)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 50) {
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke();
+    }
+    for (let i = 0; i < H; i += 50) {
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
+    }
+
+    // ── 7. Boundary fill ──────────────────────────────────────
+    ctx.beginPath();
+    boundaryCoords.forEach(([lng, lat], i) => {
+      const [x, y] = project(lng, lat);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = "rgba(232, 245, 233, 0.95)";
+    ctx.fill();
+
+    // ── 8. Heatmap blobs ──────────────────────────────────────
+    const heatConfigs = {
       fire: {
-        radius: 28,
-        blur: 20,
-        maxZoom: 15,
-        max: 2.0,
-        minOpacity: 0.3,
-        gradient: {
-          0.2: "rgba(255, 255, 0, 0.4)",
-          0.5: "rgba(255, 128, 0, 0.7)",
-          0.8: "rgba(220, 38, 38, 0.9)",
-          1.0: "rgba(100, 0, 0, 1.0)",
-        },
+        radius: 40,
+        stops: [
+          { pos: 0,   color: "rgba(220,38,38,0)"   },
+          { pos: 0.3, color: "rgba(255,128,0,0.45)" },
+          { pos: 0.6, color: "rgba(220,38,38,0.7)"  },
+          { pos: 1,   color: "rgba(100,0,0,0.9)"    },
+        ],
       },
       crime: {
-        radius: 28,
-        blur: 20,
-        maxZoom: 15,
-        max: 2.0,
-        minOpacity: 0.3,
-        gradient: {
-          0.2: "rgba(255, 240, 120, 0.4)",
-          0.5: "rgba(251, 191, 36, 0.7)",
-          0.8: "rgba(217, 119, 6, 0.9)",
-          1.0: "rgba(100, 40, 0, 1.0)",
-        },
+        radius: 40,
+        stops: [
+          { pos: 0,   color: "rgba(251,191,36,0)"   },
+          { pos: 0.3, color: "rgba(251,191,36,0.45)"},
+          { pos: 0.6, color: "rgba(217,119,6,0.7)"  },
+          { pos: 1,   color: "rgba(100,40,0,0.9)"   },
+        ],
       },
       flood: {
-        radius: 35,
-        blur: 25,
-        maxZoom: 15,
-        max: 2.0,
-        minOpacity: 0.3,
-        gradient: {
-          0.2: "rgba(150, 200, 255, 0.4)",
-          0.5: "rgba(59, 130, 246, 0.7)",
-          0.8: "rgba(29, 78, 216, 0.9)",
-          1.0: "rgba(8, 15, 60, 1.0)",
-        },
+        radius: 50,
+        stops: [
+          { pos: 0,   color: "rgba(59,130,246,0)"   },
+          { pos: 0.3, color: "rgba(59,130,246,0.45)"},
+          { pos: 0.6, color: "rgba(29,78,216,0.7)"  },
+          { pos: 1,   color: "rgba(8,15,60,0.9)"    },
+        ],
       },
     };
 
+    ctx.save();
+    // Clip heatmap blobs to boundary
+    ctx.beginPath();
+    boundaryCoords.forEach(([lng, lat], i) => {
+      const [x, y] = project(lng, lat);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.clip();
+
     ["fire", "crime", "flood"].forEach((type) => {
-      const points = (heatData[type] || []).map((p) => [
-        p.lat,
-        p.lng,
-        p.intensity,
-      ]);
-      if (points.length > 0) {
-        L.heatLayer(points, heatmapConfigs[type]).addTo(heatmapExportMap);
-      }
+      const points = heatData[type] || [];
+      const cfg    = heatConfigs[type];
+      points.forEach(({ lat, lng, intensity }) => {
+        const [cx, cy] = project(lng, lat);
+        const r = cfg.radius * (0.4 + intensity * 0.6);
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+        cfg.stops.forEach(s => grad.addColorStop(s.pos, s.color));
+        ctx.globalAlpha = Math.min(1, intensity * 1.3);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+      });
     });
 
-    // ── 4. Invalidate size so Leaflet renders correctly ──────
-    heatmapExportMap.invalidateSize();
+    ctx.globalAlpha = 1;
+    ctx.restore();
 
-    // ── 5. Wait for tiles + heatmap to render, then composite ─
-    setTimeout(() => {
-      try {
-        // Create output canvas at map size
-        const W = mapEl.offsetWidth || 900;
-        const H = mapEl.offsetHeight || 600;
-        const output = document.createElement("canvas");
-        output.width = W;
-        output.height = H;
-        const ctx = output.getContext("2d");
+    // ── 9. Boundary outline on top ────────────────────────────
+    ctx.beginPath();
+    boundaryCoords.forEach(([lng, lat], i) => {
+      const [x, y] = project(lng, lat);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle = "#1c7b5d";
+    ctx.lineWidth   = 2.5;
+    ctx.setLineDash([8, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-        // White background
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, W, H);
+    // ── 10. Legend ────────────────────────────────────────────
+    const legend = [
+      { label: "Fire",  color: "#ef4444" },
+      { label: "Crime", color: "#f59e0b" },
+      { label: "Flood", color: "#3b82f6" },
+    ];
+    // Legend background pill
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.beginPath();
+    ctx.roundRect(10, H - 34, 260, 26, 6);
+    ctx.fill();
+    ctx.font = "bold 12px sans-serif";
+    legend.forEach((item, i) => {
+      const x = 20 + i * 86;
+      ctx.fillStyle = item.color;
+      ctx.beginPath();
+      ctx.arc(x + 6, H - 21, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#374151";
+      ctx.fillText(item.label, x + 16, H - 16);
+    });
 
-        // ── Draw all tile <img> elements ─────────────────────
-        // Leaflet renders tiles as <img> inside .leaflet-tile-pane
-        const tilePanes = mapEl.querySelectorAll(
-          ".leaflet-tile-pane img.leaflet-tile",
-        );
-        tilePanes.forEach((img) => {
-          if (!img.complete || img.naturalWidth === 0) return;
-          // Get tile's position relative to the map container
-          const tileContainer = img.closest(".leaflet-tile-container");
-          const pane = img.closest(".leaflet-pane");
+    // ── 11. Title label ───────────────────────────────────────
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.beginPath();
+    ctx.roundRect(W / 2 - 100, 8, 200, 22, 5);
+    ctx.fill();
+    ctx.font         = "bold 12px sans-serif";
+    ctx.fillStyle    = "#1c7b5d";
+    ctx.textAlign    = "center";
+    ctx.fillText("BARANGAY GULOD — INCIDENT HEATMAP", W / 2, 23);
+    ctx.textAlign    = "left";
 
-          // Parse transform from tile container and pane to get absolute position
-          function getTranslate(el) {
-            if (!el) return { x: 0, y: 0 };
-            const t = el.style.transform || "";
-            const m = t.match(/translate3d\(([^,]+)px,\s*([^,]+)px/);
-            if (m) return { x: parseFloat(m[1]), y: parseFloat(m[2]) };
-            const m2 = t.match(/translate\(([^,]+)px,\s*([^,]+)px/);
-            if (m2) return { x: parseFloat(m2[1]), y: parseFloat(m2[2]) };
-            return { x: 0, y: 0 };
-          }
-
-          const panePos = getTranslate(pane);
-          const containerPos = getTranslate(tileContainer);
-          const imgLeft = parseFloat(img.style.left) || 0;
-          const imgTop = parseFloat(img.style.top) || 0;
-
-          const x = panePos.x + containerPos.x + imgLeft;
-          const y = panePos.y + containerPos.y + imgTop;
-
-          try {
-            ctx.drawImage(img, x, y, img.width, img.height);
-          } catch (e) {
-            // Tainted — skip this tile
-          }
-        });
-
-        // ── Draw heatmap canvas layers ────────────────────────
-        // Leaflet.heat renders onto <canvas> inside .leaflet-heatmap-layer
-        // or directly inside .leaflet-overlay-pane
-        const heatCanvases = mapEl.querySelectorAll("canvas");
-        heatCanvases.forEach((c) => {
-          if (c.width === 0 || c.height === 0) return;
-          const pane = c.closest(".leaflet-pane");
-          const pos = getTranslate(pane); // reuse helper above
-
-          // Also check for canvas own transform
-          function getTranslate(el) {
-            if (!el) return { x: 0, y: 0 };
-            const t = el.style.transform || "";
-            const m = t.match(/translate3d\(([^,]+)px,\s*([^,]+)px/);
-            if (m) return { x: parseFloat(m[1]), y: parseFloat(m[2]) };
-            const m2 = t.match(/translate\(([^,]+)px,\s*([^,]+)px/);
-            if (m2) return { x: parseFloat(m2[1]), y: parseFloat(m2[2]) };
-            return { x: 0, y: 0 };
-          }
-
-          const panePos = getTranslate(c.closest(".leaflet-pane"));
-          ctx.drawImage(c, panePos.x, panePos.y);
-        });
-
-        // ── Draw SVG boundary (GeoJSON) ───────────────────────
-        const svgEl = mapEl.querySelector(".leaflet-overlay-pane svg");
-        if (svgEl) {
-          const svgData = new XMLSerializer().serializeToString(svgEl);
-          const svgBlob = new Blob([svgData], {
-            type: "image/svg+xml;charset=utf-8",
-          });
-          const svgUrl = URL.createObjectURL(svgBlob);
-          const svgImg = new Image();
-          svgImg.onload = () => {
-            const pane = svgEl.closest(".leaflet-pane");
-            const panePos = getTranslate(pane);
-            ctx.drawImage(svgImg, panePos.x, panePos.y);
-            URL.revokeObjectURL(svgUrl);
-            resolve(output.toDataURL("image/jpeg", 0.92));
-          };
-          svgImg.onerror = () => {
-            URL.revokeObjectURL(svgUrl);
-            resolve(output.toDataURL("image/jpeg", 0.92));
-          };
-          svgImg.src = svgUrl;
-        } else {
-          resolve(output.toDataURL("image/jpeg", 0.92));
-        }
-      } catch (e) {
-        console.error("Canvas composite failed:", e);
-        resolve(null);
-      }
-    }, 3500); // wait for tiles + heatmap to render
+    resolve(canvas.toDataURL("image/jpeg", 0.92));
   });
 }
 
