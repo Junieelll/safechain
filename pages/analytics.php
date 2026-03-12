@@ -23,9 +23,8 @@
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
 </head>
 
 <body class="min-h-screen flex transition-all duration-300 dark:bg-neutral-900">
@@ -43,7 +42,8 @@
       </div>
 
       <div class="header-actions flex gap-2">
-        <button class="py-2.5 px-6 bg-white dark:bg-neutral-800 flex gap-3 text-sm rounded-lg text-emerald-500 dark:text-white/80 font-medium">
+        <button
+          class="py-2.5 px-6 bg-white dark:bg-neutral-800 flex gap-3 text-sm rounded-lg text-emerald-500 dark:text-white/80 font-medium">
           <i class="uil uil-filter"></i>
           Filters
         </button>
@@ -108,7 +108,7 @@
       </div>
 
       <!-- Card 3 -->
-      <div 
+      <div
         class="animate-scale-in-3 float-effect stat-card relative bg-white/95 dark:bg-neutral-800 backdrop-blur-md rounded-3xl p-8 border border-gray-200/80 dark:border-neutral-600 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:-translate-y-2 hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
         <div class="relative z-10">
           <div class="flex justify-between items-start mb-4">
@@ -378,6 +378,19 @@
           </tbody>
         </table>
       </div>
+    </div>
+
+    <div id="heatmapExportContainer" style="
+      position: fixed;
+      top: -9999px;
+      left: -9999px;
+      width: 900px;
+      height: 600px;
+      visibility: hidden;
+      pointer-events: none;
+      z-index: -1;
+    ">
+      <div id="heatmapExportMap" style="width: 100%; height: 100%;"></div>
     </div>
     <!-- Toast Container -->
     <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-3 max-w-md w-full"></div>
