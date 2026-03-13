@@ -368,7 +368,8 @@ function updateMapMarkers() {
   let incidentsToProcess = { fire: [], crime: [], flood: [] };
 
   if (incidentData.all && Array.isArray(incidentData.all)) {
-    incidentData.all.forEach((incident) => {
+    const filtered = applyGeofenceFilter(incidentData.all);
+    filtered.forEach((incident) => {
       const t = incident.type.toLowerCase();
       if (t.includes("fire")) incidentsToProcess.fire.push(incident);
       else if (t.includes("crime")) incidentsToProcess.crime.push(incident);
@@ -648,8 +649,7 @@ function renderEmergencyList() {
     });
   }
 
-  // Geofence only blocks receiving new incidents (handled server-side).
-  // All saved incidents are always shown on map and list.
+  allIncidents = applyGeofenceFilter(allIncidents);
 
   if (allIncidents.length === 0) {
     return `
