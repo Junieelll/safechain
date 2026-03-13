@@ -19,7 +19,7 @@ $publicRoutes = [
     'auth/login',
     'auth/register',
     'auth/logout',
-    'reset-password-page',  // Password reset page — no login required
+    'forgot-password',  // Password reset page — no login required
 ];
 
 // ===== Look for the page file in /pages/ first, then /page/ =====

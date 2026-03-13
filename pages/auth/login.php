@@ -28,12 +28,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Check if user is suspended BEFORE verifying password
         if ($userExists['status'] === 'suspended') {
           $error = "Your account has been suspended. Please contact an administrator for assistance.";
-        } 
+        }
         // Check if user is admin (only admins can access web platform)
         elseif ($userExists['role'] !== Roles::ADMIN) {
           $error = "Access denied. Only administrators can access the web platform.";
-        } 
-        else {
+        } else {
           // User is active and is admin, now verify password
           $user = verifyCredentials($conn, $username, $password);
 
@@ -44,8 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Login successful
             AuthChecker::login(
               $user['user_id'],    // Now accepts string like 'USR-2025-001'
-              $user['name'], 
-              $user['username'], 
+              $user['name'],
+              $user['username'],
               $user['role'],
               $user['status'],
               $rememberMe
@@ -114,7 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       <div class="login-footer">
         <h2 class="text-neutral-200 mb-3 font-semibold text-4xl">Alert Instantly. Connect Reliably. Save Lives.</h2>
-        <p class="text-neutral-300 text-base">From fire emergencies to floods and crime alerts, our smart community system lets you call for help instantly.</p>
+        <p class="text-neutral-300 text-base">From fire emergencies to floods and crime alerts, our smart community
+          system lets you call for help instantly.</p>
 
         <div class="page-indicator">
           <div class="indicator-dot active"></div>
@@ -132,7 +132,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <?php if ($error): ?>
-          <div style="background: #fee2e2; border: 1px solid #fecaca; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px;">
+          <div
+            style="background: #fee2e2; border: 1px solid #fecaca; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px;">
             <i class="uil uil-exclamation-triangle" style="margin-right: 8px;"></i>
             <?= htmlspecialchars($error) ?>
           </div>
@@ -143,13 +144,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label class="form-label" for="loginUsername">Username</label>
             <div class="form-input-wrapper">
               <i class="uil uil-user form-input-icon"></i>
-              <input
-                type="text"
-                id="loginUsername"
-                name="username"
-                class="form-input"
-                value="<?= htmlspecialchars($_POST['username'] ?? '') ?>"
-                required />
+              <input type="text" id="loginUsername" name="username" class="form-input"
+                value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required />
             </div>
             <div class="form-error"></div>
           </div>
@@ -158,25 +154,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label class="form-label" for="loginPassword">Password</label>
             <div class="form-input-wrapper relative">
               <i class="uil uil-lock form-input-icon"></i>
-              <input
-                type="password"
-                id="loginPassword"
-                name="password"
-                class="form-input"
-                required />
-              <i id="togglePassword" class="uil uil-eye absolute text-lg text-neutral-500 cursor-pointer top-1/2 -translate-y-1/2 right-3"></i>
+              <input type="password" id="loginPassword" name="password" class="form-input" required />
+              <i id="togglePassword"
+                class="uil uil-eye absolute text-lg text-neutral-500 cursor-pointer top-1/2 -translate-y-1/2 right-3"></i>
             </div>
             <div class="form-error"></div>
           </div>
 
-          <div class="form-checkbox">
-            <input
-              type="checkbox"
-              id="rememberMe"
-              name="remember_me"
-              class="w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" />
-            <label for="rememberMe">Remember me</label>
+          <div class="flex space-between items-center">
+            <div class="form-checkbox">
+              <input type="checkbox" id="rememberMe" name="remember_me"
+                class="w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')]" />
+              <label for="rememberMe">Remember me</label>
+            </div>
+            <a href="/forgot-password" class="text-emerald-500 font-medium text-sm hover:underline" >Forgot Password?</a>
           </div>
+
 
           <button type="submit" class="form-submit rounded-full mt-5">Login</button>
 
