@@ -45,13 +45,28 @@ if (!AuthChecker::isLoggedIn()) {
 
     <main id="mainContent" class="transition-all duration-500 ease-in-out ml-[302px] mr-[360px] flex-1 p-8">
         <div class="left-panel w-full">
-            <div class="header flex flex-col items-end">
-                <h1 class="text-sm font-medium mb-1 dark:text-white/90">
-                    Brgy. Gulod, Novaliches, QC
-                </h1>
-                <p class="text-black/70 text-xs dark:text-white/70">
-                    Friday, October 18, 2025, 3:42:52 PM
-                </p>
+            <div class="header flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div id="geofenceToggleTrack"
+                        onclick="toggleGeofence()"
+                        title="Geofence Filter"
+                        class="w-10 h-[22px] rounded-full relative cursor-pointer transition-colors duration-200 bg-slate-200 dark:bg-neutral-600">
+                        <div id="geofenceToggleThumb"
+                            class="absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"></div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-600 dark:text-white/80 leading-tight">Geofence Filter</p>
+                        <p id="geofenceStatus" class="text-[10px] text-slate-400 dark:text-white/40 leading-tight">Off — Receive Incidents on areas</p>
+                    </div>
+                </div>
+                <div class="flex flex-col items-start">
+                    <h1 class="text-sm font-medium mb-1 dark:text-white/90">
+                        Brgy. Gulod, Novaliches, QC
+                    </h1>
+                    <p class="text-black/70 text-xs dark:text-white/70" id="currentDateTime">
+                        Friday, October 18, 2025, 3:42:52 PM
+                    </p>
+                </div>
             </div>
 
             <div class="border border-white dark:border-neutral-800 rounded-2xl mt-4 relative">
