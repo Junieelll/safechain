@@ -5,7 +5,7 @@ if (session_status() === PHP_SESSION_NONE)
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/includes/auth_helper.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config/conn.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/helpers/response_helper.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/api/helpers/response_helper.php';
 
 setCorsHeaders();
 

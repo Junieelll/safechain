@@ -367,22 +367,22 @@ initializeAudio();
  * Play the notification sound for soundConfig.duration ms then stop.
  */
 async function playNotificationSound() {
-    // Reload settings if they haven't been fetched yet
     if (!soundSettingsLoaded) await loadSoundSettings();
- 
-    // Rebuild audio if src changed (e.g. admin uploaded a new file mid-session)
+
     if (!audioInitialized || notificationAudio?.src !== soundConfig.src) {
         buildAudio();
     }
- 
+
     if (!notificationAudio) return;
- 
+
     notificationAudio.volume      = soundConfig.volume;
     notificationAudio.currentTime = 0;
+    notificationAudio.loop        = true;   // ← loop it
     notificationAudio.play().catch(() => {});
- 
+
     if (testStopTimer) clearTimeout(testStopTimer);
     testStopTimer = setTimeout(() => {
+        notificationAudio.loop    = false;  // ← stop looping then pause
         notificationAudio.pause();
         notificationAudio.currentTime = 0;
     }, soundConfig.duration);
