@@ -127,23 +127,33 @@ async function loadGeofenceState() {
     const res = await fetch('api/settings/get.php?key=geofence_enabled');
     const data = await res.json();
     if (data.success) {
-      geofenceEnabled = data.value === '1';
+      geofenceEnabled = (data.data?.value ?? data.value) === '1';
       applyGeofenceUI();
     }
   } catch (_) {}
 }
 
 async function toggleGeofence() {
-  geofenceEnabled = !geofenceEnabled;
+  const intended = !geofenceEnabled;
+  geofenceEnabled = intended;
   applyGeofenceUI();
 
   try {
-    await fetch('api/settings/toggle_geofence.php', {
+    const res = await fetch('api/settings/toggle_geofence.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: geofenceEnabled }),
+      body: JSON.stringify({ enabled: intended }),
     });
+    const data = await res.json();
+
+    if (!data.success) {
+      geofenceEnabled = !intended;
+      applyGeofenceUI();
+      showToast('error', 'Failed to save geofence setting: ' + (data.message ?? ''));
+    }
   } catch (_) {
+    geofenceEnabled = !intended;
+    applyGeofenceUI();
     showToast('error', 'Failed to save geofence setting');
   }
 
