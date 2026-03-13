@@ -22,13 +22,6 @@ if (AuthChecker::getUserRole() !== 'admin') {
 // If the table doesn't exist yet, we fall back to defaults gracefully.
 $settings = [];
 $defaults = [
-    // Barangay profile
-    'barangay_name' => 'Barangay Gulod',
-    'barangay_address' => 'Novaliches, Quezon City',
-    'barangay_contact' => '',
-    'barangay_email' => '',
-    'barangay_logo' => '',
-
     // Report settings
     'report_left_logo' => '',   // QC logo / left logo path
     'report_right_logo' => '',   // Gulod seal / right logo path
@@ -455,7 +448,6 @@ function s(array $settings, string $key): string
                     class="bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-2xl p-2 sticky top-6">
                     <?php
                     $tabs = [
-                        ['id' => 'barangay', 'icon' => 'uil-building', 'label' => 'Barangay'],
                         ['id' => 'reports', 'icon' => 'uil-file-alt', 'label' => 'Reports'],
                         ['id' => 'system', 'icon' => 'uil-cog', 'label' => 'System'],
                     ];
@@ -474,95 +466,9 @@ function s(array $settings, string $key): string
             <div class="flex-1 min-w-0">
 
                 <!-- ══════════════════════════════════════
-                     TAB: BARANGAY PROFILE
-                ══════════════════════════════════════ -->
-                <div class="tab-panel active" id="tab-barangay">
-
-                    <!-- Logo -->
-                    <div class="settings-card">
-                        <p class="settings-card-title">
-                            <i class="uil uil-image brand"></i> Barangay Logo
-                        </p>
-                        <div class="flex gap-5 items-start">
-                            <div id="logoPreviewWrap"
-                                class="w-20 h-20 rounded-2xl border-2 border-slate-200 dark:border-neutral-600 overflow-hidden flex items-center justify-center bg-slate-50 dark:bg-neutral-700 flex-shrink-0">
-                                <?php if (!empty($settings['barangay_logo'])): ?>
-                                    <img id="logoPreview" src="<?= s($settings, 'barangay_logo') ?>"
-                                        class="w-full h-full object-contain" />
-                                <?php else: ?>
-                                    <i class="uil uil-image-slash text-2xl text-slate-300 dark:text-neutral-600"
-                                        id="logoPlaceholder"></i>
-                                    <img id="logoPreview" src="" class="w-full h-full object-contain hidden" />
-                                <?php endif; ?>
-                            </div>
-                            <div class="flex-1">
-                                <div class="upload-zone p-5 text-center" id="logoDropzone"
-                                    onclick="document.getElementById('logoInput').click()">
-                                    <i
-                                        class="uil uil-cloud-upload text-2xl text-slate-300 dark:text-neutral-600 mb-1 block"></i>
-                                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Click to upload
-                                        logo</p>
-                                    <p class="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">PNG, SVG or WebP —
-                                        max 2MB</p>
-                                    <input type="file" id="logoInput" accept="image/*" class="hidden"
-                                        onchange="handleLogoUpload(this)" />
-                                </div>
-                                <p class="sc-hint mt-2">Used as the barangay logo in generated PDF reports and on the
-                                    dashboard header.</p>
-                                <?php if (!empty($settings['barangay_logo'])): ?>
-                                    <button onclick="clearLogo()"
-                                        class="mt-2 text-xs text-red-400 hover:text-red-500 font-medium flex items-center gap-1">
-                                        <i class="uil uil-times-circle"></i> Remove logo
-                                    </button>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Basic info -->
-                    <div class="settings-card">
-                        <p class="settings-card-title">
-                            <i class="uil uil-map-marker brand"></i> Barangay Information
-                        </p>
-                        <div class="flex flex-col gap-4">
-                            <div>
-                                <label class="sc-label">Barangay Name</label>
-                                <input type="text" class="sc-input" id="barangay_name"
-                                    value="<?= s($settings, 'barangay_name') ?>" placeholder="e.g. Barangay Gulod" />
-                            </div>
-                            <div>
-                                <label class="sc-label">Address</label>
-                                <input type="text" class="sc-input" id="barangay_address"
-                                    value="<?= s($settings, 'barangay_address') ?>"
-                                    placeholder="e.g. Novaliches, Quezon City" />
-                            </div>
-                            <div class="field-row cols-2">
-                                <div>
-                                    <label class="sc-label">Contact Number</label>
-                                    <input type="text" class="sc-input" id="barangay_contact"
-                                        value="<?= s($settings, 'barangay_contact') ?>" placeholder="+63 2 1234 5678" />
-                                </div>
-                                <div>
-                                    <label class="sc-label">Email Address</label>
-                                    <input type="email" class="sc-input" id="barangay_email"
-                                        value="<?= s($settings, 'barangay_email') ?>"
-                                        placeholder="barangay@example.gov.ph" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end">
-                        <button class="save-btn" onclick="saveTab('barangay')">
-                            <i class="uil uil-save"></i> Save Barangay Info
-                        </button>
-                    </div>
-                </div>
-
-                <!-- ══════════════════════════════════════
                      TAB: REPORT SETTINGS
                 ══════════════════════════════════════ -->
-                <div class="tab-panel" id="tab-reports">
+                <div class="tab-panel active" id="tab-reports">
 
                     <!-- ── Report Logos ───────────────────────────────── -->
                     <div class="settings-card">
@@ -673,16 +579,20 @@ function s(array $settings, string $key): string
                                 <div class="flex-1 text-center">
                                     <p id="prev_republic"
                                         class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                                        <?= s($settings, 'report_republic_line') ?: 'REPUBLIC OF THE PHILIPPINES' ?></p>
+                                        <?= s($settings, 'report_republic_line') ?: 'REPUBLIC OF THE PHILIPPINES' ?>
+                                    </p>
                                     <p id="prev_brgy_line"
                                         class="text-sm font-extrabold text-slate-900 dark:text-slate-100 leading-tight mt-0.5">
-                                        <?= s($settings, 'report_barangay_line') ?: 'BARANGAY GULOD' ?></p>
+                                        <?= s($settings, 'report_barangay_line') ?: 'BARANGAY GULOD' ?>
+                                    </p>
                                     <p id="prev_address"
                                         class="text-xs text-slate-600 dark:text-slate-400 leading-tight mt-0.5">
-                                        <?= s($settings, 'report_address_line') ?: 'Address' ?></p>
+                                        <?= s($settings, 'report_address_line') ?: 'Address' ?>
+                                    </p>
                                     <p id="prev_tel"
                                         class="text-xs text-slate-500 dark:text-slate-500 italic leading-tight mt-0.5">
-                                        <?= s($settings, 'report_tel_line') ?: 'Tel. No.' ?></p>
+                                        <?= s($settings, 'report_tel_line') ?: 'Tel. No.' ?>
+                                    </p>
                                 </div>
                                 <div class="w-16 h-16 flex-shrink-0 flex items-center justify-center">
                                     <?php if (!empty($settings['report_right_logo'])): ?>
@@ -1094,12 +1004,12 @@ function s(array $settings, string $key): string
             document.getElementById('tab-' + id).classList.add('active');
             document.querySelector(`.settings-tab[data-tab="${id}"]`).classList.add('active');
             // update global save btn label
-            const labels = { barangay: 'Barangay Info', reports: 'Report Settings', system: 'System Settings' };
+            const labels = { reports: 'Report Settings', system: 'System Settings' };
             document.getElementById('globalSaveBtn').innerHTML =
                 `<i class="uil uil-save text-base"></i> Save ${labels[id]}`;
             currentTab = id;
         }
-        let currentTab = 'barangay';
+        let currentTab = 'reports';
 
         function saveCurrentTab() { saveTab(currentTab); }
 
