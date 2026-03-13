@@ -289,89 +289,146 @@ document.addEventListener("click", () => userDropdown.classList.add("hidden"));
 userDropdown.addEventListener("click", (e) => e.stopPropagation());
 
 const POLL_INTERVAL = 3000;
+ 
 let knownIncidentIds = new Set(
-  JSON.parse(localStorage.getItem("knownIncidentIds") || "[]")
+    JSON.parse(localStorage.getItem('knownIncidentIds') || '[]')
 );
 let isInitialLoad = true;
-
-// Audio
+ 
+// ── Sound config (populated by loadSoundSettings) ────────────────────────
+let soundConfig = {
+    src:      '/assets/sounds/alert.mp3',   // fallback default
+    volume:   0.7,
+    duration: 3000,   // ms
+};
+let soundSettingsLoaded = false;
+ 
+// ── Audio instance ────────────────────────────────────────────────────────
 let notificationAudio = null;
-let audioInitialized = false;
-
-function initializeAudio() {
-  if (!audioInitialized) {
-    notificationAudio = new Audio("/assets/sounds/alert.mp3");
-    notificationAudio.volume = 0.7;
+let audioInitialized  = false;
+let testStopTimer     = null;
+ 
+/**
+ * Fetch sound settings from the backend once.
+ * Called immediately and re-called lazily if it failed the first time.
+ */
+async function loadSoundSettings() {
+    try {
+        const res  = await fetch('api/settings/sound.php');
+        const data = await res.json();
+        if (data.success && data.data) {
+            soundConfig.src      = data.data.src      || '/assets/sounds/alert.mp3';
+            soundConfig.volume   = data.data.volume   ?? 0.7;
+            soundConfig.duration = (data.data.duration ?? 3) * 1000;
+        }
+        soundSettingsLoaded = true;
+    } catch (e) {
+        // Network error — keep defaults, retry on next play
+        soundSettingsLoaded = false;
+    }
+}
+ 
+// Kick off settings load immediately (non-blocking)
+loadSoundSettings();
+ 
+/**
+ * (Re)build the Audio object using the current soundConfig.
+ * Safe to call multiple times — disposes the old instance first.
+ */
+function buildAudio() {
+    if (notificationAudio) {
+        notificationAudio.pause();
+        notificationAudio.src = '';
+        notificationAudio = null;
+    }
+    notificationAudio        = new Audio(soundConfig.src);
+    notificationAudio.volume = soundConfig.volume;
     notificationAudio.load();
     audioInitialized = true;
-
-    notificationAudio.play().then(() => {
-      notificationAudio.pause();
-      notificationAudio.currentTime = 0;
-    }).catch(() => {});
-
-  }
 }
-
+ 
+/**
+ * Warm up the audio context on first user gesture (required by browsers).
+ */
+function initializeAudio() {
+    if (audioInitialized) return;
+    buildAudio();
+    notificationAudio.play()
+        .then(() => { notificationAudio.pause(); notificationAudio.currentTime = 0; })
+        .catch(() => {});
+}
+ 
 initializeAudio();
-["click", "keydown", "touchstart"].forEach((event) => {
-  document.addEventListener(event, () => {
-    initializeAudio();
-  }, { once: true });
+['click', 'keydown', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, initializeAudio, { once: true });
 });
-
-function playNotificationSound() {
-  if (!audioInitialized) initializeAudio();
-  if (notificationAudio) {
+ 
+/**
+ * Play the notification sound for soundConfig.duration ms then stop.
+ */
+async function playNotificationSound() {
+    // Reload settings if they haven't been fetched yet
+    if (!soundSettingsLoaded) await loadSoundSettings();
+ 
+    // Rebuild audio if src changed (e.g. admin uploaded a new file mid-session)
+    if (!audioInitialized || notificationAudio?.src !== soundConfig.src) {
+        buildAudio();
+    }
+ 
+    if (!notificationAudio) return;
+ 
+    notificationAudio.volume      = soundConfig.volume;
     notificationAudio.currentTime = 0;
     notificationAudio.play().catch(() => {});
-    setTimeout(() => {
-      notificationAudio.pause();
-      notificationAudio.currentTime = 0;
-    }, 3000);
-  }
+ 
+    if (testStopTimer) clearTimeout(testStopTimer);
+    testStopTimer = setTimeout(() => {
+        notificationAudio.pause();
+        notificationAudio.currentTime = 0;
+    }, soundConfig.duration);
 }
-
+ 
+// ── Incident polling ──────────────────────────────────────────────────────
 async function checkNewIncidents() {
-  if (isInitialLoad) isInitialLoad = false;
-  if (window.__dashboardActive) return;
-
-  try {
-    const response = await fetch("api/dashboard/get_incidents.php");
-    const result = await response.json();
-
-    if (result.success) {
-      // ── Sync knownIncidentIds — remove IDs no longer in DB ──
-      const activeIds = new Set(
-        ["fire", "crime", "flood"].flatMap(t => (result.data[t] || []).map(i => i.id))
-      );
-      knownIncidentIds.forEach(id => {
-        if (!activeIds.has(id)) knownIncidentIds.delete(id);
-      });
-      localStorage.setItem("knownIncidentIds", JSON.stringify([...knownIncidentIds]));
-
-      ["fire", "crime", "flood"].forEach((type) => {
-        if (result.data[type]) {
-          result.data[type].forEach((incident) => {
-            if (!knownIncidentIds.has(incident.id)) {
-              knownIncidentIds.add(incident.id);
-              localStorage.setItem(
-                "knownIncidentIds",
-                JSON.stringify([...knownIncidentIds])
-              );
-              if (!isInitialLoad && typeof showToast === "function") {
-                showToast("info", `New ${type} incident: ${incident.user.name}`);
-                playNotificationSound();
-              }
-            }
-          });
+    if (isInitialLoad) isInitialLoad = false;
+    if (window.__dashboardActive) return;
+ 
+    try {
+        const response = await fetch('api/dashboard/get_incidents.php');
+        const result   = await response.json();
+ 
+        if (result.success) {
+            // Sync — remove IDs no longer in DB
+            const activeIds = new Set(
+                ['fire', 'crime', 'flood'].flatMap(t =>
+                    (result.data[t] || []).map(i => i.id)
+                )
+            );
+            knownIncidentIds.forEach(id => {
+                if (!activeIds.has(id)) knownIncidentIds.delete(id);
+            });
+            localStorage.setItem('knownIncidentIds', JSON.stringify([...knownIncidentIds]));
+ 
+            ['fire', 'crime', 'flood'].forEach(type => {
+                (result.data[type] || []).forEach(incident => {
+                    if (!knownIncidentIds.has(incident.id)) {
+                        knownIncidentIds.add(incident.id);
+                        localStorage.setItem(
+                            'knownIncidentIds',
+                            JSON.stringify([...knownIncidentIds])
+                        );
+                        if (!isInitialLoad && typeof showToast === 'function') {
+                            showToast('info', `New ${type} incident: ${incident.user.name}`);
+                            playNotificationSound();
+                        }
+                    }
+                });
+            });
         }
-      });
+    } catch (error) {
+        console.error('Sidebar polling error:', error);
     }
-  } catch (error) {
-    console.error("Sidebar polling error:", error);
-  }
 }
-
+ 
 setInterval(checkNewIncidents, POLL_INTERVAL);
 checkNewIncidents();
