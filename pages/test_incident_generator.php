@@ -47,6 +47,81 @@ error_reporting(E_ALL);
             </button>
         </div>
 
+        <!-- ── GEOFENCE TESTER ── -->
+        <div class="bg-white rounded-2xl shadow p-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-1">🗺️ Geofence Tester</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Tests that incidents outside Gulod are rejected when geofence is ON, and accepted when OFF.
+            </p>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Device</label>
+                    <select id="geofenceDevice" class="w-full p-2.5 border rounded-lg text-sm">
+                        <?php
+                        include $_SERVER['DOCUMENT_ROOT'] . '/config/conn.php';
+                        $query = "SELECT device_id, name FROM residents WHERE is_archived = 0 AND device_id != '' ORDER BY name";
+                        $result = mysqli_query($conn, $query);
+                        while ($row = mysqli_fetch_assoc($result)) {
+                            echo "<option value='{$row['device_id']}'>{$row['name']} ({$row['device_id']})</option>";
+                        }
+                        mysqli_close($conn);
+                        ?>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Incident Type</label>
+                    <select id="geofenceType" class="w-full p-2.5 border rounded-lg text-sm">
+                        <option value="fire">🔥 Fire</option>
+                        <option value="crime">🛡️ Crime</option>
+                        <option value="flood">🌊 Flood</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Latitude</label>
+                    <input id="geofenceLat" type="number" step="any" value="14.719072"
+                        class="w-full p-2.5 border rounded-lg text-sm font-mono" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Longitude</label>
+                    <input id="geofenceLng" type="number" step="any" value="121.030359"
+                        class="w-full p-2.5 border rounded-lg text-sm font-mono" />
+                </div>
+            </div>
+
+            <!-- Geofence state indicator -->
+            <div id="geofenceStateBox" class="mb-4 p-3 rounded-xl border text-sm font-medium text-center">
+                ⏳ Loading geofence state...
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+                <button onclick="sendGeofenceTest()"
+                    class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl transition">
+                    🧪 Send Incident
+                </button>
+                <button onclick="setGeofence(true)"
+                    class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition">
+                    ✅ Enable Geofence
+                </button>
+                <button onclick="setGeofence(false)"
+                    class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 rounded-xl transition">
+                    ⛔ Disable Geofence
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-3">
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-700">
+                    <strong>Geofence ON:</strong> Sending the default coordinates (14.719072, 121.030359) should be <strong>rejected</strong> — outside Gulod boundary.
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-700">
+                    <strong>Geofence OFF:</strong> Same coordinates should be <strong>accepted</strong> and saved as a new incident.
+                </div>
+            </div>
+        </div>
+
         <!-- ── CORROBORATION TESTER ── -->
         <div class="bg-white rounded-2xl shadow p-6">
             <h2 class="text-lg font-bold text-gray-800 mb-1">👥 Corroboration & Rescue Tester</h2>
@@ -186,6 +261,7 @@ error_reporting(E_ALL);
         // ── Init ───────────────────────────────────────────────────────────────
         window.addEventListener('load', () => {
             checkAPIConnection();
+            loadGeofenceStateUI();
             // Seed 2 reporter rows by default
             addReporterRow();
             addReporterRow();
@@ -518,6 +594,62 @@ error_reporting(E_ALL);
                 document.getElementById('movingStatus').classList.add('hidden');
                 document.getElementById('progressBar').style.width = '0%';
             }, 3000);
+        }
+
+        // ── Geofence tester ────────────────────────────────────────────────────
+        async function loadGeofenceStateUI() {
+            const box = document.getElementById('geofenceStateBox');
+            try {
+                const res  = await fetch('api/settings/get.php?key=geofence_enabled');
+                const data = await res.json();
+                const enabled = (data.data?.value ?? data.value) === '1';
+                box.textContent = enabled ? '🟢 Geofence is currently ON — outside incidents will be rejected' : '🔴 Geofence is currently OFF — all incidents accepted';
+                box.className   = `mb-4 p-3 rounded-xl border text-sm font-medium text-center ${enabled ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-red-50 border-red-300 text-red-800'}`;
+            } catch {
+                box.textContent = '⚠️ Could not load geofence state';
+                box.className   = 'mb-4 p-3 rounded-xl border text-sm font-medium text-center bg-yellow-50 border-yellow-300 text-yellow-800';
+            }
+        }
+
+        async function setGeofence(enabled) {
+            try {
+                const res  = await fetch('api/settings/toggle_geofence.php', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ enabled }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    logMessage(`✓ Geofence ${enabled ? 'ENABLED' : 'DISABLED'}`, enabled ? 'success' : 'warning');
+                } else {
+                    logMessage(`✗ Failed to set geofence: ${data.message}`, 'error');
+                }
+            } catch {
+                logMessage('✗ Network error setting geofence', 'error');
+            }
+            loadGeofenceStateUI();
+        }
+
+        async function sendGeofenceTest() {
+            const device = document.getElementById('geofenceDevice').value;
+            const type   = document.getElementById('geofenceType').value;
+            const lat    = parseFloat(document.getElementById('geofenceLat').value);
+            const lng    = parseFloat(document.getElementById('geofenceLng').value);
+
+            if (!device) { logMessage('No device selected', 'error'); return; }
+
+            logMessage(`Sending ${type} incident at (${lat}, ${lng})...`, 'info');
+
+            const result = await postIncident({ device_id: device, type: 'INCIDENT', button: type, lat, lng, timestamp: Date.now() });
+
+            if (result.success) {
+                logMessage(`✓ Incident ACCEPTED — ${result.action}: ${result.incident_id} by ${result.reporter}`, 'success');
+            } else {
+                logMessage(`✗ Incident REJECTED — ${result.message}`, 'error');
+            }
+            logJSON('Full response', result, result.success ? 'success' : 'error');
+            loadGeofenceStateUI();
+            checkAPIConnection();
         }
 
         // ── Util ───────────────────────────────────────────────────────────────

@@ -127,33 +127,23 @@ async function loadGeofenceState() {
     const res = await fetch('api/settings/get.php?key=geofence_enabled');
     const data = await res.json();
     if (data.success) {
-      geofenceEnabled = (data.data?.value ?? data.value) === '1';
+      geofenceEnabled = data.value === '1';
       applyGeofenceUI();
     }
   } catch (_) {}
 }
 
 async function toggleGeofence() {
-  const intended = !geofenceEnabled;
-  geofenceEnabled = intended;
+  geofenceEnabled = !geofenceEnabled;
   applyGeofenceUI();
 
   try {
-    const res = await fetch('api/settings/toggle_geofence.php', {
+    await fetch('api/settings/toggle_geofence.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: intended }),
+      body: JSON.stringify({ enabled: geofenceEnabled }),
     });
-    const data = await res.json();
-
-    if (!data.success) {
-      geofenceEnabled = !intended;
-      applyGeofenceUI();
-      showToast('error', 'Failed to save geofence setting: ' + (data.message ?? ''));
-    }
   } catch (_) {
-    geofenceEnabled = !intended;
-    applyGeofenceUI();
     showToast('error', 'Failed to save geofence setting');
   }
 
@@ -378,8 +368,7 @@ function updateMapMarkers() {
   let incidentsToProcess = { fire: [], crime: [], flood: [] };
 
   if (incidentData.all && Array.isArray(incidentData.all)) {
-    const filtered = applyGeofenceFilter(incidentData.all);
-    filtered.forEach((incident) => {
+    incidentData.all.forEach((incident) => {
       const t = incident.type.toLowerCase();
       if (t.includes("fire")) incidentsToProcess.fire.push(incident);
       else if (t.includes("crime")) incidentsToProcess.crime.push(incident);
@@ -659,7 +648,8 @@ function renderEmergencyList() {
     });
   }
 
-  allIncidents = applyGeofenceFilter(allIncidents);
+  // Geofence only blocks receiving new incidents (handled server-side).
+  // All saved incidents are always shown on map and list.
 
   if (allIncidents.length === 0) {
     return `
