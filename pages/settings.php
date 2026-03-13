@@ -1010,6 +1010,7 @@ function s(array $settings, string $key): string
             currentTab = id;
         }
         let currentTab = 'reports';
+        switchTab('reports'); // activate the default tab button on load
 
         function saveCurrentTab() { saveTab(currentTab); }
 
