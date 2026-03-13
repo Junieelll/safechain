@@ -127,7 +127,7 @@ async function loadGeofenceState() {
     const res = await fetch('api/settings/get.php?key=geofence_enabled');
     const data = await res.json();
     if (data.success) {
-      geofenceEnabled = data.value === '1';
+      geofenceEnabled = data.data.value === '1';  // ← was data.value
       applyGeofenceUI();
     }
   } catch (_) {}
