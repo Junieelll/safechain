@@ -50,7 +50,7 @@ if (!AuthChecker::isLoggedIn()) {
                     <div id="geofenceToggleTrack"
                         onclick="toggleGeofence()"
                         title="Geofence Filter"
-                        class="w-10 h-[22px] rounded-full relative cursor-pointer transition-colors duration-200 bg-slate-200 dark:bg-neutral-600">
+                        class="w-10 h-[22px] rounded-full border border-gray-200 relative cursor-pointer transition-colors duration-200 bg-slate-200 dark:bg-neutral-600">
                         <div id="geofenceToggleThumb"
                             class="absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"></div>
                     </div>
