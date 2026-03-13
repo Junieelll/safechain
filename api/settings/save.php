@@ -37,9 +37,8 @@ $allowedKeys = [
                    'report_republic_line','report_barangay_line','report_address_line','report_tel_line',
                    'report_punong_name','report_punong_position',
                    'report_officials',
-                   'report_sk_name','report_secretary_name','report_treasurer_name',
-                   'report_signatory_name','report_signatory_pos','report_footer_note'],
-    'system'   => ['force_resolve_hours','maintenance_mode','dashboard_banner','dashboard_banner_type',
+                   'report_sk_name','report_secretary_name','report_treasurer_name'],
+    'system'   => ['force_resolve_hours',
                    'notification_sound','notification_volume','notification_duration'],
 ];
 
@@ -178,9 +177,6 @@ if ($tab === 'system') {
         ResponseHelper::error('Force-resolve threshold must be between 1 and 48 hours', 422);
     }
     $body['force_resolve_hours'] = (string)$hours;
-    $body['maintenance_mode'] = in_array($body['maintenance_mode'] ?? '0', ['0','1']) ? $body['maintenance_mode'] : '0';
-    $body['dashboard_banner_type'] = in_array($body['dashboard_banner_type'] ?? 'info', ['info','warning','danger'])
-        ? $body['dashboard_banner_type'] : 'info';
 
     $vol = (int)($body['notification_volume'] ?? 70);
     $body['notification_volume'] = (string)max(0, min(100, $vol));
