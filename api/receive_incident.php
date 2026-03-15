@@ -260,7 +260,7 @@ function handleNewIncident($conn, $data, $resident, bool $geofenceEnabled = fals
                 'id' => $incident_id,
                 'type' => $type,
                 'location' => "$lat, $lng",
-                'extra' => "⚠️ RESCUE NEEDED: {$resident['name']} (Device: {$data['device_id']})",
+                'extra' => " RESCUE NEEDED: {$resident['name']} (Device: {$data['device_id']})",
             ]);
             error_log(sprintf(
                 "[SafeChain] ⚠️ RESCUE SIGNAL: %s needs rescue at incident %s (%.6f, %.6f)",
@@ -321,6 +321,12 @@ function handleNewIncident($conn, $data, $resident, bool $geofenceEnabled = fals
     $location = mysqli_real_escape_string($conn, $geocodedAddress);
 
     // ── 10. Insert new incident ───────────────────────────────
+    // Use date_time from Python if provided (for queued offline incidents
+    // that were recorded locally but pushed later). Falls back to NOW().
+    $incidentDateTime = !empty($data['date_time'])
+        ? "'" . mysqli_real_escape_string($conn, $data['date_time']) . "'"
+        : 'NOW()';
+
     $insertQuery = "
         INSERT INTO incidents
             (id, type, location, reporter, reporter_id, device_id,
@@ -328,7 +334,7 @@ function handleNewIncident($conn, $data, $resident, bool $geofenceEnabled = fals
              confidence_score, corroborated_by, is_false_alarm)
         VALUES
             ('$incidentId', '$type', '$location', '$reporter_name',
-             '$reporter_id', '$device_id', NOW(), 'pending', 0,
+             '$reporter_id', '$device_id', $incidentDateTime, 'pending', 0,
              $lat, $lng, 1, 0, 0)
     ";
 

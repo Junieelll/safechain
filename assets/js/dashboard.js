@@ -178,6 +178,16 @@ async function fetchLiveIncidents() {
         0,
       );
 
+      // ── Also track rescue count changes ───────────────────
+      const prevRescueSum = (incidentData.all || []).reduce(
+        (sum, i) => sum + (i.rescue?.count ?? 0),
+        0,
+      );
+      const newRescueSum = (result.all_incidents || []).reduce(
+        (sum, i) => sum + (i.rescue?.count ?? 0),
+        0,
+      );
+
       // Update data FIRST
       incidentData = result.data;
       if (result.all_incidents) incidentData.all = result.all_incidents;
@@ -193,8 +203,8 @@ async function fetchLiveIncidents() {
         JSON.stringify([...knownIncidentIds]),
       );
 
-      // Rebuild markers if count OR corroborations changed
-      if (newCount !== prevCount || newCorroSum !== prevCorroSum) {
+      // Rebuild markers if count, corroborations, OR rescue status changed
+      if (newCount !== prevCount || newCorroSum !== prevCorroSum || newRescueSum !== prevRescueSum) {
         updateMapMarkers();
       }
 
@@ -266,8 +276,8 @@ function generateHeatmapData(type) {
 
 function updateAllHeatmaps() {
   const currentZoom = map.getZoom();
-  const dynamicRadius = Math.max(10, (currentZoom - 12) * 8);
-  const dynamicBlur = Math.max(10, dynamicRadius - 5);
+  const dynamicRadius = Math.min(50, Math.max(10, (currentZoom - 12) * 8));
+  const dynamicBlur = Math.min(35, Math.max(10, dynamicRadius - 5));
 
   // Higher max at low zoom prevents saturation on dense clusters
   const dynamicMax = currentZoom >= 17 ? 1.5 : currentZoom >= 15 ? 2.5 : 4.0;
@@ -431,10 +441,15 @@ function updateMapMarkers() {
       const hasRescue = incident.rescue?.count > 0;
       const color = circleColors[type];
 
+      // Circle is always centered on the original reporter's location.
+      // Corroborator points only influence the radius (how wide the
+      // affected area is), not the center — so the circle doesn't drift.
+      const circleCenter = [incident.lat, incident.lng];
+
       const reporterPoints = [[incident.lat, incident.lng]];
 
       (incident.corroborator_locations || [])
-        .filter((c) => c.lat != 0 && c.lng != 0)
+        .filter((c) => c.lat && c.lng && c.lat != 0 && c.lng != 0)
         .forEach((c) =>
           reporterPoints.push([parseFloat(c.lat), parseFloat(c.lng)]),
         );
@@ -456,12 +471,15 @@ function updateMapMarkers() {
         iconAnchor: [14, 14],
       });
 
-      (incident.corroborator_locations || []).forEach((corro) => {
-        const corroMarker = L.marker([corro.lat, corro.lng], {
-          icon: corroIcon,
-        });
+      // Fix: filter zero/null coords before placing corroborator markers
+      (incident.corroborator_locations || [])
+        .filter((c) => c.lat && c.lng && c.lat != 0 && c.lng != 0)
+        .forEach((corro) => {
+          const corroMarker = L.marker([corro.lat, corro.lng], {
+            icon: corroIcon,
+          });
 
-        corroMarker.bindPopup(`
+          corroMarker.bindPopup(`
     <div class="p-2">
       <strong class="text-xs">Corroborator</strong><br>
       <span class="text-xs">${corro.name}</span><br>
@@ -469,40 +487,39 @@ function updateMapMarkers() {
     </div>
   `);
 
-        if (markerFiltersActive[type]) corroMarker.addTo(map);
-        markers[type].push(corroMarker); // tracked so filters/clear still work
-      });
-
-      const centroid = reporterPoints
-        .reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]], [0, 0])
-        .map((v) => v / reporterPoints.length);
+          if (markerFiltersActive[type]) corroMarker.addTo(map);
+          markers[type].push(corroMarker); // tracked so filters/clear still work
+        });
 
       const maxDistMeters = Math.max(
         ...reporterPoints.map((p) => {
           const R = 6371000;
-          const dLat = ((p[0] - centroid[0]) * Math.PI) / 180;
-          const dLng = ((p[1] - centroid[1]) * Math.PI) / 180;
+          const dLat = ((p[0] - circleCenter[0]) * Math.PI) / 180;
+          const dLng = ((p[1] - circleCenter[1]) * Math.PI) / 180;
           const a =
             Math.sin(dLat / 2) ** 2 +
-            Math.cos((centroid[0] * Math.PI) / 180) *
+            Math.cos((circleCenter[0] * Math.PI) / 180) *
               Math.cos((p[0] * Math.PI) / 180) *
               Math.sin(dLng / 2) ** 2;
           return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }),
       );
 
+      // Min radius matches receive_incident.php proximity thresholds.
+      // Max radius caps the circle so it never balloons beyond the
+      // grouping window even if corroborators are at the edge of it.
       const circleSizing = {
-        fire: { minRadius: 30, padding: 10 },
-        crime: { minRadius: 12, padding: 5 },
-        flood: { minRadius: 60, padding: 30 },
+        fire:  { minRadius: 50,  maxRadius: 150 },
+        crime: { minRadius: 30,  maxRadius: 80  },
+        flood: { minRadius: 100, maxRadius: 300 },
       };
-      const { minRadius, padding } = circleSizing[type] || {
-        minRadius: 25,
-        padding: 10,
+      const { minRadius, maxRadius } = circleSizing[type] || {
+        minRadius: 50,
+        maxRadius: 150,
       };
-      const radius = Math.max(minRadius, maxDistMeters + padding);
+      const radius = Math.min(maxRadius, Math.max(minRadius, maxDistMeters + 10));
 
-      const circle = L.circle(centroid, {
+      const circle = L.circle(circleCenter, {
         color: hasRescue ? "#ef4444" : color,
         fillColor: hasRescue ? "#ef4444" : color,
         fillOpacity: hasRescue ? 0.25 : type === "crime" ? 0.08 : 0.15, // ← dimmer for crime
@@ -1050,6 +1067,14 @@ filterButtons.forEach((btn) => {
         marker.addTo(map);
       } else {
         map.removeLayer(marker);
+      }
+    });
+
+    coverageCircles[filter].forEach((circle) => {
+      if (markerFiltersActive[filter]) {
+        circle.addTo(map);
+      } else {
+        map.removeLayer(circle);
       }
     });
   });
