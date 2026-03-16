@@ -304,6 +304,20 @@ function handle_update_status(mysqli $conn, string $id, array $user): void
             'UPDATE incidents SET status=?, dispatched_to=?, dispatched_at=?, dispatched_by=?, updated_at=? WHERE id=?'
         );
         $stmt->bind_param('ssssss', $status, $responder_id, $now, $responder_name, $now, $id);
+    } elseif ($status === 'resolved') {
+        // Clear rescue flags on the incident itself
+        $stmt = $conn->prepare(
+            'UPDATE incidents SET status=?, needs_rescue=0, updated_at=? WHERE id=?'
+        );
+        $stmt->bind_param('sss', $status, $now, $id);
+        $stmt->execute();
+        $stmt->close();
+
+        // Also clear rescue flags on all corroborators
+        $stmt = $conn->prepare(
+            'UPDATE incident_corroborations SET needs_rescue=0 WHERE incident_id=?'
+        );
+        $stmt->bind_param('s', $id);
     } else {
         $stmt = $conn->prepare('UPDATE incidents SET status=?, updated_at=? WHERE id=?');
         $stmt->bind_param('sss', $status, $now, $id);
