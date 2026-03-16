@@ -1545,7 +1545,7 @@ function buildMap(el) {
     loraMarker = null;
   }
 
-  const MAPTILER_KEY = "2bXjFOI9q9BSiHQVwLb7";
+  const MAPTILER_KEY = "XTXjcHDPMSRZi9uVEw8c";
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
 
   const onlineTile = isDark
@@ -1786,7 +1786,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(renderDevices, 400);
     });
   });
-
+ 
   // Search
   const searchInput = document.querySelector(
     'input[placeholder="Search devices..."]',
