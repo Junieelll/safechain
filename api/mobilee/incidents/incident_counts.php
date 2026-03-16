@@ -16,8 +16,8 @@ $user          = mobile_authenticate();
 $role          = strtolower($user['role'] ?? '');
 $allowed_types = match ($role) {
     'bpso'        => ['crime'],
-    'bhert'       => ['flood'],
-    'firefighter' => ['fire', 'flood'],
+    'bdrrm'       => ['flood'],
+    'bfp' => ['fire'],
     'admin'       => ['fire', 'flood', 'crime'],
     default       => [],
 };

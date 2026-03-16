@@ -18,7 +18,7 @@ $role      = strtolower($user['role'] ?? '');
 $flaggedBy = $user['id']   ?? '';
 $actorName = $user['name'] ?? $user['username'] ?? 'Responder';
 
-if (!in_array($role, ['bpso', 'bhert', 'firefighter'], true)) {
+if (!in_array($role, ['bpso', 'bdrrm', 'bfp'], true)) {
     ResponseHelper::forbidden('Only responders can flag incidents');
 }
 

@@ -201,8 +201,8 @@ function createUserRow(user, index = 0) {
 
 function getRoleConfig(role) {
   const configs = {
-    bhert: {
-      label: "BHERT",
+    bdrrm: {
+      label: "BDRRM",
       icon: "uil uil-medkit",
       bgColor: "bg-emerald-100 dark:bg-emerald-900/20",
       textColor: "text-emerald-500 dark:text-emerald-400",
@@ -222,8 +222,8 @@ function getRoleConfig(role) {
       textColor: "text-amber-500 dark:text-amber-400",
       borderColor: "border-amber-500 dark:border-amber-800",
     },
-    firefighter: {
-      label: "FIREFIGHTER",
+    bfp: {
+      label: "BFP",
       icon: "uil uil-fire",
       bgColor: "bg-red-50 dark:bg-red-900/20",
       textColor: "text-red-700 dark:text-red-400",
@@ -571,20 +571,24 @@ function openCreateAccountModal() {
                     SELECT ROLE
                 </label>
                 <div class="relative">
-                    <select
-                        id="createRole"
-                        class="w-full px-4 py-3 bg-[#F1F5F9] dark:bg-neutral-700 rounded-xl text-sm 
-                               border-2 border-transparent focus:border-emerald-400 dark:focus:border-emerald-500
-                               focus:outline-none focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/60
-                               text-gray-900 dark:text-gray-100
-                               appearance-none cursor-pointer transition"
-                    >
-                        <option value="admin">Admin</option>
-                        <option value="bpso">BPSO</option>
-                        <option value="bhert">BHERT</option>
-                        <option value="firefighter">Firefighter</option>
-                    </select>
-                    <i class="uil uil-angle-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"></i>
+                    <button
+                        id="createRoleDropdownButton"
+                        type="button"
+                        class="w-full bg-[#F1F5F9] dark:bg-neutral-700 rounded-xl px-4 py-3 border-2 border-transparent text-left flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-500 transition">
+                        <span id="createRoleSelectedText" class="text-sm text-gray-400 dark:text-gray-500">Select Role</span>
+                        <i id="createRoleDropdownIcon" class="uil uil-angle-down text-xl text-gray-400 dark:text-gray-500 transition-transform duration-200"></i>
+                    </button>
+                    <div
+                        id="createRoleDropdownMenu"
+                        class="hidden absolute z-10 w-full mt-2 bg-white dark:bg-neutral-700 dark:border-gray-800 border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                        <div class="py-1">
+                            <button type="button" class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition" data-value="admin">ADMIN</button>
+                            <button type="button" class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition" data-value="bpso">BPSO</button>
+                            <button type="button" class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition" data-value="bdrrm">BDRRM</button>
+                            <button type="button" class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition" data-value="bfp">BFP</button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="createRole" value="" />
                 </div>
             </div>
 
@@ -653,9 +657,10 @@ function openCreateAccountModal() {
     onPrimary: () => {
       const fullName = document.getElementById("createFullName").value.trim();
       const username = document.getElementById("createUsername").value.trim();
+      const role = document.getElementById("createRole").value;
       const password = document.getElementById("createPassword").value;
 
-      if (!fullName || !username || !password) {
+      if (!fullName || !username || !role || !password) {
         showToast("error", "Please fill in all fields");
         modalManager.setButtonLoading("createAccountModal", "primary", false);
         return false;
@@ -673,6 +678,19 @@ function openCreateAccountModal() {
   });
 
   modalManager.show("createAccountModal");
+
+  // Wire up the role dropdown using the same setupDropdown pattern
+  setTimeout(() => {
+    setupDropdown(
+      "createRoleDropdownButton",
+      "createRoleDropdownMenu",
+      "createRoleSelectedText",
+      "createRoleDropdownIcon",
+      (value) => {
+        document.getElementById("createRole").value = value;
+      },
+    );
+  }, 0);
 }
 
 // Generate username from full name

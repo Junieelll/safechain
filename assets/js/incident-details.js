@@ -1080,11 +1080,11 @@ const isOnline = navigator.onLine;
 
 // Determine tile URLs based on online status
 const lightTileUrl = isOnline
-  ? "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7"
+  ? "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=XTXjcHDPMSRZi9uVEw8c"
   : "assets/tiles/street-v2/{z}/{x}/{y}.png";
 
 const darkTileUrl = isOnline
-  ? "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7"
+  ? "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=XTXjcHDPMSRZi9uVEw8c"
   : "assets/tiles/street-v2-dark/{z}/{x}/{y}.png";
 
 // Create tile layers with error fallback
@@ -1121,10 +1121,10 @@ const darkLayer = L.tileLayer(darkTileUrl, {
 // Listen for online/offline changes and update both layers
 window.addEventListener("online", () => {
   lightLayer.setUrl(
-    "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+    "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=XTXjcHDPMSRZi9uVEw8c",
   );
   darkLayer.setUrl(
-    "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+    "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=XTXjcHDPMSRZi9uVEw8c",
   );
 });
 

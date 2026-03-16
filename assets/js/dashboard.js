@@ -867,11 +867,11 @@ map.on("zoomend", () => {
 const isOnline = navigator.onLine;
 
 const lightTileUrl = isOnline
-  ? "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7"
+  ? "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=XTXjcHDPMSRZi9uVEw8c"
   : "assets/tiles/street-v2/{z}/{x}/{y}.png";
 
 const darkTileUrl = isOnline
-  ? "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7"
+  ? "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=XTXjcHDPMSRZi9uVEw8c"
   : "assets/tiles/street-v2-dark/{z}/{x}/{y}.png";
 
 const lightLayer = L.tileLayer(lightTileUrl, {
@@ -902,10 +902,10 @@ const darkLayer = L.tileLayer(darkTileUrl, {
 
 window.addEventListener("online", () => {
   lightLayer.setUrl(
-    "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+    "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=XTXjcHDPMSRZi9uVEw8c",
   );
   darkLayer.setUrl(
-    "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+    "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=XTXjcHDPMSRZi9uVEw8c",
   );
 });
 

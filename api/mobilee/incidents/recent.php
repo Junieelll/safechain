@@ -15,8 +15,8 @@ $limit  = min(20, (int) ($_GET['limit'] ?? 5));
 // Match allowed incident types per role — same as incidents.php
 $allowed_types = match ($role) {
     'bpso'        => ['crime'],
-    'bhert'       => ['flood'],
-    'firefighter' => ['fire'],
+    'bdrrm'       => ['flood'],
+    'bfp' => ['fire'],
     'admin'       => ['fire', 'flood', 'crime'],
     default       => [],
 };

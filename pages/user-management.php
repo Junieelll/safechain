@@ -101,13 +101,13 @@
                                         </button>
                                         <button
                                             class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
-                                            data-value="bhert">
-                                            BHERT
+                                            data-value="bdrrm">
+                                            BDRRM
                                         </button>
                                         <button
                                             class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
-                                            data-value="firefighter">
-                                            FIREFIGHTER
+                                            data-value="bfp">
+                                            BFP
                                         </button>
                                     </div>
                                 </div>

@@ -197,10 +197,10 @@
       class="relative bg-white/95 dark:bg-neutral-800 backdrop-blur-md rounded-3xl p-6 border border-gray-200/80 dark:border-neutral-600 overflow-hidden transition-all duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:shadow-[0_12px_32px_rgba(39,194,145,0.15)] hover:border-emerald-500/30">
       <div class="mb-6">
         <h3 class="font-semibold text-[#4B4B4B] dark:text-neutral-300">
-          Recent Emergency Incidents
+          Recent Resolved Emergency Incidents
         </h3>
         <p class="text-xs font-medium text-gray-500 dark:text-neutral-400">
-          Latest emergency responses in the last 24 hours
+          Latest resolved emergency responses in the last 24 hours
         </p>
       </div>
       <div class="overflow-x-auto">
@@ -231,150 +231,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-              <td class="py-4 px-4 text-sm font-semibold text-emerald-500">
-                EMG-2025-1047
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">Fire</td>
-              <td class="py-4 px-4 text-sm text-gray-700">Maria Santos</td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                63 San Nicasio St., Villaflor, Gulod, QC
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                2025-10-10 2:34 PM
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">1.8 Min</td>
-              <td class="py-4 px-4">
-                <span
-                  class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-600">Resolved</span>
-              </td>
-            </tr>
-            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-              <td class="py-4 px-4 text-sm font-semibold text-emerald-500">
-                EMG-2025-1047
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">Fire</td>
-              <td class="py-4 px-4 text-sm text-gray-700">Maria Santos</td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                63 San Nicasio St., Villaflor, Gulod, QC
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                2025-10-10 2:34 PM
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">1.8 Min</td>
-              <td class="py-4 px-4">
-                <span
-                  class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-600">Resolved</span>
-              </td>
-            </tr>
-            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-              <td class="py-4 px-4 text-sm font-semibold text-emerald-500">
-                EMG-2025-1047
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">Fire</td>
-              <td class="py-4 px-4 text-sm text-gray-700">Maria Santos</td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                63 San Nicasio St., Villaflor, Gulod, QC
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                2025-10-10 2:34 PM
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">1.8 Min</td>
-              <td class="py-4 px-4">
-                <span
-                  class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-600">Resolved</span>
-              </td>
-            </tr>
-            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-              <td class="py-4 px-4 text-sm font-semibold text-emerald-500">
-                EMG-2025-1047
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">Fire</td>
-              <td class="py-4 px-4 text-sm text-gray-700">Maria Santos</td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                63 San Nicasio St., Villaflor, Gulod, QC
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                2025-10-10 2:34 PM
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">1.8 Min</td>
-              <td class="py-4 px-4">
-                <span
-                  class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-600">Resolved</span>
-              </td>
-            </tr>
-            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-              <td class="py-4 px-4 text-sm font-semibold text-emerald-500">
-                EMG-2025-1047
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">Fire</td>
-              <td class="py-4 px-4 text-sm text-gray-700">Maria Santos</td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                63 San Nicasio St., Villaflor, Gulod, QC
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                2025-10-10 2:34 PM
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">1.8 Min</td>
-              <td class="py-4 px-4">
-                <span
-                  class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-600">Resolved</span>
-              </td>
-            </tr>
-            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-              <td class="py-4 px-4 text-sm font-semibold text-emerald-500">
-                EMG-2025-1047
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">Fire</td>
-              <td class="py-4 px-4 text-sm text-gray-700">Maria Santos</td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                63 San Nicasio St., Villaflor, Gulod, QC
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                2025-10-10 2:34 PM
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">1.8 Min</td>
-              <td class="py-4 px-4">
-                <span
-                  class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-600">Resolved</span>
-              </td>
-            </tr>
-            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-              <td class="py-4 px-4 text-sm font-semibold text-emerald-500">
-                EMG-2025-1047
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">Fire</td>
-              <td class="py-4 px-4 text-sm text-gray-700">Maria Santos</td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                63 San Nicasio St., Villaflor, Gulod, QC
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                2025-10-10 2:34 PM
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">1.8 Min</td>
-              <td class="py-4 px-4">
-                <span
-                  class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-600">Resolved</span>
-              </td>
-            </tr>
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="py-4 px-4 text-sm font-semibold text-emerald-500">
-                EMG-2025-1047
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">Fire</td>
-              <td class="py-4 px-4 text-sm text-gray-700">Maria Santos</td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                63 San Nicasio St., Villaflor, Gulod, QC
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">
-                2025-10-10 2:34 PM
-              </td>
-              <td class="py-4 px-4 text-sm text-gray-700">1.8 Min</td>
-              <td class="py-4 px-4">
-                <span
-                  class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-600">Resolved</span>
-              </td>
-            </tr>
+            
           </tbody>
         </table>
       </div>

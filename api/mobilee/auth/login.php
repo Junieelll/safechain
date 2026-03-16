@@ -74,7 +74,7 @@ try {
     }
 
     // Check if user role is allowed (not admin - mobile app is for responders and residents only)
-    $allowedRoles = ['bpso', 'bhert', 'firefighter', 'resident'];
+    $allowedRoles = ['bpso', 'bdrrm', 'bfp', 'resident'];
     if (!in_array($user['role'], $allowedRoles)) {
         ResponseHelper::error('Access denied. This platform is for responders and residents only.', 403);
     }

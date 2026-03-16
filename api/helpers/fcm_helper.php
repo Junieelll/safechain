@@ -21,8 +21,8 @@ function getFCMAccessToken(): string
 function getRolesForIncidentType(string $type): array
 {
     return match ($type) {
-        'fire' => ['firefighter', 'bhert', 'admin'],
-        'flood' => ['bhert', 'firefighter', 'admin'],
+        'fire' => ['bfp', 'admin'],
+        'flood' => ['bdrrm', 'admin'],
         'crime' => ['bpso', 'admin'],
         default => ['admin'],
     };

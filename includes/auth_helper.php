@@ -446,8 +446,8 @@ class Roles
     const GUEST = 'guest';
     const ADMIN = 'admin';
     const BPSO = 'bpso';        // Barangay Public Safety Officer
-    const BHERT = 'bhert';      // Barangay Health Emergency Response Team
-    const FIREFIGHTER = 'firefighter';
+    const BDRRM = 'bdrrm';      // Barangay Health Emergency Response Team
+    const BFP = 'bfp';
 
     /**
      * Get all responder roles (mobile app users)
@@ -456,8 +456,8 @@ class Roles
     {
         return [
             self::BPSO,
-            self::BHERT,
-            self::FIREFIGHTER
+            self::BDRRM,
+            self::BFP
         ];
     }
 
@@ -502,8 +502,8 @@ class Roles
             self::GUEST => 'Guest',
             self::ADMIN => 'Administrator',
             self::BPSO => 'BPSO',
-            self::BHERT => 'BHERT',
-            self::FIREFIGHTER => 'Firefighter'
+            self::BDRRM => 'BDRRM',
+            self::BFP => 'BFP'
         ];
 
         return $displayNames[$role] ?? 'Unknown';

@@ -59,8 +59,8 @@ function handle_get(mysqli $conn, string $id, array $user): void
 
     $role_types = [
         'bpso'        => ['crime'],
-        'bhert'       => ['flood'],
-        'firefighter' => ['fire', 'flood'],
+        'bdrrm'       => ['flood'],
+        'bfp' => ['fire'],
         'admin'       => ['fire', 'flood', 'crime'],
     ];
     $allowed = $role_types[strtolower($user['role'] ?? '')] ?? [];
