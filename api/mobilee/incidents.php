@@ -38,8 +38,8 @@ function get_allowed_types(string $role): array
 {
     return match ($role) {
         'bpso' => ['crime'],
-        'bhert' => ['flood'],
-        'firefighter' => ['fire', 'flood'],
+        'bdrrm' => ['flood'],
+        'bfp' => ['fire'],
         'admin' => ['fire', 'flood', 'crime'],
         default => [],
     };
