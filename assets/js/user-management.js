@@ -688,6 +688,9 @@ function openCreateAccountModal() {
       "createRoleDropdownIcon",
       (value) => {
         document.getElementById("createRole").value = value;
+        const span = document.getElementById("createRoleSelectedText");
+        span.classList.remove("text-gray-400", "dark:text-gray-500");
+        span.classList.add("text-gray-700", "dark:text-gray-100");
       },
     );
   }, 0);
@@ -983,19 +986,24 @@ function editUser(userId) {
             Role
           </label>
           <div class="relative">
-            <select
-              id="editRole"
-              class="w-full px-4 py-2.5 bg-gray-50 dark:bg-neutral-700 border-2 border-transparent
-                     focus:border-blue-400 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-neutral-600
-                     focus:outline-none focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/50
-                     rounded-xl text-sm text-gray-800 dark:text-gray-100 appearance-none cursor-pointer transition-all duration-200"
-            >
-              <option value="admin"       ${user.role === "admin" ? "selected" : ""}>Admin</option>
-              <option value="bpso"        ${user.role === "bpso" ? "selected" : ""}>BPSO</option>
-              <option value="bhert"       ${user.role === "bhert" ? "selected" : ""}>BHERT</option>
-              <option value="firefighter" ${user.role === "firefighter" ? "selected" : ""}>Firefighter</option>
-            </select>
-            <i class="uil uil-angle-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+            <button
+              id="editRoleDropdownButton"
+              type="button"
+              class="w-full bg-gray-50 dark:bg-neutral-700 rounded-xl px-4 py-2.5 border-2 border-transparent text-left flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 dark:focus:ring-blue-900/50 dark:focus:border-blue-500 transition-all duration-200">
+              <span id="editRoleSelectedText" class="text-sm text-gray-800 dark:text-gray-100">${roleConfig.label}</span>
+              <i id="editRoleDropdownIcon" class="uil uil-angle-down text-xl text-gray-400 dark:text-gray-500 transition-transform duration-200"></i>
+            </button>
+            <div
+              id="editRoleDropdownMenu"
+              class="hidden absolute z-10 w-full mt-2 bg-white dark:bg-neutral-700 dark:border-gray-800 border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+              <div class="py-1">
+                <button type="button" class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-blue-700/20 hover:bg-blue-50 hover:text-blue-600 transition" data-value="admin">ADMIN</button>
+                <button type="button" class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-blue-700/20 hover:bg-blue-50 hover:text-blue-600 transition" data-value="bpso">BPSO</button>
+                <button type="button" class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-blue-700/20 hover:bg-blue-50 hover:text-blue-600 transition" data-value="bdrrm">BDRRM</button>
+                <button type="button" class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-blue-700/20 hover:bg-blue-50 hover:text-blue-600 transition" data-value="bfp">BFP</button>
+              </div>
+            </div>
+            <input type="hidden" id="editRole" value="${user.role}" />
           </div>
         </div>
       </div>
@@ -1037,6 +1045,19 @@ function editUser(userId) {
   });
 
   modalManager.show("editAccountModal");
+
+  // Wire up the role dropdown
+  setTimeout(() => {
+    setupDropdown(
+      "editRoleDropdownButton",
+      "editRoleDropdownMenu",
+      "editRoleSelectedText",
+      "editRoleDropdownIcon",
+      (value) => {
+        document.getElementById("editRole").value = value;
+      },
+    );
+  }, 0);
 }
 
 // Preview selected photo
