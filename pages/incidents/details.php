@@ -286,24 +286,6 @@ $currentUserRole = AuthChecker::getUserRole();
               </h2>
             </div>
 
-            <!-- Responder Info Banner (hidden by default) -->
-            <div id="responderBanner" class="hidden mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-              <p class="text-xs text-blue-500 dark:text-blue-400 font-semibold uppercase tracking-wider mb-2">
-                Assigned Responder
-              </p>
-              <div class="flex items-center gap-3">
-                <img id="responderAvatar" src="" alt="" class="w-9 h-9 rounded-full object-cover hidden" />
-                <div id="responderAvatarFallback"
-                  class="w-9 h-9 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center">
-                  <i class="uil uil-user text-blue-500 dark:text-blue-300"></i>
-                </div>
-                <div>
-                  <p id="responderName" class="text-sm font-semibold text-gray-900 dark:text-neutral-200">—</p>
-                  <p id="responderStatus" class="text-xs text-gray-500 dark:text-neutral-400">—</p>
-                </div>
-              </div>
-            </div>
-
             <div class="space-y-2.5">
               <!-- Force Resolve: only shown when stuck responding -->
               <button id="forceResolveBtn" onclick="forceResolve()" class="hidden
@@ -338,6 +320,25 @@ $currentUserRole = AuthChecker::getUserRole();
             </p>
             <div id="medicalBadgesContainer" class="flex flex-wrap gap-2">
               <!-- Populated by JS -->
+            </div>
+          </div>
+
+
+          <!-- Responder Info Banner (hidden by default) -->
+          <div id="responderBanner" class="hidden mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+            <p class="text-xs text-blue-500 dark:text-blue-400 font-semibold uppercase tracking-wider mb-2">
+              Assigned Responder
+            </p>
+            <div class="flex items-center gap-3">
+              <img id="responderAvatar" src="" alt="" class="w-9 h-9 rounded-full object-cover hidden" />
+              <div id="responderAvatarFallback"
+                class="w-9 h-9 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center">
+                <i class="uil uil-user text-blue-500 dark:text-blue-300"></i>
+              </div>
+              <div>
+                <p id="responderName" class="text-sm font-semibold text-gray-900 dark:text-neutral-200">—</p>
+                <p id="responderStatus" class="text-xs text-gray-500 dark:text-neutral-400">—</p>
+              </div>
             </div>
           </div>
 
