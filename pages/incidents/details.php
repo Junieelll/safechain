@@ -329,11 +329,11 @@ $currentUserRole = AuthChecker::getUserRole();
               </h2>
               <span
                 class="text-xs text-red-400 dark:text-red-400 font-semibold bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-full">
-                ⚠ Inform Medical Team
+                ℹ May Need Medical Attention
               </span>
             </div>
             <p class="text-xs text-gray-500 dark:text-neutral-400 mb-4">
-              Known medical conditions of the reporter — share with responding medical personnel.
+              The reporter has known medical conditions. Assess if medical assistance is needed based on the situation.
             </p>
             <div id="medicalBadgesContainer" class="flex flex-wrap gap-2">
               <!-- Populated by JS -->
