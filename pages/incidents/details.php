@@ -322,14 +322,15 @@ $currentUserRole = AuthChecker::getUserRole();
 
           <!-- Medical Conditions Card -->
           <div id="medicalConditionsCard" class="hidden bg-white dark:bg-neutral-800 rounded-3xl p-7">
-            <div class="flex justify-between items-center pb-4 mb-5 border-b-2 border-gray-100 dark:border-neutral-600">
-              <h2 class="text-base font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-2.5">
+            <div
+              class="flex-col justify-between items-center pb-4 mb-5 border-b-2 border-gray-100 dark:border-neutral-600">
+              <h2 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-2.5">
                 <i class="uil uil-heart-rate text-2xl text-red-500"></i>
                 Reporter Medical Conditions
               </h2>
               <span
-                class="text-xs text-red-400 dark:text-red-400 font-semibold bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-full">
-                ℹ May Need Medical Attention
+                class="text-xs flex items-center justify-center text-red-400 dark:text-red-400 font-semibold bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-full">
+                <i class="uil uil-info-circle mr-2 text-base"></i>May Need Medical Attention
               </span>
             </div>
             <p class="text-xs text-gray-500 dark:text-neutral-400 mb-4">
@@ -338,7 +339,7 @@ $currentUserRole = AuthChecker::getUserRole();
             <div id="medicalBadgesContainer" class="flex flex-wrap gap-2">
               <!-- Populated by JS -->
             </div>
-          </div>  
+          </div>
 
           <!-- Timeline Card -->
           <div class="bg-white dark:bg-neutral-800 rounded-3xl p-7 ">
