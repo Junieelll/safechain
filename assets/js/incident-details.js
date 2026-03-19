@@ -815,9 +815,11 @@ function populateResponderBanner(incident) {
   if (incident.status === "responding") {
     statusEl.textContent = "Currently responding";
     statusEl.className = "text-xs text-blue-600 dark:text-blue-400";
+    document.getElementById("trackResponderBtn")?.classList.remove("hidden");
   } else if (incident.status === "resolved") {
     statusEl.textContent = "Resolved this incident";
     statusEl.className = "text-xs text-green-500 dark:text-green-400";
+    document.getElementById("trackResponderBtn")?.classList.add("hidden");
   }
 
   // Avatar
@@ -1811,3 +1813,156 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchIncidentDetails();
   startSSE();
 });
+
+
+// ── Track responder button ────────────────────────────────────────────────────
+let trackingActive = false;
+
+function trackResponder() {
+  const btn = document.getElementById("trackResponderBtn");
+
+  if (!responderMarker) {
+    showToast("info", "Waiting for responder location...");
+    return;
+  }
+
+  if (!trackingActive) {
+    // Pan map to responder and keep following
+    trackingActive = true;
+    btn.innerHTML = '<i class="uil uil-map-marker-slash"></i> Stop';
+    btn.classList.replace("bg-blue-500", "bg-red-500");
+    btn.classList.replace("hover:bg-blue-600", "hover:bg-red-600");
+    map.setView(responderMarker.getLatLng(), 17);
+    showToast("success", "Tracking responder location");
+  } else {
+    // Stop tracking
+    trackingActive = false;
+    btn.innerHTML = '<i class="uil uil-location-arrow"></i> Track';
+    btn.classList.replace("bg-red-500", "bg-blue-500");
+    btn.classList.replace("hover:bg-red-600", "hover:bg-blue-600");
+    showToast("info", "Stopped tracking");
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PUSHER — Real-time responder location tracking
+// Only activates when incident status is "responding"
+// ═══════════════════════════════════════════════════════════════════════════
+
+(function initResponderTracking() {
+  // responderMarker is module-scoped so we can move it on each update
+  let responderMarker = null;
+  let pusherChannel  = null;
+  let pusherInstance = null;
+
+  // ── Inject pulsing dot CSS once ────────────────────────────────────────────
+  const style = document.createElement('style');
+  style.textContent = `
+    .responder-dot {
+      width: 20px; height: 20px;
+      background: #3B82F6;
+      border: 3px solid white;
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(59,130,246,0.6);
+      animation: responder-pulse 1.8s infinite;
+    }
+    @keyframes responder-pulse {
+      0%   { box-shadow: 0 0 0 0   rgba(59,130,246,0.6); }
+      70%  { box-shadow: 0 0 0 10px rgba(59,130,246,0);   }
+      100% { box-shadow: 0 0 0 0   rgba(59,130,246,0);    }
+    }
+    .responder-label {
+      background: #1D4ED8;
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 99px;
+      white-space: nowrap;
+      margin-top: 3px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+  `;
+  document.head.appendChild(style);
+
+  function makeResponderIcon() {
+    return L.divIcon({
+      className: '',
+      html: `
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="responder-dot"></div>
+          <div class="responder-label">Responder</div>
+        </div>`,
+      iconSize:   [70, 42],
+      iconAnchor: [35, 10],
+    });
+  }
+
+  function placeOrMoveMarker(lat, lng) {
+    const latlng = [lat, lng];
+    if (responderMarker) {
+      responderMarker.setLatLng(latlng);
+    } else {
+      responderMarker = L.marker(latlng, { icon: makeResponderIcon() })
+        .addTo(map)
+        .bindPopup('<b>Responder</b><br>Live location');
+    }
+  }
+
+  function updateLastSeenLabel(updatedAt) {
+    const el = document.getElementById('responderStatus');
+    if (!el) return;
+    const t = new Date(updatedAt);
+    el.textContent = 'Live · ' + t.toLocaleTimeString('en-PH', {
+      hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true,
+    });
+    el.className = 'text-xs text-blue-500 dark:text-blue-400 font-medium';
+  }
+
+  function startPusher(incident) {
+    if (incident.status !== 'responding') return;
+
+    pusherInstance = new Pusher('e5c099a8d626646ef327', { cluster: 'ap1' });
+    pusherChannel  = pusherInstance.subscribe('incident.' + incident.id);
+
+    pusherChannel.bind('responder.location', function (payload) {
+      placeOrMoveMarker(payload.latitude, payload.longitude);
+      updateLastSeenLabel(payload.updated_at);
+      // Pan map to follow responder if tracking is active
+      if (trackingActive) {
+        map.setView([payload.latitude, payload.longitude]);
+      }
+    });
+
+    console.log('[Pusher] Subscribed to incident.' + incident.id);
+  }
+
+  function stopPusher() {
+    if (pusherChannel && pusherInstance) {
+      pusherChannel.unbind_all();
+      pusherInstance.unsubscribe(pusherChannel.name);
+    }
+    pusherInstance?.disconnect();
+    pusherInstance = null;
+    pusherChannel  = null;
+  }
+
+  // Expose marker so trackResponder() can access it
+  Object.defineProperty(window, 'responderMarker', { get: () => responderMarker });
+
+  // ── Wait for fetchIncidentDetails to populate currentIncident ─────────────
+  // fetchIncidentDetails() sets currentIncident then calls populateIncidentDetails()
+  // We hook in right after by polling until currentIncident is available.
+  let attempts = 0;
+  const waitForIncident = setInterval(function () {
+    if (currentIncident) {
+      clearInterval(waitForIncident);
+      startPusher(currentIncident);
+    } else if (++attempts > 40) {  // give up after ~4 seconds
+      clearInterval(waitForIncident);
+    }
+  }, 100);
+
+  // ── Clean up on page unload ───────────────────────────────────────────────
+  window.addEventListener('beforeunload', stopPusher);
+})();

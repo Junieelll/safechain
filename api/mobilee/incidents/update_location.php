@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../helpers/jwt_helper.php';
 require_once __DIR__ . '/../middleware/mobile_auth.php';
 
 // ── Pusher PHP SDK — loaded from root vendor (shared with rest of project) ──
-require_once __DIR__ . '/../../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../vendor/autoload.php';
 
 error_reporting(E_ERROR | E_PARSE);
 ini_set('display_errors', '0');
