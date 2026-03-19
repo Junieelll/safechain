@@ -54,7 +54,6 @@ function startSSE() {
 
     // Retry with backoff — max 10s
     const delay = Math.min((reconnectTimer?._delay || 1000) * 2, 10000);
-    console.warn(`SSE disconnected. Reconnecting in ${delay / 1000}s...`);
 
     reconnectTimer = setTimeout(() => {
       reconnectTimer._delay = delay;
@@ -565,6 +564,7 @@ async function getAddressFromCoordinates(lat, lng) {
     const data = await response.json();
     const a = data.address ?? {};
 
+
     return {
       street: a.road ?? a.pedestrian ?? a.path ?? "N/A",
       barangay: a.suburb ?? a.village ?? a.neighbourhood ?? a.quarter ?? "N/A",
@@ -728,7 +728,7 @@ async function populateIncidentDetails(incident) {
       if (window.placeOrMoveMarker) {
         clearInterval(seedInterval);
         window.placeOrMoveMarker(loc.latitude, loc.longitude);
-        window.updateLastSeenLabel?.(loc.updated_at);
+        window.updateLastSeenLabel?.(loc.updated_at, true);
         // Fit map to show both responder and incident marker
         if (incidentMarker) {
           const bounds = L.latLngBounds(
@@ -1846,38 +1846,52 @@ function trackResponder() {
   let lastPingTime = null;
   let liveTickInterval = null;
 
-  function updateLastSeenLabel(updatedAt) {
-    // Record ping time as browser time — server timestamp has UTC+8 offset issues
-    lastPingTime = new Date();
+  function updateLastSeenLabel(updatedAt, fromSeed = false) {
+    // For live Pusher pings use browser time (avoids UTC+8 server offset issues).
+    // For the initial DB seed use the actual server timestamp so elapsed time
+    // is correct on page load even when no Pusher events have arrived yet.
+    if (fromSeed && updatedAt) {
+      // MySQL datetime "2026-03-19 17:23:45" — replace space with T for correct parsing
+      const normalized = typeof updatedAt === 'string' ? updatedAt.replace(' ', 'T') : updatedAt;
+      lastPingTime = new Date(normalized);
+    } else {
+      lastPingTime = new Date();
+    }
 
     const el = document.getElementById('responderStatus');
     if (!el) return;
     el.className = 'text-xs text-blue-500 dark:text-blue-400 font-medium';
 
-    // Show just now immediately
-    el.textContent = '● Live — just now';
-
-    // Clear and restart interval on every ping so it's always in sync.
-    // The old "start once" pattern caused drift because the interval timer
-    // and the ping timer were never aligned — the counter kept growing
-    // even when pings arrived every second.
+    // Clear existing interval
     if (liveTickInterval) {
       clearInterval(liveTickInterval);
       liveTickInterval = null;
     }
 
-    liveTickInterval = setInterval(() => {
+    // Shared tick function — run immediately so the label is correct
+    // right away without waiting 1 second for the interval to fire
+    const tick = () => {
       const el = document.getElementById('responderStatus');
       if (!el || !lastPingTime) return;
       const secAgo = Math.floor((Date.now() - lastPingTime.getTime()) / 1000);
+      const minAgo = Math.floor(secAgo / 60);
+      const hrAgo  = Math.floor(minAgo / 60);
       if (secAgo < 5) {
         el.textContent = '● Live — just now';
       } else if (secAgo < 60) {
         el.textContent = `● Live — ${secAgo}s ago`;
+      } else if (minAgo < 60) {
+        el.textContent = `● Live — ${minAgo}m ago`;
       } else {
-        el.textContent = `● Live — ${Math.floor(secAgo / 60)}m ago`;
+        const remainingMin = minAgo % 60;
+        el.textContent = remainingMin > 0
+          ? `● Live — ${hrAgo}h ${remainingMin}m ago`
+          : `● Live — ${hrAgo}h ago`;
       }
-    }, 1000);
+    };
+
+    tick(); // run immediately — shows correct elapsed time from DB on page load
+    liveTickInterval = setInterval(tick, 1000);
   }
 
   function startPusher(incident) {
