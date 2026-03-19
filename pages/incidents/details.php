@@ -36,6 +36,7 @@ $currentUserRole = AuthChecker::getUserRole();
   <script src="assets/js/leaflet/leaflet.js"></script>
   <script src="assets/js/leaflet/leaflet-routing-machine.min.js"></script>
   <link rel="icon" type="image/x-icon" href="assets/img/logo.png">
+  <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 </head>
 
 <body class="min-h-screen flex transition-all duration-300 dark:bg-neutral-900"
@@ -278,7 +279,8 @@ $currentUserRole = AuthChecker::getUserRole();
         <!-- Right Column (1/3) -->
         <div class="space-y-7">
           <!-- Responder Info Banner (hidden by default) -->
-          <div id="responderBanner" class="hidden mb-4 p-5 px-7 bg-blue-200/50 border border-blue-500 dark:bg-blue-900/20 rounded-xl">
+          <div id="responderBanner"
+            class="hidden mb-4 p-5 px-7 bg-blue-200/50 border border-blue-500 dark:bg-blue-900/20 rounded-3xl">
             <p class="text-xs text-blue-500 dark:text-blue-400 font-semibold uppercase tracking-wider mb-2">
               Assigned Responder
             </p>
@@ -434,6 +436,121 @@ $currentUserRole = AuthChecker::getUserRole();
   <script src="assets/js/toast.js"></script>
   <script src="assets/js/modal.js"></script>
   <script src="assets/js/incident-details.js"></script>
+  <script>
+    (function () {
+      // ── Wait for incident data to be loaded by incident-details.js ──────────
+      // incident-details.js sets window.incidentData after fetching from the API.
+      // We poll briefly until it's ready, then subscribe.
+      let attempts = 0;
+
+      function initPusher() {
+        const data = window.incidentData;
+        if (!data || !data.id) {
+          if (++attempts < 20) return setTimeout(initPusher, 300);
+          return; // give up after 6 seconds
+        }
+
+        if (data.status !== 'responding') return; // only track active incidents
+
+        // ── Pusher setup ────────────────────────────────────────────────────────
+        const pusher = new Pusher('e5c099a8d626646ef327', {
+          cluster: 'ap1',
+        });
+
+        const channel = pusher.subscribe('incident.' + data.id);
+
+        // ── Responder marker (blue pulsing dot) ─────────────────────────────────
+        let responderMarker = null;
+
+        // Inject CSS for pulsing dot once
+        if (!document.getElementById('responder-dot-style')) {
+          const style = document.createElement('style');
+          style.id = 'responder-dot-style';
+          style.textContent = `
+        .responder-dot {
+          width: 18px; height: 18px;
+          background: #3B82F6;
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 0 0 0 rgba(59,130,246,0.6);
+          animation: responder-pulse 1.8s infinite;
+        }
+        @keyframes responder-pulse {
+          0%   { box-shadow: 0 0 0 0 rgba(59,130,246,0.6); }
+          70%  { box-shadow: 0 0 0 10px rgba(59,130,246,0); }
+          100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+        }
+        .responder-label {
+          background: #1D4ED8;
+          color: white;
+          font-size: 10px;
+          font-weight: 600;
+          padding: 2px 7px;
+          border-radius: 99px;
+          white-space: nowrap;
+          margin-top: 4px;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+      `;
+          document.head.appendChild(style);
+        }
+
+        function makeResponderIcon() {
+          return L.divIcon({
+            className: '',
+            html: `
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="responder-dot"></div>
+            <div class="responder-label">Responder</div>
+          </div>`,
+            iconSize: [60, 40],
+            iconAnchor: [30, 9],
+          });
+        }
+
+        // If initial load already has responder coords (from DB join), place marker
+        if (data.responder_lat && data.responder_lon) {
+          const latlng = [data.responder_lat, data.responder_lon];
+          responderMarker = L.marker(latlng, { icon: makeResponderIcon() })
+            .addTo(window.incidentMap)
+            .bindTooltip('Responder live location', { permanent: false });
+        }
+
+        // ── Listen for real-time location updates ───────────────────────────────
+        channel.bind('responder.location', function (payload) {
+          const latlng = [payload.latitude, payload.longitude];
+
+          if (responderMarker) {
+            // Smoothly move existing marker
+            responderMarker.setLatLng(latlng);
+          } else {
+            // First location ping — create the marker
+            responderMarker = L.marker(latlng, { icon: makeResponderIcon() })
+              .addTo(window.incidentMap)
+              .bindTooltip('Responder live location', { permanent: false });
+          }
+
+          // Update the "last seen" timestamp in the responder card
+          const el = document.getElementById('responderStatus');
+          if (el) {
+            const t = new Date(payload.updated_at);
+            el.textContent = 'Live · ' + t.toLocaleTimeString('en-PH', {
+              hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true
+            });
+          }
+        });
+
+        // ── Unsubscribe when page is closed ────────────────────────────────────
+        window.addEventListener('beforeunload', function () {
+          channel.unbind_all();
+          pusher.unsubscribe('incident.' + data.id);
+          pusher.disconnect();
+        });
+      }
+
+      initPusher();
+    })();
+  </script>
 </body>
 
 </html>
