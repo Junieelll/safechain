@@ -723,6 +723,30 @@ async function populateIncidentDetails(incident) {
   if (incident.lat && incident.lng) {
     updateIncidentMap(incident);
   }
+
+  // ── Seed responder marker from DB location (shown immediately on load) ───
+  if (incident.status === 'responding' && incident.responder_location) {
+    const loc = incident.responder_location;
+    // Retry until placeOrMoveMarker is ready (assigned by Pusher IIFE)
+    let seedAttempts = 0;
+    const seedInterval = setInterval(() => {
+      if (window.placeOrMoveMarker) {
+        clearInterval(seedInterval);
+        window.placeOrMoveMarker(loc.latitude, loc.longitude);
+        window.updateLastSeenLabel?.(loc.updated_at);
+        // Fit map to show both responder and incident marker
+        if (incidentMarker) {
+          const bounds = L.latLngBounds(
+            [loc.latitude, loc.longitude],
+            incidentMarker.getLatLng()
+          );
+          map.fitBounds(bounds.pad(0.3));
+        }
+      } else if (++seedAttempts > 20) {
+        clearInterval(seedInterval); // give up after 2s
+      }
+    }, 100);
+  }
 }
 
 async function forceResolve() {
@@ -815,11 +839,13 @@ function populateResponderBanner(incident) {
   if (incident.status === "responding") {
     statusEl.textContent = "Currently responding";
     statusEl.className = "text-xs text-blue-600 dark:text-blue-400";
-    document.getElementById("trackResponderBtn")?.classList.remove("hidden");
+    const trackBtn = document.getElementById("trackResponderBtn");
+    if (trackBtn) { trackBtn.style.display = "flex"; }
   } else if (incident.status === "resolved") {
     statusEl.textContent = "Resolved this incident";
     statusEl.className = "text-xs text-green-500 dark:text-green-400";
-    document.getElementById("trackResponderBtn")?.classList.add("hidden");
+    const trackBtn = document.getElementById("trackResponderBtn");
+    if (trackBtn) { trackBtn.style.display = "none"; }
   }
 
   // Avatar
@@ -1009,7 +1035,7 @@ function updateIncidentMap(incident) {
     window.corroboratorCircles.push(coverageCircle);
   }
 
-  startMarker.setLatLng(barangayHall);
+
 }
 
 // Helper functions
@@ -1071,9 +1097,6 @@ function updateStatusBadge(status) {
 
 // Initialize Map
 const incidentLocation = [14.716412, 121.040834];
-const barangayHall = [14.712429, 121.038435];
-let routingControl = null;
-let directionsActive = false;
 let selectedFiles = [];
 
 const map = L.map("incidentMap", { maxZoom: 21 }).setView(incidentLocation, 16);
@@ -1189,122 +1212,9 @@ const crimeIcon = L.divIcon({
   iconSize: [40, 40],
 });
 
-const startIcon = L.divIcon({
-  className: "custom-icon",
-  html: '<div style="background: #10b981; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"><i class="uil uil-map-marker text-lg text-white"></i></div>',
-  iconSize: [35, 35],
-});
-
 // Initialize marker variables
 let incidentMarker = null;
-const startMarker = L.marker(barangayHall, { icon: startIcon }).bindPopup(
-  "<b>Barangay Hall</b><br>Starting Point",
-);
 
-// Updated Toggle Directions function
-function toggleDirections() {
-  const btn = document.getElementById("toggleDirections");
-  const routeInfo = document.getElementById("routeInfo");
-
-  if (!directionsActive) {
-    // Check if incident marker exists
-    if (!incidentMarker) {
-      showToast(
-        "error",
-        "Cannot calculate directions: No incident location available",
-      );
-      return;
-    }
-
-    // Get the current incident location from the marker
-    const incidentLocation = incidentMarker.getLatLng();
-
-    startMarker.addTo(map);
-
-    routingControl = L.Routing.control({
-      waypoints: [
-        L.latLng(barangayHall[0], barangayHall[1]),
-        L.latLng(incidentLocation.lat, incidentLocation.lng),
-      ],
-      routeWhileDragging: false,
-      addWaypoints: false,
-      draggableWaypoints: false,
-      fitSelectedRoutes: true,
-      showAlternatives: false,
-      lineOptions: {
-        styles: [{ color: "#10B981", opacity: 0.8, weight: 6 }],
-      },
-      createMarker: function () {
-        return null;
-      },
-    }).addTo(map);
-
-    routingControl.on("routesfound", function (e) {
-      const routes = e.routes;
-      const summary = routes[0].summary;
-      const instructions = routes[0].instructions;
-
-      // Calculate distance and time
-      const distanceKm = (summary.totalDistance / 1000).toFixed(2);
-      const timeMin = Math.round(summary.totalTime / 60);
-
-      // Extract dynamic route names from instructions
-      const routeNames = [];
-      instructions.forEach((instruction) => {
-        if (instruction.road) {
-          routeNames.push(instruction.road);
-        }
-      });
-
-      // Remove duplicates and filter out empty strings
-      const uniqueRoutes = [...new Set(routeNames)].filter(
-        (name) => name && name.trim() !== "",
-      );
-
-      // Create route display text
-      let routeText = "Direct Route";
-      if (uniqueRoutes.length > 0) {
-        if (uniqueRoutes.length === 1) {
-          routeText = `Via ${uniqueRoutes[0]}`;
-        } else if (uniqueRoutes.length === 2) {
-          routeText = `Via ${uniqueRoutes[0]} and ${uniqueRoutes[1]}`;
-        } else {
-          const mainRoads = uniqueRoutes.slice(0, 2);
-          routeText = `Via ${mainRoads.join(", ")} and ${
-            uniqueRoutes.length - 2
-          } more`;
-        }
-      }
-
-      // Update UI
-      document.getElementById("routeDistance").textContent = distanceKm + " km";
-      document.getElementById("routeTime").textContent = timeMin + " minutes";
-      document.getElementById("routeName").textContent = routeText;
-
-      routeInfo.classList.remove("hidden");
-    });
-
-    btn.innerHTML = '<i class="uil uil-times text-base"></i> Hide Directions';
-    directionsActive = true;
-  } else {
-    if (routingControl) {
-      map.removeControl(routingControl);
-      routingControl = null;
-    }
-    map.removeLayer(startMarker);
-    routeInfo.classList.add("hidden");
-
-    btn.innerHTML =
-      '<i class="uil uil-map-marker text-base"></i> Show Directions';
-    directionsActive = false;
-
-    // Re-center on incident if marker exists
-    if (incidentMarker) {
-      const incidentLocation = incidentMarker.getLatLng();
-      map.setView([incidentLocation.lat, incidentLocation.lng], 15);
-    }
-  }
-}
 
 document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
 document
@@ -1835,11 +1745,20 @@ function trackResponder() {
     map.setView(responderMarker.getLatLng(), 17);
     showToast("success", "Tracking responder location");
   } else {
-    // Stop tracking
+    // Stop tracking — pan back to incident so admin sees the full picture
     trackingActive = false;
     btn.innerHTML = '<i class="uil uil-location-arrow"></i> Track';
     btn.classList.replace("bg-red-500", "bg-blue-500");
     btn.classList.replace("hover:bg-red-600", "hover:bg-blue-600");
+    if (incidentMarker && window.responderMarker) {
+      const bounds = L.latLngBounds(
+        incidentMarker.getLatLng(),
+        window.responderMarker.getLatLng()
+      );
+      map.fitBounds(bounds.pad(0.3));
+    } else if (incidentMarker) {
+      map.setView(incidentMarker.getLatLng(), 16);
+    }
     showToast("info", "Stopped tracking");
   }
 }
@@ -1858,18 +1777,18 @@ function trackResponder() {
   // ── Inject pulsing dot CSS once ────────────────────────────────────────────
   const style = document.createElement('style');
   style.textContent = `
-    .responder-dot {
-      width: 20px; height: 20px;
-      background: #3B82F6;
-      border: 3px solid white;
+    .responder-ring {
+      position: absolute;
+      inset: -6px;
       border-radius: 50%;
-      box-shadow: 0 0 0 0 rgba(59,130,246,0.6);
+      border: 3px solid rgba(59,130,246,0.6);
       animation: responder-pulse 1.8s infinite;
+      pointer-events: none;
     }
     @keyframes responder-pulse {
-      0%   { box-shadow: 0 0 0 0   rgba(59,130,246,0.6); }
-      70%  { box-shadow: 0 0 0 10px rgba(59,130,246,0);   }
-      100% { box-shadow: 0 0 0 0   rgba(59,130,246,0);    }
+      0%   { transform: scale(0.9); opacity: 1; }
+      70%  { transform: scale(1.3); opacity: 0; }
+      100% { transform: scale(0.9); opacity: 0; }
     }
     .responder-label {
       background: #1D4ED8;
@@ -1886,15 +1805,30 @@ function trackResponder() {
   document.head.appendChild(style);
 
   function makeResponderIcon() {
+    const avatar   = currentIncident?.responder_avatar;
+    const name     = currentIncident?.responder_name ?? currentIncident?.dispatched_by ?? 'Responder';
+    const innerHtml = avatar
+      ? `<img src="https://safechain.site/${avatar}"
+              style="width:42px;height:42px;border-radius:50%;object-fit:cover;
+                     border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);" />`
+      : `<div style="width:42px;height:42px;border-radius:50%;background:#3B82F6;
+                     border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);
+                     display:flex;align-items:center;justify-content:center;">
+           <i class="uil uil-user" style="color:white;font-size:18px;"></i>
+         </div>`;
+
     return L.divIcon({
       className: '',
       html: `
         <div style="display:flex;flex-direction:column;align-items:center;">
-          <div class="responder-dot"></div>
-          <div class="responder-label">Responder</div>
+          <div class="responder-ping" style="position:relative;width:42px;height:42px;">
+            <div class="responder-ring"></div>
+            ${innerHtml}
+          </div>
+          <div class="responder-label">${name}</div>
         </div>`,
-      iconSize:   [70, 42],
-      iconAnchor: [35, 10],
+      iconSize:   [80, 62],
+      iconAnchor: [40, 21],
     });
   }
 
@@ -1903,9 +1837,10 @@ function trackResponder() {
     if (responderMarker) {
       responderMarker.setLatLng(latlng);
     } else {
+      const name = currentIncident?.responder_name ?? currentIncident?.dispatched_by ?? 'Responder';
       responderMarker = L.marker(latlng, { icon: makeResponderIcon() })
         .addTo(map)
-        .bindPopup('<b>Responder</b><br>Live location');
+        .bindPopup(`<b>${name}</b><br><span style="font-size:11px;color:#6b7280;">Live location</span>`);
     }
   }
 
@@ -1947,7 +1882,9 @@ function trackResponder() {
     pusherChannel  = null;
   }
 
-  // Expose marker so trackResponder() can access it
+  // Expose functions immediately so seed call in populateIncidentDetails can use them
+  window.placeOrMoveMarker   = placeOrMoveMarker;
+  window.updateLastSeenLabel = updateLastSeenLabel;
   Object.defineProperty(window, 'responderMarker', { get: () => responderMarker });
 
   // ── Wait for fetchIncidentDetails to populate currentIncident ─────────────

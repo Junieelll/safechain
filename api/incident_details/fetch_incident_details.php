@@ -151,6 +151,25 @@ try {
     }
     $incident['corroborator_locations'] = $corroLocations;
 
+    // ── Responder live location from DB (seed for map on initial load) ──────
+    $locQuery = "
+        SELECT latitude, longitude, heading, speed, updated_at
+        FROM responder_locations
+        WHERE incident_id = '$incidentId'
+        LIMIT 1
+    ";
+    $locResult = mysqli_query($conn, $locQuery);
+    $incident['responder_location'] = null;
+    if ($locResult && $row = mysqli_fetch_assoc($locResult)) {
+        $incident['responder_location'] = [
+            'latitude'   => (float) $row['latitude'],
+            'longitude'  => (float) $row['longitude'],
+            'heading'    => $row['heading'] !== null ? (float) $row['heading'] : null,
+            'speed'      => $row['speed']   !== null ? (float) $row['speed']   : null,
+            'updated_at' => $row['updated_at'],
+        ];
+    }
+
     echo json_encode(['success' => true, 'data' => $incident]);
 
 } catch (Exception $e) {

@@ -34,9 +34,7 @@ $currentUserRole = AuthChecker::getUserRole();
     };
   </script>
   <script src="assets/js/leaflet/leaflet.js"></script>
-  <script src="assets/js/leaflet/leaflet-routing-machine.min.js"></script>
   <link rel="icon" type="image/x-icon" href="assets/img/logo.png">
-  <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 </head>
 
 <body class="min-h-screen flex transition-all duration-300 dark:bg-neutral-900"
@@ -167,30 +165,10 @@ $currentUserRole = AuthChecker::getUserRole();
                   <i class="uil uil-minus"></i>
                 </button>
               </div>
-              <div class="absolute bottom-2.5 right-2.5 z-[999] flex flex-col gap-2">
-                <button id="toggleDirections" onclick="toggleDirections()"
-                  class="toggle-btn flex items-center dark:border-gray-600 gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium text-neutral-100 hover:-translate-y-0.5 hover:shadow-lg transition-all">
-                  <i class="uil uil-map-marker text-2xl"></i>
-                  Show Directions
-                </button>
-              </div>
+
               <div id="incidentMap" class="h-full w-full"></div>
             </div>
 
-            <div id="routeInfo" class="hidden bg-gray-50 dark:bg-neutral-600 rounded-lg p-3 mt-2.5">
-              <div class="flex justify-between mb-2 text-sm">
-                <span class="text-gray-500 dark:text-neutral-300 font-medium">Distance:</span>
-                <span class="text-gray-900 dark:text-neutral-300 font-semibold" id="routeDistance">-</span>
-              </div>
-              <div class="flex justify-between mb-2 text-sm">
-                <span class="text-gray-500 dark:text-neutral-300  font-medium">Estimated Time:</span>
-                <span class="text-gray-900 dark:text-neutral-300 font-semibold" id="routeTime">-</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-500 dark:text-neutral-300 font-medium">Route:</span>
-                <span class="text-gray-900 dark:text-neutral-300 font-semibold" id="routeName">-</span>
-              </div>
-            </div>
           </div>
 
           <!-- Reporter Card -->
@@ -278,25 +256,6 @@ $currentUserRole = AuthChecker::getUserRole();
 
         <!-- Right Column (1/3) -->
         <div class="space-y-7">
-          <!-- Responder Info Banner (hidden by default) -->
-          <div id="responderBanner"
-            class="hidden mb-4 p-5 px-7 bg-blue-200/50 border border-blue-500 dark:bg-blue-900/20 rounded-3xl">
-            <p class="text-xs text-blue-500 dark:text-blue-400 font-semibold uppercase tracking-wider mb-2">
-              Assigned Responder
-            </p>
-            <div class="flex items-center gap-3">
-              <img id="responderAvatar" src="" alt="" class="w-9 h-9 rounded-full object-cover hidden" />
-              <div id="responderAvatarFallback"
-                class="w-9 h-9 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center">
-                <i class="uil uil-user text-blue-500 dark:text-blue-300"></i>
-              </div>
-              <div>
-                <p id="responderName" class="text-sm font-semibold text-gray-900 dark:text-neutral-200">—</p>
-                <p id="responderStatus" class="text-xs text-gray-500 dark:text-neutral-400">—</p>
-              </div>
-            </div>
-          </div>
-
           <!-- Actions Card -->
           <div class="bg-white dark:bg-neutral-800 rounded-3xl p-7" id="quickActionsCard">
             <div class="flex justify-between items-center pb-4 mb-5 border-b-2 border-gray-100 dark:border-neutral-600">
@@ -304,6 +263,32 @@ $currentUserRole = AuthChecker::getUserRole();
                 <i class="uil uil-bolt text-2xl"></i>
                 Quick Actions
               </h2>
+            </div>
+
+            <!-- Responder Info Banner (hidden by default) -->
+            <div id="responderBanner" class="hidden mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+              <p class="text-xs text-blue-500 dark:text-blue-400 font-semibold uppercase tracking-wider mb-2">
+                Assigned Responder
+              </p>
+              <div class="flex items-center gap-3">
+                <img id="responderAvatar" src="" alt="" class="w-9 h-9 rounded-full object-cover hidden" />
+                <div id="responderAvatarFallback"
+                  class="w-9 h-9 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center">
+                  <i class="uil uil-user text-blue-500 dark:text-blue-300"></i>
+                </div>
+                <div class="flex-1">
+                  <p id="responderName" class="text-sm font-semibold text-gray-900 dark:text-neutral-200">—</p>
+                  <p id="responderStatus" class="text-xs text-gray-500 dark:text-neutral-400">—</p>
+                </div>
+                <!-- Track button — only visible when incident is responding -->
+                <button id="trackResponderBtn"
+                  onclick="trackResponder()"
+                  title="Pan map to responder"
+                  class="hidden items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-lg transition-all hover:-translate-y-0.5 hover:shadow-md">
+                  <i class="uil uil-location-arrow"></i>
+                  Track
+                </button>
+              </div>
             </div>
 
             <div class="space-y-2.5">
@@ -324,24 +309,23 @@ $currentUserRole = AuthChecker::getUserRole();
 
           <!-- Medical Conditions Card -->
           <div id="medicalConditionsCard" class="hidden bg-white dark:bg-neutral-800 rounded-3xl p-7">
-            <div
-              class="flex-col justify-between items-center pb-4 mb-5 border-b-2 border-gray-100 dark:border-neutral-600">
-              <h2 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-2.5">
+            <div class="flex justify-between items-center pb-4 mb-5 border-b-2 border-gray-100 dark:border-neutral-600">
+              <h2 class="text-base font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-2.5">
                 <i class="uil uil-heart-rate text-2xl text-red-500"></i>
                 Reporter Medical Conditions
               </h2>
               <span
-                class="text-xs flex items-center justify-center text-red-400 dark:text-red-400 font-semibold bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-full">
-                <i class="uil uil-info-circle mr-2 text-base"></i>May Need Medical Attention
+                class="text-xs text-red-400 dark:text-red-400 font-semibold bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-full">
+                ⚠ Inform Medical Team
               </span>
             </div>
             <p class="text-xs text-gray-500 dark:text-neutral-400 mb-4">
-              The reporter has known medical conditions. Assess if medical assistance is needed based on the situation.
+              Known medical conditions of the reporter — share with responding medical personnel.
             </p>
             <div id="medicalBadgesContainer" class="flex flex-wrap gap-2">
               <!-- Populated by JS -->
             </div>
-          </div>
+          </div>  
 
           <!-- Timeline Card -->
           <div class="bg-white dark:bg-neutral-800 rounded-3xl p-7 ">
@@ -435,122 +419,8 @@ $currentUserRole = AuthChecker::getUserRole();
   <script src="assets/js/sidebar.js"></script>
   <script src="assets/js/toast.js"></script>
   <script src="assets/js/modal.js"></script>
+  <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
   <script src="assets/js/incident-details.js"></script>
-  <script>
-    (function () {
-      // ── Wait for incident data to be loaded by incident-details.js ──────────
-      // incident-details.js sets window.incidentData after fetching from the API.
-      // We poll briefly until it's ready, then subscribe.
-      let attempts = 0;
-
-      function initPusher() {
-        const data = window.incidentData;
-        if (!data || !data.id) {
-          if (++attempts < 20) return setTimeout(initPusher, 300);
-          return; // give up after 6 seconds
-        }
-
-        if (data.status !== 'responding') return; // only track active incidents
-
-        // ── Pusher setup ────────────────────────────────────────────────────────
-        const pusher = new Pusher('e5c099a8d626646ef327', {
-          cluster: 'ap1',
-        });
-
-        const channel = pusher.subscribe('incident.' + data.id);
-
-        // ── Responder marker (blue pulsing dot) ─────────────────────────────────
-        let responderMarker = null;
-
-        // Inject CSS for pulsing dot once
-        if (!document.getElementById('responder-dot-style')) {
-          const style = document.createElement('style');
-          style.id = 'responder-dot-style';
-          style.textContent = `
-        .responder-dot {
-          width: 18px; height: 18px;
-          background: #3B82F6;
-          border: 3px solid white;
-          border-radius: 50%;
-          box-shadow: 0 0 0 0 rgba(59,130,246,0.6);
-          animation: responder-pulse 1.8s infinite;
-        }
-        @keyframes responder-pulse {
-          0%   { box-shadow: 0 0 0 0 rgba(59,130,246,0.6); }
-          70%  { box-shadow: 0 0 0 10px rgba(59,130,246,0); }
-          100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
-        }
-        .responder-label {
-          background: #1D4ED8;
-          color: white;
-          font-size: 10px;
-          font-weight: 600;
-          padding: 2px 7px;
-          border-radius: 99px;
-          white-space: nowrap;
-          margin-top: 4px;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
-      `;
-          document.head.appendChild(style);
-        }
-
-        function makeResponderIcon() {
-          return L.divIcon({
-            className: '',
-            html: `
-          <div style="display:flex;flex-direction:column;align-items:center;">
-            <div class="responder-dot"></div>
-            <div class="responder-label">Responder</div>
-          </div>`,
-            iconSize: [60, 40],
-            iconAnchor: [30, 9],
-          });
-        }
-
-        // If initial load already has responder coords (from DB join), place marker
-        if (data.responder_lat && data.responder_lon) {
-          const latlng = [data.responder_lat, data.responder_lon];
-          responderMarker = L.marker(latlng, { icon: makeResponderIcon() })
-            .addTo(window.incidentMap)
-            .bindTooltip('Responder live location', { permanent: false });
-        }
-
-        // ── Listen for real-time location updates ───────────────────────────────
-        channel.bind('responder.location', function (payload) {
-          const latlng = [payload.latitude, payload.longitude];
-
-          if (responderMarker) {
-            // Smoothly move existing marker
-            responderMarker.setLatLng(latlng);
-          } else {
-            // First location ping — create the marker
-            responderMarker = L.marker(latlng, { icon: makeResponderIcon() })
-              .addTo(window.incidentMap)
-              .bindTooltip('Responder live location', { permanent: false });
-          }
-
-          // Update the "last seen" timestamp in the responder card
-          const el = document.getElementById('responderStatus');
-          if (el) {
-            const t = new Date(payload.updated_at);
-            el.textContent = 'Live · ' + t.toLocaleTimeString('en-PH', {
-              hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true
-            });
-          }
-        });
-
-        // ── Unsubscribe when page is closed ────────────────────────────────────
-        window.addEventListener('beforeunload', function () {
-          channel.unbind_all();
-          pusher.unsubscribe('incident.' + data.id);
-          pusher.disconnect();
-        });
-      }
-
-      initPusher();
-    })();
-  </script>
 </body>
 
 </html>
