@@ -88,6 +88,27 @@ if (!$incident) {
     exit;
 }
 
+// ── Fetch evidence attachments ───────────────────────────────────────────
+$evidenceList = [];
+$evResult = mysqli_query($conn, "
+    SELECT file_name, file_type, file_path
+    FROM incident_evidence
+    WHERE incident_id = '$incidentId'
+    ORDER BY uploaded_at ASC
+");
+if ($evResult) {
+    while ($evRow = mysqli_fetch_assoc($evResult)) {
+        // Only include images for the attachments page
+        if (strpos($evRow['file_type'], 'image/') === 0) {
+            $evidenceList[] = [
+                'file_name' => $evRow['file_name'],
+                'file_type' => $evRow['file_type'],
+                'file_url'  => rtrim('https://safechain.site', '/') . '/' . $evRow['file_path'],
+            ];
+        }
+    }
+}
+
 // Decode JSON fields
 $actionsTaken    = json_decode($incident['actions_taken'] ?? '[]', true) ?: [];
 $recommendations = $incident['recommendations'] ?? '';
@@ -425,12 +446,41 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                     <?php endif; ?>
 
                     <div class="section-title" style="margin-top: 20px; text-align: center">
-                        REPORT CLOSED — <?= htmlspecialchars($incident['report_date'] ?? $incident['date_reported']) ?>
+                        <?php if (!empty($evidenceList)): ?>
+                            ATTACHMENTS:
+                            <?php foreach ($evidenceList as $ev): ?>
+                                <div class="list-item" style="text-align:left; font-weight:normal; font-size:11px;">- <?= htmlspecialchars($ev['file_name']) ?></div>
+                            <?php endforeach; ?>
+                            <br>
+                        <?php endif; ?>
+                        END OF REPORT
                     </div>
 
                 </div><!-- .content -->
             </div><!-- .main-content -->
         </div><!-- .a4 -->
+
+        <?php if (!empty($evidenceList)): ?>
+        <!-- Attachments page — image grid, no header/footer, just photos -->
+        <div class="a4" id="page-attachments" style="padding: 40px 50px;">
+            <div style="text-align:center; font-size:13px; font-weight:bold; letter-spacing:1px; margin-bottom:24px; border-bottom:2px solid #333; padding-bottom:10px;">
+                PHOTO ATTACHMENTS — <?= htmlspecialchars($incident['id']) ?>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:16px;">
+                <?php foreach ($evidenceList as $idx => $ev): ?>
+                    <div style="break-inside:avoid; border:1px solid #ddd; border-radius:4px; overflow:hidden;">
+                        <img src="<?= htmlspecialchars($ev['file_url']) ?>"
+                             alt="Attachment <?= $idx + 1 ?>"
+                             style="width:100%; height:220px; object-fit:cover; display:block;" />
+                        <div style="padding:6px 8px; font-size:10px; color:#555; background:#f9f9f9; border-top:1px solid #eee;">
+                            Figure <?= $idx + 1 ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
     </div><!-- .container -->
 
     <script>

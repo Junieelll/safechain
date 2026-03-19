@@ -841,7 +841,7 @@ function s(array $settings, string $key): string
         function handleLogoUpload(input) {
             const file = input.files[0];
             if (!file) return;
-            if (file.size > 2 * 1024 * 1024) { showToast('Logo must be under 2MB', 'error'); return; }
+            if (file.size > 2 * 1024 * 1024) { showToast('error', 'Logo must be under 2MB'); return; }
             const reader = new FileReader();
             reader.onload = e => {
                 const img = document.getElementById('logoPreview');
@@ -871,7 +871,7 @@ function s(array $settings, string $key): string
         function handleReportLogoUpload(input, slotId) {
             const file = input.files[0];
             if (!file) return;
-            if (file.size > 2 * 1024 * 1024) { showToast('Logo must be under 2MB', 'error'); input.value = ''; return; }
+            if (file.size > 2 * 1024 * 1024) { showToast('error', 'Logo must be under 2MB'); input.value = ''; return; }
             const reader = new FileReader();
             reader.onload = e => {
                 const img = document.getElementById(slotId + '_preview');
@@ -927,7 +927,7 @@ function s(array $settings, string $key): string
         function addKagawad() {
             const list = document.getElementById('kagawadList');
             const rows = list.querySelectorAll('.kagawad-row');
-            if (rows.length >= 7) { showToast('Maximum 7 Kagawad rows', 'error'); return; }
+            if (rows.length >= 7) { showToast('error', 'Maximum 7 Kagawad rows'); return; }
             const div = document.createElement('div');
             div.className = 'kagawad-row flex gap-2 items-center';
             div.innerHTML = `
@@ -1012,7 +1012,7 @@ function s(array $settings, string $key): string
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast('Settings saved successfully', 'success');
+                    showToast('success', 'Settings saved successfully');
                     document.body.classList.remove('dirty');
                     if (tab === 'system') { pendingSoundFile = null; document.getElementById('notification_sound_cleared').value = '0'; }
                     if (tab === 'reports') {
@@ -1020,10 +1020,10 @@ function s(array $settings, string $key): string
                         document.getElementById('report_right_logo_cleared').value = '0';
                     }
                 } else {
-                    showToast(data.message || 'Failed to save settings', 'error');
+                    showToast('error', data.message || 'Failed to save settings');
                 }
             } catch (err) {
-                showToast('Network error — please try again', 'error');
+                showToast('error', 'Network error — please try again');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = orig;
@@ -1061,7 +1061,7 @@ function s(array $settings, string $key): string
             if (!file) return;
             const maxMB = 5;
             if (file.size > maxMB * 1024 * 1024) {
-                showToast(`Audio file must be under ${maxMB}MB`, 'error');
+                showToast('error', `Audio file must be under ${maxMB}MB`);
                 input.value = '';
                 return;
             }
@@ -1074,7 +1074,7 @@ function s(array $settings, string $key): string
             previewAudio = new Audio(URL.createObjectURL(file));
 
             document.body.classList.add('dirty');
-            showToast('Sound file ready — click "Test Sound" to preview or save to apply.', 'success');
+            showToast('success', 'Sound file ready — click "Test Sound" to preview or save to apply.');
         }
 
         function clearSound() {
@@ -1084,7 +1084,7 @@ function s(array $settings, string $key): string
             document.getElementById('soundFileName').textContent = 'Default alert sound (alert.mp3)';
             document.getElementById('notification_sound_cleared').value = '1';
             document.body.classList.add('dirty');
-            showToast('Custom sound removed — default will be used.', 'success');
+            showToast('success', 'Custom sound removed — default will be used.');
         }
 
         function testNotificationSound() {
@@ -1104,7 +1104,7 @@ function s(array $settings, string $key): string
             const audio = new Audio(src);
             audio.volume = volume;
             audio.loop = true;   // ← loop
-            audio.play().catch(() => showToast('Browser blocked autoplay — interact with the page first.', 'error'));
+            audio.play().catch(() => showToast('error', 'Browser blocked autoplay — interact with the page first.'));
 
             const wv = document.getElementById('soundWaveform');
             const st = document.getElementById('soundStatus');
@@ -1188,7 +1188,7 @@ function s(array $settings, string $key): string
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast('Settings saved successfully', 'success');
+                    showToast('success', 'Settings saved successfully');
                     document.body.classList.remove('dirty');
                     if (tab === 'system') {
                         pendingSoundFile = null;
@@ -1199,10 +1199,10 @@ function s(array $settings, string $key): string
                         document.getElementById('report_right_logo_cleared').value = '0';
                     }
                 } else {
-                    showToast(data.message || 'Failed to save settings', 'error');
+                    showToast('error', data.message || 'Failed to save settings');
                 }
             } catch (err) {
-                showToast('Network error — please try again', 'error');
+                showToast('error', 'Network error — please try again');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = orig;
