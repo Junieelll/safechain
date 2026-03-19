@@ -1215,6 +1215,8 @@ const crimeIcon = L.divIcon({
 // Initialize marker variables
 let incidentMarker = null;
 
+// Initialize marker variables
+let incidentMarker = null;
 
 document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
 document
@@ -1844,14 +1846,34 @@ function trackResponder() {
     }
   }
 
+  let lastPingTime = null;
+  let liveTickInterval = null;
+
   function updateLastSeenLabel(updatedAt) {
+    lastPingTime = new Date(updatedAt);
     const el = document.getElementById('responderStatus');
     if (!el) return;
-    const t = new Date(updatedAt);
-    el.textContent = 'Live · ' + t.toLocaleTimeString('en-PH', {
-      hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true,
-    });
     el.className = 'text-xs text-blue-500 dark:text-blue-400 font-medium';
+
+    // Start ticking if not already
+    if (!liveTickInterval) {
+      liveTickInterval = setInterval(() => {
+        if (!lastPingTime) return;
+        const el = document.getElementById('responderStatus');
+        if (!el) return;
+        const secAgo = Math.floor((Date.now() - lastPingTime.getTime()) / 1000);
+        if (secAgo < 5) {
+          el.textContent = '● Live — just now';
+        } else if (secAgo < 60) {
+          el.textContent = `● Live — ${secAgo}s ago`;
+        } else {
+          el.textContent = `● Live — ${Math.floor(secAgo / 60)}m ago`;
+        }
+      }, 1000);
+    }
+
+    // Show "just now" immediately on ping
+    el.textContent = '● Live — just now';
   }
 
   function startPusher(incident) {
@@ -1880,6 +1902,10 @@ function trackResponder() {
     pusherInstance?.disconnect();
     pusherInstance = null;
     pusherChannel  = null;
+    if (liveTickInterval) {
+      clearInterval(liveTickInterval);
+      liveTickInterval = null;
+    }
   }
 
   // Expose functions immediately so seed call in populateIncidentDetails can use them
