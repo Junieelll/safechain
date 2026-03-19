@@ -12,7 +12,41 @@ if (!$incidentId) {
     exit;
 }
 
-// Fetch incident + report details
+// ── Load all system settings from DB ─────────────────────────────────────
+$settings = [];
+$defaults = [
+    'report_left_logo'      => '',
+    'report_right_logo'     => '',
+    'report_republic_line'  => 'REPUBLIC OF THE PHILIPPINES',
+    'report_barangay_line'  => 'BARANGAY GULOD',
+    'report_address_line'   => 'VILLAFLOR VILLAGE, DISTRICT V, QUEZON CITY',
+    'report_tel_line'       => 'Tel. No. 8366-3198',
+    'report_punong_name'    => 'REY ALDRIN S. TOLENTINO',
+    'report_punong_position'=> 'Punong Barangay',
+    'report_officials'      => '[]',
+    'report_secretary_name' => 'MILA B. NARIO',
+    'report_treasurer_name' => 'LUNINGNING R. ARATAS',
+    'report_sk_name'        => 'ALJOHN JAYZEL E. CLEMENTE, JMA',
+    'report_footer_note'    => '',
+];
+
+try {
+    $res = $conn->query("SELECT setting_key, setting_value FROM system_settings");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $settings[$row['setting_key']] = $row['setting_value'];
+        }
+    }
+} catch (Exception $e) { /* silently fall back to defaults */ }
+
+// Merge defaults for any missing keys
+$settings = array_merge($defaults, $settings);
+
+// Parse officials JSON
+$officials = json_decode($settings['report_officials'] ?? '[]', true);
+if (!is_array($officials)) $officials = [];
+
+// ── Fetch incident + report details ──────────────────────────────────────
 $query = "
     SELECT 
         i.id, i.type, i.location, i.status,
@@ -46,7 +80,7 @@ $query = "
     LIMIT 1
 ";
 
-$result = mysqli_query($conn, $query);
+$result  = mysqli_query($conn, $query);
 $incident = mysqli_fetch_assoc($result);
 
 if (!$incident) {
@@ -55,24 +89,22 @@ if (!$incident) {
 }
 
 // Decode JSON fields
-$actionsTaken = json_decode($incident['actions_taken'] ?? '[]', true) ?: [];
+$actionsTaken    = json_decode($incident['actions_taken'] ?? '[]', true) ?: [];
 $recommendations = $incident['recommendations'] ?? '';
-$typeData = json_decode($incident['type_specific_data'] ?? '{}', true) ?: [];
+$typeData        = json_decode($incident['type_specific_data'] ?? '{}', true) ?: [];
 
 // Helper to get type_specific value with fallback
 function td(array $data, string $key, string $fallback = 'N/A'): string
 {
     $val = $data[$key] ?? null;
-    if ($val === null || $val === '')
-        return $fallback;
-    if (is_bool($val))
-        return $val ? 'Yes' : 'No';
-    return ucwords(str_replace('_', ' ', (string) $val));
+    if ($val === null || $val === '') return $fallback;
+    if (is_bool($val)) return $val ? 'Yes' : 'No';
+    return ucwords(str_replace('_', ' ', (string)$val));
 }
 
 // Type-specific labels
 $typeLabels = [
-    'fire' => 'FIRE INCIDENT',
+    'fire'  => 'FIRE INCIDENT',
     'flood' => 'FLOOD INCIDENT',
     'crime' => 'CRIME INCIDENT',
 ];
@@ -94,9 +126,6 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
 </head>
 
 <body>
-    <div id="editBanner">
-        ✏️ Edit mode — click any text to modify it. Click <strong>Done Editing</strong> when finished.
-    </div>
 
     <!-- FAB -->
     <div class="fab-container open">
@@ -104,10 +133,6 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
             <button class="fab-action-btn openBtn">
                 <i class="uil uil-print"></i>
                 <span>Print</span>
-            </button>
-            <button class="fab-action-btn editBtn">
-                <i class="uil uil-edit"></i>
-                <span>Edit Content</span>
             </button>
             <button class="fab-action-btn downloadBtn">
                 <i class="uil uil-import"></i>
@@ -123,45 +148,89 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
     <div class="container">
         <div class="a4" id="page-1">
 
-            <!-- Header -->
+            <!-- Header — fully dynamic from settings -->
             <div class="header">
                 <div class="header-left">
-                    <img src="assets/img/qc-logo.jpg" alt="" />
+                    <?php if (!empty($settings['report_left_logo'])): ?>
+                        <img src="<?= htmlspecialchars($settings['report_left_logo']) ?>" alt="Left Logo" />
+                    <?php endif; ?>
                 </div>
                 <div class="header-center">
-                    <div class="header-title">REPUBLIC OF THE PHILIPPINES</div>
-                    <div class="header-subtitle">BARANGAY GULOD</div>
-                    <div class="header-address">VILLAFLOR VILLAGE, DISTRICT V, QUEZON CITY</div>
-                    <div class="header-tel">Tel. No. 8366-3198</div>
+                    <div class="header-title">
+                        <?= htmlspecialchars($settings['report_republic_line']) ?>
+                    </div>
+                    <div class="header-subtitle">
+                        <?= htmlspecialchars($settings['report_barangay_line']) ?>
+                    </div>
+                    <div class="header-address">
+                        <?= htmlspecialchars($settings['report_address_line']) ?>
+                    </div>
+                    <div class="header-tel">
+                        <?= htmlspecialchars($settings['report_tel_line']) ?>
+                    </div>
                 </div>
                 <div class="header-right">
-                    <img src="assets/img/gulod-logo.png" alt="" />
+                    <?php if (!empty($settings['report_right_logo'])): ?>
+                        <img src="<?= htmlspecialchars($settings['report_right_logo']) ?>" alt="Right Logo" />
+                    <?php endif; ?>
                 </div>
             </div>
 
             <div class="main-content">
 
-                <!-- Barangay Officials sidebar (same for all types) -->
+                <!-- Barangay Officials sidebar — fully dynamic from settings -->
                 <aside class="barangay-officials">
                     <div class="barangay-captain">
-                        <span class="official-name">REY ALDRIN S. TOLENTINO</span>
-                        <span class="position">Punong Barangay</span>
+                        <span class="official-name">
+                            <?= htmlspecialchars($settings['report_punong_name']) ?>
+                        </span>
+                        <span class="position">
+                            <?= htmlspecialchars($settings['report_punong_position']) ?>
+                        </span>
                     </div>
-                    <div class="officials-section-title">Barangay Kagawad</div>
-                    <div class="official-item"><span class="official-name">LOVEL V. ALINAJE</span><span
-                            class="position">BIGLANG-AWA</span></div>
-                    <div class="official-item"><span class="official-name">MARLON S. SORIANO</span></div>
-                    <div class="official-item"><span class="official-name">SHERILL B. AGLE</span></div>
-                    <div class="official-item"><span class="official-name">PERCIVAL M. CASTELLFORT</span></div>
-                    <div class="official-item"><span class="official-name">EDGAR P. BABALOT</span></div>
-                    <div class="official-item"><span class="official-name">NONITO D. GONZALES</span></div>
-                    <div class="official-item"><span class="official-name">GLENDEL B. CLEMENTE</span></div>
-                    <div class="official-item"><span class="official-name">ALJOHN JAYZEL E. CLEMENTE, JMA</span><span
-                            class="position">SK Chairperson</span></div>
-                    <div class="official-item"><span class="official-name line-height-0">MILA B. NARIO</span><span
-                            class="position">Barangay Secretary</span></div>
-                    <div class="official-item"><span class="official-name line-height-0">LUNINGNING R.
-                            ARATAS</span><span class="position">Barangay Treasurer</span></div>
+
+                    <?php if (!empty($officials)): ?>
+                        <div class="officials-section-title">Barangay Kagawad</div>
+                        <?php foreach ($officials as $official): ?>
+                            <div class="official-item">
+                                <span class="official-name">
+                                    <?= htmlspecialchars($official['name'] ?? '') ?>
+                                </span>
+                                <?php if (!empty($official['position'])): ?>
+                                    <span class="position">
+                                        <?= htmlspecialchars($official['position']) ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+
+                    <?php if (!empty($settings['report_sk_name'])): ?>
+                        <div class="official-item">
+                            <span class="official-name">
+                                <?= htmlspecialchars($settings['report_sk_name']) ?>
+                            </span>
+                            <span class="position">SK Chairperson</span>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($settings['report_secretary_name'])): ?>
+                        <div class="official-item">
+                            <span class="official-name line-height-0">
+                                <?= htmlspecialchars($settings['report_secretary_name']) ?>
+                            </span>
+                            <span class="position">Barangay Secretary</span>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($settings['report_treasurer_name'])): ?>
+                        <div class="official-item">
+                            <span class="official-name line-height-0">
+                                <?= htmlspecialchars($settings['report_treasurer_name']) ?>
+                            </span>
+                            <span class="position">Barangay Treasurer</span>
+                        </div>
+                    <?php endif; ?>
                 </aside>
 
                 <!-- Report Content -->
@@ -175,7 +244,6 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                     <div class="report-subtitle">PREPARED BY:
                         <?= htmlspecialchars($incident['submitted_by'] ?? $adminName) ?>
                     </div>
-                    <div class="report-subtitle">APPROVED BY: Ka. Marlon Soriano</div>
 
                     <!-- I. INCIDENT OVERVIEW -->
                     <div class="section-title">I. INCIDENT OVERVIEW</div>
@@ -368,12 +436,12 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const mainContent = document.querySelector("#main-content");
-            const firstPage = document.querySelector("#page-1");
-            const container = document.querySelector(".container");
+            const firstPage   = document.querySelector("#page-1");
+            const container   = document.querySelector(".container");
             const MAX_CONTENT_HEIGHT = 700;
 
             function createNewPage() {
-                const newPage = firstPage.cloneNode(true);
+                const newPage    = firstPage.cloneNode(true);
                 const newContent = newPage.querySelector(".content");
                 newContent.innerHTML = "";
                 newContent.style.backgroundImage = "none";
@@ -384,11 +452,9 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
 
             function splitContent() {
                 const allItems = Array.from(mainContent.children);
-                let pages = [
-                    []
-                ];
+                let pages = [[]];
                 let currentPageHeight = 0;
-                let currentPageIndex = 0;
+                let currentPageIndex  = 0;
 
                 allItems.forEach((item) => {
                     const clone = item.cloneNode(true);
@@ -415,14 +481,12 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
             }
 
             // FAB toggle
-            const fab = document.querySelector(".fab-container");
+            const fab    = document.querySelector(".fab-container");
             const toggle = document.getElementById("fabToggle");
             toggle.addEventListener("click", () => fab.classList.toggle("open"));
 
             // Print
             document.querySelector(".openBtn").addEventListener("click", () => {
-                if (isEditing) document.querySelector(".editBtn").click();
-                // Wait for any pending splits to complete before printing
                 setTimeout(() => window.print(), 400);
             });
 
@@ -430,10 +494,10 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
             document.querySelector(".downloadBtn").addEventListener("click", async function () {
                 const { jsPDF } = window.jspdf;
                 const pages = document.querySelectorAll(".a4");
-                const btn = this;
+                const btn   = this;
 
                 btn.innerHTML = '<i class="uil uil-spinner-alt"></i><span>Generating...</span>';
-                btn.disabled = true;
+                btn.disabled  = true;
                 fab.style.visibility = "hidden";
 
                 try {
@@ -443,20 +507,19 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                         format: "a4"
                     });
 
-                    const A4_WIDTH_MM = 210;
+                    const A4_WIDTH_MM  = 210;
                     const A4_HEIGHT_MM = 297;
 
                     for (let i = 0; i < pages.length; i++) {
                         const page = pages[i];
 
-                        // Force the page to render at exact A4 pixel dimensions
                         const originalStyle = page.getAttribute("style") || "";
-                        page.style.width = "794px";   // 210mm at 96dpi
-                        page.style.height = "1123px"; // 297mm at 96dpi
+                        page.style.width    = "794px";
+                        page.style.height   = "1123px";
                         page.style.position = "fixed";
-                        page.style.top = "0";
-                        page.style.left = "0";
-                        page.style.zIndex = "-9999";
+                        page.style.top      = "0";
+                        page.style.left     = "0";
+                        page.style.zIndex   = "-9999";
 
                         const canvas = await html2canvas(page, {
                             scale: 4,
@@ -469,11 +532,9 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                             windowHeight: 1123,
                         });
 
-                        // Restore original style
                         page.setAttribute("style", originalStyle);
 
                         const imgData = canvas.toDataURL("image/jpeg", 0.95);
-
                         if (i > 0) pdf.addPage("a4", "portrait");
                         pdf.addImage(imgData, "JPEG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
                     }
@@ -486,47 +547,8 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                 } finally {
                     fab.style.visibility = "visible";
                     btn.innerHTML = '<i class="uil uil-import"></i><span>Download as PDF</span>';
-                    btn.disabled = false;
+                    btn.disabled  = false;
                 }
-            });
-
-            // ── Edit Toggle ───────────────────────────────────────────────
-            let isEditing = false;
-
-            // Elements that make sense to edit
-            const editableSelectors = [
-                ".report-subtitle",
-                ".section-content .list-item",
-                ".section-title",
-            ];
-
-            document.querySelector(".editBtn").addEventListener("click", function () {
-                isEditing = !isEditing;
-
-                // Toggle contenteditable on all editable elements across all pages
-                document.querySelectorAll(editableSelectors.join(",")).forEach((el) => {
-                    el.contentEditable = isEditing ? "true" : "false";
-
-                    if (isEditing) {
-                        el.style.outline = "1px dashed #3b82f6";
-                        el.style.borderRadius = "3px";
-                        el.style.minHeight = "1em";
-                        el.style.cursor = "text";
-                    } else {
-                        el.style.outline = "";
-                        el.style.borderRadius = "";
-                        el.style.cursor = "";
-                    }
-                });
-
-                // Update button label
-                this.innerHTML = isEditing ?
-                    '<i class="uil uil-check"></i><span>Done Editing</span>' :
-                    '<i class="uil uil-edit"></i><span>Edit Content</span>';
-
-                // Show/hide edit hint banner
-                const banner = document.getElementById("editBanner");
-                if (banner) banner.classList.toggle("visible", isEditing);
             });
 
             window.addEventListener("load", () => setTimeout(splitContent, 300));
@@ -534,9 +556,7 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get("autodownload") === "1") {
                 window.addEventListener("load", () => {
-                    setTimeout(() => {
-                        document.querySelector(".downloadBtn").click();
-                    }, 800);
+                    setTimeout(() => document.querySelector(".downloadBtn").click(), 800);
                 });
             }
         });

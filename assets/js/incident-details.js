@@ -843,7 +843,7 @@ function populateResponderBanner(incident) {
     if (trackBtn) { trackBtn.style.display = "flex"; }
   } else if (incident.status === "resolved") {
     statusEl.textContent = "Resolved this incident";
-    statusEl.className = "text-xs text-green-500 dark:text-green-400";
+    statusEl.className = "text-xs text-emerald-500 dark:text-emerald-400";
     const trackBtn = document.getElementById("trackResponderBtn");
     if (trackBtn) { trackBtn.style.display = "none"; }
   }
@@ -1852,7 +1852,12 @@ function trackResponder() {
   let liveTickInterval = null;
 
   function updateLastSeenLabel(updatedAt) {
-    lastPingTime = new Date(updatedAt);
+    // Normalize MySQL datetime string ("2026-03-19 17:23:45") to ISO format
+    // so browsers parse it as local time, not UTC — avoids the 8-hour offset bug
+    const normalized = typeof updatedAt === 'string'
+      ? updatedAt.replace(' ', 'T')
+      : updatedAt;
+    lastPingTime = new Date(normalized);
     const el = document.getElementById('responderStatus');
     if (!el) return;
     el.className = 'text-xs text-blue-500 dark:text-blue-400 font-medium';
