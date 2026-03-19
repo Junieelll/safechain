@@ -298,6 +298,29 @@ function handle_update_status(mysqli $conn, string $id, array $user): void
     $responder_name = $user['name'] ?? $user['username'] ?? 'Unknown';
     $responder_id = $user['id'] ?? '';
 
+    // ── Block: responder must resolve current incident before taking another ──
+    if ($status === 'responding' && $incident['status'] === 'pending') {
+        $activeStmt = $conn->prepare("
+            SELECT id FROM incidents
+            WHERE dispatched_to = ?
+              AND status        = 'responding'
+              AND is_archived   = 0
+              AND id           != ?
+            LIMIT 1
+        ");
+        $activeStmt->bind_param('ss', $responder_id, $id);
+        $activeStmt->execute();
+        $activeIncident = $activeStmt->get_result()->fetch_assoc();
+        $activeStmt->close();
+
+        if ($activeIncident) {
+            ResponseHelper::error(
+                'You must resolve incident ' . $activeIncident['id'] . ' before responding to another.',
+                422
+            );
+        }
+    }
+
     if ($status === 'responding' && $incident['status'] === 'pending') {
         // $now used for both dispatched_at and updated_at — same accurate time
         $stmt = $conn->prepare(
