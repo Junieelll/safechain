@@ -298,7 +298,7 @@ $avatar_color = getUserColor($user_id);
                     <div class="flex gap-4 pt-3.5 border-t border-gray-100 dark:border-gray-700">
                         <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-300 text-[13px]">
                             <i class="uil uil-eye text-base"></i>
-                            ${formatNumber(announcement.views)} views
+                            ${formatNumber(announcement.view_count ?? 0)} views
                         </div>
                     </div>
                 </div>
