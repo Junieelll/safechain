@@ -1742,6 +1742,11 @@ function trackResponder() {
     btn.classList.replace("bg-blue-500", "bg-red-500");
     btn.classList.replace("hover:bg-blue-600", "hover:bg-red-600");
     map.setView(responderMarker.getLatLng(), 17);
+    // Scroll the map into view smoothly
+    document.getElementById("incidentMap")?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
     showToast("success", "Tracking responder location");
   } else {
     // Stop tracking — pan back to incident so admin sees the full picture
