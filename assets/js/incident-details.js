@@ -68,7 +68,6 @@ function startSSE() {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
     }
-    console.log("SSE connected");
   };
 }
 
@@ -162,7 +161,6 @@ async function getCurrentAdminName() {
       currentAdminName = bodyElement.dataset.adminName;
       currentUserId = bodyElement.dataset.userId || "";
       currentUserRole = bodyElement.dataset.userRole || "";
-      console.log("Current admin loaded from HTML:", currentAdminName);
       return;
     }
 
@@ -174,7 +172,6 @@ async function getCurrentAdminName() {
       currentAdminName = result.admin_name || "Admin";
       currentUserId = result.user_id;
       currentUserRole = result.role;
-      console.log("Current admin loaded from API:", currentAdminName);
     } else {
       console.error("Failed to get admin info:", result.error);
     }
@@ -567,8 +564,6 @@ async function getAddressFromCoordinates(lat, lng) {
     );
     const data = await response.json();
     const a = data.address ?? {};
-
-    console.log("Nominatim address:", a); // remove after confirming
 
     return {
       street: a.road ?? a.pedestrian ?? a.path ?? "N/A",
@@ -1892,7 +1887,6 @@ function trackResponder() {
     pusherChannel  = pusherInstance.subscribe('incident.' + incident.id);
 
     pusherChannel.bind('responder.location', function (payload) {
-      console.log('[Pusher] responder.location received:', payload, 'at', new Date().toISOString());
       placeOrMoveMarker(payload.latitude, payload.longitude);
       updateLastSeenLabel(payload.updated_at);
       // Pan map to follow responder if tracking is active
@@ -1901,7 +1895,6 @@ function trackResponder() {
       }
     });
 
-    console.log('[Pusher] Subscribed to incident.' + incident.id);
   }
 
   function stopPusher() {
