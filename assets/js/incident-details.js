@@ -1852,35 +1852,37 @@ function trackResponder() {
   let liveTickInterval = null;
 
   function updateLastSeenLabel(updatedAt) {
-    // Normalize MySQL datetime string ("2026-03-19 17:23:45") to ISO format
-    // so browsers parse it as local time, not UTC — avoids the 8-hour offset bug
-    const normalized = typeof updatedAt === 'string'
-      ? updatedAt.replace(' ', 'T')
-      : updatedAt;
-    lastPingTime = new Date(normalized);
+    // Record ping time as browser time — server timestamp has UTC+8 offset issues
+    lastPingTime = new Date();
+
     const el = document.getElementById('responderStatus');
     if (!el) return;
     el.className = 'text-xs text-blue-500 dark:text-blue-400 font-medium';
 
-    // Start ticking if not already
-    if (!liveTickInterval) {
-      liveTickInterval = setInterval(() => {
-        if (!lastPingTime) return;
-        const el = document.getElementById('responderStatus');
-        if (!el) return;
-        const secAgo = Math.floor((Date.now() - lastPingTime.getTime()) / 1000);
-        if (secAgo < 5) {
-          el.textContent = '● Live — just now';
-        } else if (secAgo < 60) {
-          el.textContent = `● Live — ${secAgo}s ago`;
-        } else {
-          el.textContent = `● Live — ${Math.floor(secAgo / 60)}m ago`;
-        }
-      }, 1000);
+    // Show just now immediately
+    el.textContent = '● Live — just now';
+
+    // Clear and restart interval on every ping so it's always in sync.
+    // The old "start once" pattern caused drift because the interval timer
+    // and the ping timer were never aligned — the counter kept growing
+    // even when pings arrived every second.
+    if (liveTickInterval) {
+      clearInterval(liveTickInterval);
+      liveTickInterval = null;
     }
 
-    // Show "just now" immediately on ping
-    el.textContent = '● Live — just now';
+    liveTickInterval = setInterval(() => {
+      const el = document.getElementById('responderStatus');
+      if (!el || !lastPingTime) return;
+      const secAgo = Math.floor((Date.now() - lastPingTime.getTime()) / 1000);
+      if (secAgo < 5) {
+        el.textContent = '● Live — just now';
+      } else if (secAgo < 60) {
+        el.textContent = `● Live — ${secAgo}s ago`;
+      } else {
+        el.textContent = `● Live — ${Math.floor(secAgo / 60)}m ago`;
+      }
+    }, 1000);
   }
 
   function startPusher(incident) {
@@ -1890,6 +1892,7 @@ function trackResponder() {
     pusherChannel  = pusherInstance.subscribe('incident.' + incident.id);
 
     pusherChannel.bind('responder.location', function (payload) {
+      console.log('[Pusher] responder.location received:', payload, 'at', new Date().toISOString());
       placeOrMoveMarker(payload.latitude, payload.longitude);
       updateLastSeenLabel(payload.updated_at);
       // Pan map to follow responder if tracking is active

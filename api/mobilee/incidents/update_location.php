@@ -6,9 +6,6 @@ require_once __DIR__ . '/../../helpers/response_helper.php';
 require_once __DIR__ . '/../../helpers/jwt_helper.php';
 require_once __DIR__ . '/../middleware/mobile_auth.php';
 
-// ── Pusher PHP SDK — loaded from root vendor (shared with rest of project) ──
-require_once __DIR__ . '/../../../vendor/autoload.php';
-
 error_reporting(E_ERROR | E_PARSE);
 ini_set('display_errors', '0');
 
@@ -20,15 +17,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $user = mobile_authenticate();
 
-$body = json_decode(file_get_contents('php://input'), true) ?? [];
-
+$body        = json_decode(file_get_contents('php://input'), true) ?? [];
 $incident_id = trim($body['incident_id'] ?? '');
 $latitude    = isset($body['latitude'])  ? (float) $body['latitude']  : null;
 $longitude   = isset($body['longitude']) ? (float) $body['longitude'] : null;
 $heading     = isset($body['heading'])   ? (float) $body['heading']   : null;
 $speed       = isset($body['speed'])     ? (float) $body['speed']     : null;
 
-// ── Validate ──────────────────────────────────────────────────────────────
 if (!$incident_id || $latitude === null || $longitude === null) {
     ResponseHelper::validationError(
         ['fields' => ['incident_id, latitude, longitude are required']],
@@ -36,7 +31,7 @@ if (!$incident_id || $latitude === null || $longitude === null) {
     );
 }
 
-// ── Verify incident exists and responder is assigned to it ────────────────
+// Verify incident exists and responder is assigned
 $stmt = $conn->prepare("
     SELECT id, status, dispatched_to
     FROM incidents
@@ -60,7 +55,7 @@ if ($incident['status'] !== 'responding') {
     ResponseHelper::error('Location tracking only active while responding', 422);
 }
 
-// ── Upsert location (one row per responder per incident) ──────────────────
+// Upsert location
 $user_id = $user['id'];
 $stmt = $conn->prepare("
     INSERT INTO responder_locations (user_id, incident_id, latitude, longitude, heading, speed, updated_at)
@@ -80,34 +75,56 @@ if (!$stmt->execute()) {
 }
 $stmt->close();
 
-// ── Trigger Pusher event ──────────────────────────────────────────────────
-try {
-    $pusher = new Pusher\Pusher(
-        'e5c099a8d626646ef327',   // key
-        '99d94b39121f95c241e5',   // secret
-        '2129743',                 // app_id
-        [
-            'cluster' => 'ap1',
-            'useTLS'  => true,
-        ]
-    );
+// Trigger Pusher event via raw HTTP (Pusher PHP SDK has hanging issues on this host)
+$pusher_app_id  = '2129743';
+$pusher_key     = 'e5c099a8d626646ef327';
+$pusher_secret  = '99d94b39121f95c241e5';
+$pusher_cluster = 'ap1';
 
-    $pusher->trigger(
-        'incident.' . $incident_id,   // channel — one per incident
-        'responder.location',          // event name
-        [
-            'user_id'     => $user_id,
-            'incident_id' => $incident_id,
-            'latitude'    => $latitude,
-            'longitude'   => $longitude,
-            'heading'     => $heading,
-            'speed'       => $speed,
-            'updated_at'  => date('Y-m-d H:i:s'),
-        ]
-    );
-} catch (Exception $e) {
-    // Don't fail the request if Pusher is down — location was already saved to DB
-    error_log('Pusher trigger failed: ' . $e->getMessage());
-}
+$timestamp = time();
+
+$post_body = json_encode([
+    'name'    => 'responder.location',
+    'channel' => 'incident.' . $incident_id,
+    'data'    => json_encode([
+        'user_id'     => $user_id,
+        'incident_id' => $incident_id,
+        'latitude'    => $latitude,
+        'longitude'   => $longitude,
+        'heading'     => $heading,
+        'speed'       => $speed,
+        'updated_at'  => date('Y-m-d H:i:s'),
+    ]),
+]);
+
+$md5_body = md5($post_body);
+
+$string_to_sign = "POST\n/apps/{$pusher_app_id}/events\n"
+    . "auth_key={$pusher_key}"
+    . "&auth_timestamp={$timestamp}"
+    . "&auth_version=1.0"
+    . "&body_md5={$md5_body}";
+
+$auth_signature = hash_hmac('sha256', $string_to_sign, $pusher_secret);
+
+$pusher_url = "https://api-{$pusher_cluster}.pusher.com/apps/{$pusher_app_id}/events"
+    . "?auth_key={$pusher_key}"
+    . "&auth_timestamp={$timestamp}"
+    . "&auth_version=1.0"
+    . "&body_md5={$md5_body}"
+    . "&auth_signature={$auth_signature}";
+
+$ch = curl_init($pusher_url);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $post_body);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Content-Type: application/json',
+    'Content-Length: ' . strlen($post_body),
+]);
+curl_exec($ch);
+curl_close($ch);
 
 ResponseHelper::success(null, 'Location updated');
