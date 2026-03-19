@@ -170,6 +170,19 @@ try {
         ];
     }
 
+    // ── Dynamic settings ──────────────────────────────────────────────
+    $settingsQuery = "
+        SELECT setting_key, setting_value
+        FROM system_settings
+        WHERE setting_key = 'force_resolve_hours'
+        LIMIT 1
+    ";
+    $settingsResult = mysqli_query($conn, $settingsQuery);
+    $incident['force_resolve_hours'] = 6; // default fallback
+    if ($settingsResult && $settingsRow = mysqli_fetch_assoc($settingsResult)) {
+        $incident['force_resolve_hours'] = (int) $settingsRow['setting_value'];
+    }
+
     echo json_encode(['success' => true, 'data' => $incident]);
 
 } catch (Exception $e) {

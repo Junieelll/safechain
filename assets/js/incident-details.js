@@ -858,7 +858,8 @@ function populateResponderBanner(incident) {
     const dispatchedAt = new Date(incident.dispatched_at);
     const hoursElapsed =
       (Date.now() - dispatchedAt.getTime()) / (1000 * 60 * 60);
-    if (hoursElapsed >= 6) {
+    const forceResolveThreshold = incident.force_resolve_hours ?? 6;
+    if (hoursElapsed >= forceResolveThreshold) {
       forceResolveBtn.classList.remove("hidden");
     }
   }
