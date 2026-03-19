@@ -1215,9 +1215,6 @@ const crimeIcon = L.divIcon({
 // Initialize marker variables
 let incidentMarker = null;
 
-// Initialize marker variables
-let incidentMarker = null;
-
 document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
 document
   .getElementById("zoomOut")
