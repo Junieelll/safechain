@@ -814,7 +814,7 @@ function populateResponderBanner(incident) {
 
   if (incident.status === "responding") {
     statusEl.textContent = "Currently responding";
-    statusEl.className = "text-xs text-blue-500 dark:text-blue-400";
+    statusEl.className = "text-xs text-blue-600 dark:text-blue-400";
   } else if (incident.status === "resolved") {
     statusEl.textContent = "Resolved this incident";
     statusEl.className = "text-xs text-green-500 dark:text-green-400";
