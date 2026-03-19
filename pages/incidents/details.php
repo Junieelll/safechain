@@ -256,6 +256,30 @@ $currentUserRole = AuthChecker::getUserRole();
 
         <!-- Right Column (1/3) -->
         <div class="space-y-7">
+          <!-- Responder Info Banner (hidden by default) -->
+          <div id="responderBanner" class="hidden mb-4 p-5 px-7 bg-blue-200/60 dark:bg-blue-900/20 rounded-3xl">
+            <p class="text-xs text-blue-500 dark:text-blue-400 font-semibold uppercase tracking-wider mb-2">
+              Assigned Responder
+            </p>
+            <div class="flex items-center gap-3">
+              <img id="responderAvatar" src="" alt="" class="w-9 h-9 rounded-full object-cover hidden" />
+              <div id="responderAvatarFallback"
+                class="w-9 h-9 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center">
+                <i class="uil uil-user text-blue-500 dark:text-blue-300"></i>
+              </div>
+              <div class="flex-1">
+                <p id="responderName" class="text-sm font-semibold text-gray-900 dark:text-neutral-200">—</p>
+                <p id="responderStatus" class="text-xs text-gray-500 dark:text-neutral-400">—</p>
+              </div>
+              <!-- Track button — only visible when incident is responding -->
+              <button id="trackResponderBtn" onclick="trackResponder()" title="Pan map to responder"
+                class="hidden items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-lg transition-all hover:-translate-y-0.5 hover:shadow-md">
+                <i class="uil uil-location-arrow"></i>
+                Track
+              </button>
+            </div>
+          </div>
+          
           <!-- Actions Card -->
           <div class="bg-white dark:bg-neutral-800 rounded-3xl p-7" id="quickActionsCard">
             <div class="flex justify-between items-center pb-4 mb-5 border-b-2 border-gray-100 dark:border-neutral-600">
@@ -263,32 +287,6 @@ $currentUserRole = AuthChecker::getUserRole();
                 <i class="uil uil-bolt text-2xl"></i>
                 Quick Actions
               </h2>
-            </div>
-
-            <!-- Responder Info Banner (hidden by default) -->
-            <div id="responderBanner" class="hidden mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-              <p class="text-xs text-blue-500 dark:text-blue-400 font-semibold uppercase tracking-wider mb-2">
-                Assigned Responder
-              </p>
-              <div class="flex items-center gap-3">
-                <img id="responderAvatar" src="" alt="" class="w-9 h-9 rounded-full object-cover hidden" />
-                <div id="responderAvatarFallback"
-                  class="w-9 h-9 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center">
-                  <i class="uil uil-user text-blue-500 dark:text-blue-300"></i>
-                </div>
-                <div class="flex-1">
-                  <p id="responderName" class="text-sm font-semibold text-gray-900 dark:text-neutral-200">—</p>
-                  <p id="responderStatus" class="text-xs text-gray-500 dark:text-neutral-400">—</p>
-                </div>
-                <!-- Track button — only visible when incident is responding -->
-                <button id="trackResponderBtn"
-                  onclick="trackResponder()"
-                  title="Pan map to responder"
-                  class="hidden items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-lg transition-all hover:-translate-y-0.5 hover:shadow-md">
-                  <i class="uil uil-location-arrow"></i>
-                  Track
-                </button>
-              </div>
             </div>
 
             <div class="space-y-2.5">
@@ -325,7 +323,7 @@ $currentUserRole = AuthChecker::getUserRole();
             <div id="medicalBadgesContainer" class="flex flex-wrap gap-2">
               <!-- Populated by JS -->
             </div>
-          </div>  
+          </div>
 
           <!-- Timeline Card -->
           <div class="bg-white dark:bg-neutral-800 rounded-3xl p-7 ">
