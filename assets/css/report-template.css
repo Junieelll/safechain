@@ -499,3 +499,33 @@ body {
   height: auto;
   display: block;
 }
+/* ── Attachment page (lives outside .container, direct child of body) ──────
+   body is a block container → width:210mm + auto margins centers it,
+   but body itself must have the neutral bg so it doesn't bleed white.     */
+body {
+  background-color: var(--bg-neutral);
+  min-height: 100vh;
+}
+
+#page-attachments {
+  width: 210mm;
+  min-height: 297mm;
+  background-color: var(--bg-light);
+  display: block;
+  margin: 20px auto 15px auto;
+  padding: 40px 50px;
+  box-sizing: border-box;
+}
+
+@media print {
+  #page-attachments {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    padding: 40px !important;
+    box-shadow: none !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    display: block !important;
+  }
+}

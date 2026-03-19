@@ -460,28 +460,37 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
             </div><!-- .main-content -->
         </div><!-- .a4 -->
 
-        <?php if (!empty($evidenceList)): ?>
-        <!-- Attachments page — image grid, no header/footer, just photos -->
-        <div class="a4" id="page-attachments" style="padding: 40px 50px;">
-            <div style="text-align:center; font-size:13px; font-weight:bold; letter-spacing:1px; margin-bottom:24px; border-bottom:2px solid #333; padding-bottom:10px;">
-                PHOTO ATTACHMENTS — <?= htmlspecialchars($incident['id']) ?>
-            </div>
-            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:16px;">
-                <?php foreach ($evidenceList as $idx => $ev): ?>
-                    <div style="break-inside:avoid; border:1px solid #ddd; border-radius:4px; overflow:hidden;">
-                        <img src="<?= htmlspecialchars($ev['file_url']) ?>"
-                             alt="Attachment <?= $idx + 1 ?>"
-                             style="width:100%; height:220px; object-fit:cover; display:block;" />
-                        <div style="padding:6px 8px; font-size:10px; color:#555; background:#f9f9f9; border-top:1px solid #eee;">
-                            Figure <?= $idx + 1 ?>
-                        </div>
+    </div><!-- .container -->
+
+    <?php if (!empty($evidenceList)): ?>
+    <?php
+        $chunks    = array_chunk($evidenceList, 2);
+        $rowCount  = count($chunks);
+        $rowHeight = $rowCount === 1 ? '490px' : ($rowCount === 2 ? '235px' : '150px');
+    ?>
+    <!-- OUTSIDE .container so JS pagination never touches this page -->
+    <div class="a4" id="page-attachments" style="padding:40px 50px;box-sizing:border-box;margin-top:20px;">
+        <div style="text-align:center;font-size:13px;font-weight:bold;letter-spacing:1px;margin-bottom:18px;border-bottom:2px solid #333;padding-bottom:10px;">
+            PHOTO ATTACHMENTS &mdash; <?= htmlspecialchars($incident['id']) ?>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+            <?php foreach ($chunks as $row): ?>
+            <div style="display:grid;grid-template-columns:repeat(<?= count($row) ?>,1fr);gap:14px;">
+                <?php foreach ($row as $ev): ?>
+                <div style="border:1px solid #ccc;border-radius:6px;overflow:hidden;display:flex;flex-direction:column;">
+                    <img src="<?= htmlspecialchars($ev['file_url']) ?>"
+                         alt="<?= htmlspecialchars($ev['file_name']) ?>"
+                         style="width:100%;height:<?= $rowHeight ?>;object-fit:contain;display:block;background:#f5f5f5;" />
+                    <div style="padding:5px 8px;font-size:10px;color:#555;background:#f9f9f9;border-top:1px solid #eee;text-align:center;">
+                        <?= htmlspecialchars($ev['file_name']) ?>
                     </div>
+                </div>
                 <?php endforeach; ?>
             </div>
+            <?php endforeach; ?>
         </div>
-        <?php endif; ?>
-
-    </div><!-- .container -->
+    </div>
+    <?php endif; ?>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -496,7 +505,7 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                 newContent.innerHTML = "";
                 newContent.style.backgroundImage = "none";
                 newPage.style.marginTop = "20px";
-                container.appendChild(newPage);
+                container.appendChild(newPage); // always inside .container
                 return newContent;
             }
 
@@ -528,6 +537,10 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                     const newContent = createNewPage();
                     pages[i].forEach((item) => newContent.appendChild(item));
                 }
+
+                // Always move attachments page to very end of body after pagination settles
+                const attachPage = document.getElementById("page-attachments");
+                if (attachPage) document.body.appendChild(attachPage);
             }
 
             // FAB toggle
