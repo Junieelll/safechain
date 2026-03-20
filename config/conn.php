@@ -5,14 +5,13 @@ if (!defined('BASE_URL')) {
 date_default_timezone_set('Asia/Manila');
 
 // Load secure config
-$config = require $_SERVER['DOCUMENT_ROOT'] . '/../secure/db_config.php';
+$config = require $_SERVER['DOCUMENT_ROOT'] . '/../secure/secrets.php';
 
-// Connect to database
 $conn = mysqli_connect(
-    $config['host'],
-    $config['user'],
-    $config['pass'],
-    $config['name']
+    $config['db']['host'],
+    $config['db']['user'],
+    $config['db']['pass'],
+    $config['db']['name']
 );
 
 if (!$conn) {

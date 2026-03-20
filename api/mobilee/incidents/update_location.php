@@ -76,10 +76,10 @@ if (!$stmt->execute()) {
 $stmt->close();
 
 // Trigger Pusher event via raw HTTP (Pusher PHP SDK has hanging issues on this host)
-$pusher_app_id  = '2129743';
-$pusher_key     = 'e5c099a8d626646ef327';
-$pusher_secret  = '99d94b39121f95c241e5';
-$pusher_cluster = 'ap1';
+$pusher_app_id  = $config['pusher']['app_id'];
+$pusher_key     = $config['pusher']['key'];
+$pusher_secret  = $config['pusher']['secret'];
+$pusher_cluster = $config['pusher']['cluster'];
 
 $timestamp = time();
 
