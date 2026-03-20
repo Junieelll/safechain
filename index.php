@@ -8,6 +8,7 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['user_id'])) {
     $_SESSION['name'] = $_COOKIE['name'] ?? '';
     $_SESSION['username'] = $_COOKIE['username'] ?? '';
     $_SESSION['user_role'] = $_COOKIE['user_role'];
+    $_SESSION['user_status'] = $_COOKIE['user_status'] ?? 'suspended';
 }
 $route = isset($_GET['route']) ? trim($_GET['route'], '/') : '';
 // Handle root/empty route based on authentication
