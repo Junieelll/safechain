@@ -928,8 +928,6 @@ async function downloadPDF(data) {
       <div class="list-item">Average Response Time: <strong>${summary.avgResponseTime ?? "N/A"}</strong></div>
       <div class="list-item">Resolution Rate: <strong>${summary.resolutionRate ?? "N/A"}</strong></div>
       <div class="list-item">Resolved: ${summary.resolved ?? 0}</div>
-      <div class="list-item">Responding: ${summary.responding ?? 0}</div>
-      <div class="list-item">Pending: ${summary.pending ?? 0}</div>
     </div>
   `;
 

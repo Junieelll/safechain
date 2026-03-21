@@ -3,6 +3,40 @@ require_once '../config/conn.php';
 require_once '../includes/auth_helper.php';
 
 AuthChecker::requireAuth('/auth/login.php');
+
+// ── Load all system settings from DB ─────────────────────────────────────
+$settings = [];
+$defaults = [
+    'report_left_logo'       => '',
+    'report_right_logo'      => '',
+    'report_republic_line'   => 'REPUBLIC OF THE PHILIPPINES',
+    'report_barangay_line'   => 'BARANGAY GULOD',
+    'report_address_line'    => 'VILLAFLOR VILLAGE, DISTRICT V, QUEZON CITY',
+    'report_tel_line'        => 'Tel. No. 8366-3198',
+    'report_punong_name'     => 'REY ALDRIN S. TOLENTINO',
+    'report_punong_position' => 'Punong Barangay',
+    'report_officials'       => '[]',
+    'report_secretary_name'  => 'MILA B. NARIO',
+    'report_treasurer_name'  => 'LUNINGNING R. ARATAS',
+    'report_sk_name'         => 'ALJOHN JAYZEL E. CLEMENTE, JMA',
+    'report_footer_note'     => '',
+];
+
+try {
+    $res = $conn->query("SELECT setting_key, setting_value FROM system_settings");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $settings[$row['setting_key']] = $row['setting_value'];
+        }
+    }
+} catch (Exception $e) { /* silently fall back to defaults */ }
+
+// Merge defaults for any missing keys
+$settings = array_merge($defaults, $settings);
+
+// Parse officials JSON
+$officials = json_decode($settings['report_officials'] ?? '[]', true);
+if (!is_array($officials)) $officials = [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -16,9 +50,6 @@ AuthChecker::requireAuth('/auth/login.php');
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-    <div id="editBanner">
-        ✏️ Edit mode — click any text to modify it. Click <strong>Done Editing</strong> when finished.
-    </div>
 
     <!-- FAB -->
     <div class="fab-container open">
@@ -26,10 +57,6 @@ AuthChecker::requireAuth('/auth/login.php');
             <button class="fab-action-btn openBtn">
                 <i class="uil uil-print"></i>
                 <span>Print</span>
-            </button>
-            <button class="fab-action-btn editBtn">
-                <i class="uil uil-edit"></i>
-                <span>Edit Content</span>
             </button>
             <button class="fab-action-btn downloadBtn">
                 <i class="uil uil-import"></i>
@@ -45,41 +72,89 @@ AuthChecker::requireAuth('/auth/login.php');
     <div class="container">
         <div class="a4" id="page-1">
 
-            <!-- Header — identical to your incident report -->
+            <!-- Header — fully dynamic from settings -->
             <div class="header">
                 <div class="header-left">
-                    <img src="assets/img/qc-logo.jpg" alt="" />
+                    <?php if (!empty($settings['report_left_logo'])): ?>
+                        <img src="<?= htmlspecialchars($settings['report_left_logo']) ?>" alt="Left Logo" />
+                    <?php endif; ?>
                 </div>
                 <div class="header-center">
-                    <div class="header-title">REPUBLIC OF THE PHILIPPINES</div>
-                    <div class="header-subtitle">BARANGAY GULOD</div>
-                    <div class="header-address">VILLAFLOR VILLAGE, DISTRICT V, QUEZON CITY</div>
-                    <div class="header-tel">Tel. No. 8366-3198</div>
+                    <div class="header-title">
+                        <?= htmlspecialchars($settings['report_republic_line']) ?>
+                    </div>
+                    <div class="header-subtitle">
+                        <?= htmlspecialchars($settings['report_barangay_line']) ?>
+                    </div>
+                    <div class="header-address">
+                        <?= htmlspecialchars($settings['report_address_line']) ?>
+                    </div>
+                    <div class="header-tel">
+                        <?= htmlspecialchars($settings['report_tel_line']) ?>
+                    </div>
                 </div>
                 <div class="header-right">
-                    <img src="assets/img/gulod-logo.png" alt="" />
+                    <?php if (!empty($settings['report_right_logo'])): ?>
+                        <img src="<?= htmlspecialchars($settings['report_right_logo']) ?>" alt="Right Logo" />
+                    <?php endif; ?>
                 </div>
             </div>
 
             <div class="main-content">
 
-                <!-- Barangay Officials sidebar — same as incident report -->
+                <!-- Barangay Officials sidebar — fully dynamic from settings -->
                 <aside class="barangay-officials">
                     <div class="barangay-captain">
-                        <span class="official-name">REY ALDRIN S. TOLENTINO</span>
-                        <span class="position">Punong Barangay</span>
+                        <span class="official-name">
+                            <?= htmlspecialchars($settings['report_punong_name']) ?>
+                        </span>
+                        <span class="position">
+                            <?= htmlspecialchars($settings['report_punong_position']) ?>
+                        </span>
                     </div>
-                    <div class="officials-section-title">Barangay Kagawad</div>
-                    <div class="official-item"><span class="official-name">LOVEL V. ALINAJE</span><span class="position">BIGLANG-AWA</span></div>
-                    <div class="official-item"><span class="official-name">MARLON S. SORIANO</span></div>
-                    <div class="official-item"><span class="official-name">SHERILL B. AGLE</span></div>
-                    <div class="official-item"><span class="official-name">PERCIVAL M. CASTELLFORT</span></div>
-                    <div class="official-item"><span class="official-name">EDGAR P. BABALOT</span></div>
-                    <div class="official-item"><span class="official-name">NONITO D. GONZALES</span></div>
-                    <div class="official-item"><span class="official-name">GLENDEL B. CLEMENTE</span></div>
-                    <div class="official-item"><span class="official-name">ALJOHN JAYZEL E. CLEMENTE, JMA</span><span class="position">SK Chairperson</span></div>
-                    <div class="official-item"><span class="official-name line-height-0">MILA B. NARIO</span><span class="position">Barangay Secretary</span></div>
-                    <div class="official-item"><span class="official-name line-height-0">LUNINGNING R. ARATAS</span><span class="position">Barangay Treasurer</span></div>
+
+                    <?php if (!empty($officials)): ?>
+                        <div class="officials-section-title">Barangay Kagawad</div>
+                        <?php foreach ($officials as $official): ?>
+                            <div class="official-item">
+                                <span class="official-name">
+                                    <?= htmlspecialchars($official['name'] ?? '') ?>
+                                </span>
+                                <?php if (!empty($official['position'])): ?>
+                                    <span class="position">
+                                        <?= htmlspecialchars($official['position']) ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+
+                    <?php if (!empty($settings['report_sk_name'])): ?>
+                        <div class="official-item">
+                            <span class="official-name">
+                                <?= htmlspecialchars($settings['report_sk_name']) ?>
+                            </span>
+                            <span class="position">SK Chairperson</span>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($settings['report_secretary_name'])): ?>
+                        <div class="official-item">
+                            <span class="official-name line-height-0">
+                                <?= htmlspecialchars($settings['report_secretary_name']) ?>
+                            </span>
+                            <span class="position">Barangay Secretary</span>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($settings['report_treasurer_name'])): ?>
+                        <div class="official-item">
+                            <span class="official-name line-height-0">
+                                <?= htmlspecialchars($settings['report_treasurer_name']) ?>
+                            </span>
+                            <span class="position">Barangay Treasurer</span>
+                        </div>
+                    <?php endif; ?>
                 </aside>
 
                 <!-- Content injected from sessionStorage -->
@@ -107,7 +182,7 @@ AuthChecker::requireAuth('/auth/login.php');
                 "<div class='list-item' style='color:red'>No analytics data found. Please export from the Analytics page.</div>";
         }
 
-        // ── Pagination (identical to your incident report) ────────
+        // ── Pagination ────────────────────────────────────────────
         const mainContent = document.querySelector("#main-content");
         const firstPage   = document.querySelector("#page-1");
         const container   = document.querySelector(".container");
@@ -124,66 +199,63 @@ AuthChecker::requireAuth('/auth/login.php');
         }
 
         function splitContent() {
-  const allItems = Array.from(mainContent.children);
+            const allItems = Array.from(mainContent.children);
 
-  const probe = document.createElement("div");
-  probe.style.cssText = "position:fixed;top:0;left:-9999px;width:500px;visibility:hidden;";
-  document.body.appendChild(probe);
+            const probe = document.createElement("div");
+            probe.style.cssText = "position:fixed;top:0;left:-9999px;width:500px;visibility:hidden;";
+            document.body.appendChild(probe);
 
-  let pages         = [[]];
-  let currentHeight = 0;
-  let pageIndex     = 0;
+            let pages         = [[]];
+            let currentHeight = 0;
+            let pageIndex     = 0;
 
-  for (let i = 0; i < allItems.length; i++) {
-    const el = allItems[i];
+            for (let i = 0; i < allItems.length; i++) {
+                const el = allItems[i];
 
-    // Measure current item
-    const clone = el.cloneNode(true);
-    probe.appendChild(clone);
-    const elHeight = clone.offsetHeight + 8;
-    probe.removeChild(clone);
+                const clone = el.cloneNode(true);
+                probe.appendChild(clone);
+                const elHeight = clone.offsetHeight + 8;
+                probe.removeChild(clone);
 
-    // If it's a section-title, also measure the NEXT sibling so they
-    // are never separated — if both don't fit, push to next page together
-    if (el.classList.contains("section-title") && allItems[i + 1]) {
-      const nextClone = allItems[i + 1].cloneNode(true);
-      probe.appendChild(nextClone);
-      const nextHeight = nextClone.offsetHeight + 8;
-      probe.removeChild(nextClone);
+                // Keep section-title with its next sibling together
+                if (el.classList.contains("section-title") && allItems[i + 1]) {
+                    const nextClone = allItems[i + 1].cloneNode(true);
+                    probe.appendChild(nextClone);
+                    const nextHeight = nextClone.offsetHeight + 8;
+                    probe.removeChild(nextClone);
 
-      const combinedHeight = elHeight + nextHeight;
+                    const combinedHeight = elHeight + nextHeight;
 
-      if (currentHeight + combinedHeight > MAX_CONTENT_HEIGHT && currentHeight > 0) {
-        pageIndex++;
-        pages[pageIndex] = [];
-        currentHeight    = 0;
-      }
+                    if (currentHeight + combinedHeight > MAX_CONTENT_HEIGHT && currentHeight > 0) {
+                        pageIndex++;
+                        pages[pageIndex] = [];
+                        currentHeight    = 0;
+                    }
 
-      pages[pageIndex].push(el.cloneNode(true));
-      currentHeight += elHeight;
-    } else {
-      if (currentHeight + elHeight > MAX_CONTENT_HEIGHT && currentHeight > 0) {
-        pageIndex++;
-        pages[pageIndex] = [];
-        currentHeight    = 0;
-      }
+                    pages[pageIndex].push(el.cloneNode(true));
+                    currentHeight += elHeight;
+                } else {
+                    if (currentHeight + elHeight > MAX_CONTENT_HEIGHT && currentHeight > 0) {
+                        pageIndex++;
+                        pages[pageIndex] = [];
+                        currentHeight    = 0;
+                    }
 
-      pages[pageIndex].push(el.cloneNode(true));
-      currentHeight += elHeight;
-    }
-  }
+                    pages[pageIndex].push(el.cloneNode(true));
+                    currentHeight += elHeight;
+                }
+            }
 
-  document.body.removeChild(probe);
+            document.body.removeChild(probe);
 
-  // Render pages
-  mainContent.innerHTML = "";
-  pages[0].forEach((el) => mainContent.appendChild(el));
+            mainContent.innerHTML = "";
+            pages[0].forEach((el) => mainContent.appendChild(el));
 
-  for (let p = 1; p < pages.length; p++) {
-    const newContent = createNewPage();
-    pages[p].forEach((el) => newContent.appendChild(el));
-  }
-}
+            for (let p = 1; p < pages.length; p++) {
+                const newContent = createNewPage();
+                pages[p].forEach((el) => newContent.appendChild(el));
+            }
+        }
 
         // ── FAB toggle ────────────────────────────────────────────
         const fab    = document.querySelector(".fab-container");
@@ -192,11 +264,10 @@ AuthChecker::requireAuth('/auth/login.php');
 
         // ── Print ─────────────────────────────────────────────────
         document.querySelector(".openBtn").addEventListener("click", () => {
-            if (isEditing) document.querySelector(".editBtn").click();
             setTimeout(() => window.print(), 400);
         });
 
-        // ── Download PDF (same logic as incident report) ──────────
+        // ── Download PDF ──────────────────────────────────────────
         document.querySelector(".downloadBtn").addEventListener("click", async function () {
             const { jsPDF } = window.jspdf;
             const pages = document.querySelectorAll(".a4");
@@ -247,39 +318,6 @@ AuthChecker::requireAuth('/auth/login.php');
                 btn.innerHTML = '<i class="uil uil-import"></i><span>Download as PDF</span>';
                 btn.disabled  = false;
             }
-        });
-
-        // ── Edit toggle (same as incident report) ─────────────────
-        let isEditing = false;
-        const editableSelectors = [
-            ".report-subtitle",
-            ".section-content .list-item",
-            ".section-title",
-        ];
-
-        document.querySelector(".editBtn").addEventListener("click", function () {
-            isEditing = !isEditing;
-
-            document.querySelectorAll(editableSelectors.join(",")).forEach((el) => {
-                el.contentEditable = isEditing ? "true" : "false";
-                if (isEditing) {
-                    el.style.outline      = "1px dashed #3b82f6";
-                    el.style.borderRadius = "3px";
-                    el.style.minHeight    = "1em";
-                    el.style.cursor       = "text";
-                } else {
-                    el.style.outline      = "";
-                    el.style.borderRadius = "";
-                    el.style.cursor       = "";
-                }
-            });
-
-            this.innerHTML = isEditing
-                ? '<i class="uil uil-check"></i><span>Done Editing</span>'
-                : '<i class="uil uil-edit"></i><span>Edit Content</span>';
-
-            const banner = document.getElementById("editBanner");
-            if (banner) banner.classList.toggle("visible", isEditing);
         });
 
         // ── Run split then optionally auto-download ───────────────
