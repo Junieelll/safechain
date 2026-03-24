@@ -9,14 +9,14 @@ const map = L.map("incidentMap").setView(incidentLocation, 15);
 
 // Create both light and dark tile layers
 const lightLayer = L.tileLayer(
-  "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=XTXjcHDPMSRZi9uVEw8c",
   {
     attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
   }
 );
 
 const darkLayer = L.tileLayer(
-  "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=XTXjcHDPMSRZi9uVEw8c",
   {
     attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
   }

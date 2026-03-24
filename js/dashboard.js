@@ -533,7 +533,7 @@ let isRightPanelCollapsed = false;
 var map = L.map("map").setView([14.7158532, 121.0403842], 16);
 
 const lightLayer = L.tileLayer(
-  "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=XTXjcHDPMSRZi9uVEw8c",
   {
     attribution:
       '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
@@ -541,7 +541,7 @@ const lightLayer = L.tileLayer(
 );
 
 const darkLayer = L.tileLayer(
-  "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=2bXjFOI9q9BSiHQVwLb7",
+  "https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=XTXjcHDPMSRZi9uVEw8c",
   {
     attribution:
       '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a>',
