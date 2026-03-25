@@ -5,7 +5,7 @@ const mainContent = document.getElementById("mainContent");
 
 // --- Smooth Page Transitions ---
 window.redirectWithTransition = function (href) {
-  document.body.classList.add('page-exit');
+  document.body.classList.add("page-exit");
   setTimeout(() => {
     window.location.href = href;
   }, 400);
@@ -17,7 +17,7 @@ let isCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
 // Load saved group states
 function getGroupState(groupId) {
   const saved = localStorage.getItem(`navGroup_${groupId}`);
-  return saved !== null ? saved === 'true' : null;
+  return saved !== null ? saved === "true" : null;
 }
 
 function saveGroupState(groupId, isOpen) {
@@ -101,13 +101,13 @@ function applySidebarState() {
 function initializeGroups() {
   document.querySelectorAll(".nav-group-toggle").forEach((toggle) => {
     const groupId = toggle.dataset.group;
-    const defaultOpen = toggle.dataset.defaultOpen === 'true';
+    const defaultOpen = toggle.dataset.defaultOpen === "true";
     const savedState = getGroupState(groupId);
     const shouldOpen = savedState !== null ? savedState : defaultOpen;
-    
+
     const groupItems = toggle.nextElementSibling.nextElementSibling;
     const arrow = toggle.querySelector(".group-arrow");
-    
+
     if (shouldOpen && !isCollapsed) {
       groupItems.style.maxHeight = groupItems.scrollHeight + "px";
       arrow.style.transform = "rotate(180deg)";
@@ -134,12 +134,13 @@ function toggleGroup(toggle) {
     }, 300);
     return;
   }
-  
+
   const groupId = toggle.dataset.group;
   const groupItems = toggle.nextElementSibling.nextElementSibling;
   const arrow = toggle.querySelector(".group-arrow");
-  const isOpen = groupItems.style.maxHeight && groupItems.style.maxHeight !== "0px";
-  
+  const isOpen =
+    groupItems.style.maxHeight && groupItems.style.maxHeight !== "0px";
+
   if (isOpen) {
     groupItems.style.maxHeight = "0";
     arrow.style.transform = "rotate(0deg)";
@@ -160,7 +161,7 @@ sidebarToggler.addEventListener("click", () => {
   isCollapsed = !isCollapsed;
   localStorage.setItem("sidebarCollapsed", isCollapsed);
   applySidebarState();
-  
+
   if (!isCollapsed) {
     setTimeout(initializeGroups, 300);
   }
@@ -224,17 +225,17 @@ document.querySelectorAll(".nav-group").forEach((group) => {
 document.getElementById("darkModeToggle").addEventListener("click", (e) => {
   e.preventDefault();
   const html = document.documentElement;
-  
-  if (html.getAttribute('data-theme') === 'dark') {
-    html.removeAttribute('data-theme');
-    localStorage.setItem('theme', 'light');
-    if (typeof switchMapTheme === 'function') {
+
+  if (html.getAttribute("data-theme") === "dark") {
+    html.removeAttribute("data-theme");
+    localStorage.setItem("theme", "light");
+    if (typeof switchMapTheme === "function") {
       switchMapTheme(false);
     }
   } else {
-    html.setAttribute('data-theme', 'dark');
-    localStorage.setItem('theme', 'dark');
-    if (typeof switchMapTheme === 'function') {
+    html.setAttribute("data-theme", "dark");
+    localStorage.setItem("theme", "dark");
+    if (typeof switchMapTheme === "function") {
       switchMapTheme(true);
     }
   }
@@ -243,7 +244,7 @@ document.getElementById("darkModeToggle").addEventListener("click", (e) => {
   const label = document.getElementById("darkModeLabel");
   icon.classList.add("rotate");
 
-  if (html.getAttribute('data-theme') === 'dark') {
+  if (html.getAttribute("data-theme") === "dark") {
     icon.classList.replace("uil-moon", "uil-sun");
     label.textContent = "Light Mode";
   } else {
@@ -255,9 +256,9 @@ document.getElementById("darkModeToggle").addEventListener("click", (e) => {
 });
 
 // Load saved theme on page load
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme === 'dark') {
-  document.documentElement.setAttribute('data-theme', 'dark');
+const savedTheme = localStorage.getItem("theme");
+if (savedTheme === "dark") {
+  document.documentElement.setAttribute("data-theme", "dark");
   const icon = document.getElementById("darkModeIcon");
   const label = document.getElementById("darkModeLabel");
   icon.classList.replace("uil-moon", "uil-sun");
@@ -289,146 +290,155 @@ document.addEventListener("click", () => userDropdown.classList.add("hidden"));
 userDropdown.addEventListener("click", (e) => e.stopPropagation());
 
 const POLL_INTERVAL = 3000;
- 
+
 let knownIncidentIds = new Set(
-    JSON.parse(localStorage.getItem('knownIncidentIds') || '[]')
+  JSON.parse(localStorage.getItem("knownIncidentIds") || "[]"),
 );
 let isInitialLoad = true;
- 
+
 // ── Sound config (populated by loadSoundSettings) ────────────────────────
 let soundConfig = {
-    src:      '/assets/sounds/alert.mp3',   // fallback default
-    volume:   0.7,
-    duration: 3000,   // ms
+  src: "/assets/sounds/alert.mp3", // fallback default
+  volume: 0.7,
+  duration: 3000, // ms
 };
 let soundSettingsLoaded = false;
- 
+
 // ── Audio instance ────────────────────────────────────────────────────────
 let notificationAudio = null;
-let audioInitialized  = false;
-let testStopTimer     = null;
- 
+let audioInitialized = false;
+let testStopTimer = null;
+
 /**
  * Fetch sound settings from the backend once.
  * Called immediately and re-called lazily if it failed the first time.
  */
 async function loadSoundSettings() {
-    try {
-        const res  = await fetch('api/settings/sound.php');
-        const data = await res.json();
-        if (data.success && data.data) {
-            soundConfig.src      = data.data.src      || '/assets/sounds/alert.mp3';
-            soundConfig.volume   = data.data.volume   ?? 0.7;
-            soundConfig.duration = (data.data.duration ?? 3) * 1000;
-        }
-        soundSettingsLoaded = true;
-    } catch (e) {
-        // Network error — keep defaults, retry on next play
-        soundSettingsLoaded = false;
+  try {
+    const res = await fetch("api/settings/sound.php");
+    const data = await res.json();
+    if (data.success && data.data) {
+      soundConfig.src = data.data.src || "/assets/sounds/alert.mp3";
+      soundConfig.volume = data.data.volume ?? 0.7;
+      soundConfig.duration = (data.data.duration ?? 3) * 1000;
     }
+    soundSettingsLoaded = true;
+  } catch (e) {
+    // Network error — keep defaults, retry on next play
+    soundSettingsLoaded = false;
+  }
 }
- 
+
 // Kick off settings load immediately (non-blocking)
 loadSoundSettings();
- 
+
 /**
  * (Re)build the Audio object using the current soundConfig.
  * Safe to call multiple times — disposes the old instance first.
  */
 function buildAudio() {
-    if (notificationAudio) {
-        notificationAudio.pause();
-        notificationAudio.src = '';
-        notificationAudio = null;
-    }
-    notificationAudio        = new Audio(soundConfig.src);
-    notificationAudio.volume = soundConfig.volume;
-    notificationAudio.load();
-    audioInitialized = true;
+  if (notificationAudio) {
+    notificationAudio.pause();
+    notificationAudio.src = "";
+    notificationAudio = null;
+  }
+  notificationAudio = new Audio(soundConfig.src);
+  notificationAudio.volume = soundConfig.volume;
+  notificationAudio.load();
+  audioInitialized = true;
 }
- 
+
 /**
  * Warm up the audio context on first user gesture (required by browsers).
  */
 function initializeAudio() {
-    if (audioInitialized) return;
-    buildAudio();
-    notificationAudio.play()
-        .then(() => { notificationAudio.pause(); notificationAudio.currentTime = 0; })
-        .catch(() => {});
+  if (audioInitialized) return;
+  buildAudio();
+  notificationAudio.volume = 0; 
+  notificationAudio.play()
+    .play()
+    .then(() => {
+      notificationAudio.pause();
+      notificationAudio.currentTime = 0;
+      notificationAudio.volume = soundConfig.volume;
+    })
+    .catch(() => {});
 }
- 
+
 initializeAudio();
-['click', 'keydown', 'touchstart'].forEach(evt => {
-    document.addEventListener(evt, initializeAudio, { once: true });
+["click", "keydown", "touchstart"].forEach((evt) => {
+  document.addEventListener(evt, initializeAudio, { once: true });
 });
- 
+
 /**
  * Play the notification sound for soundConfig.duration ms then stop.
  */
 async function playNotificationSound() {
-    if (!soundSettingsLoaded) await loadSoundSettings();
+  if (!soundSettingsLoaded) await loadSoundSettings();
 
-    if (!audioInitialized || notificationAudio?.src !== soundConfig.src) {
-        buildAudio();
-    }
+  if (!audioInitialized || notificationAudio?.src !== soundConfig.src) {
+    buildAudio();
+  }
 
-    if (!notificationAudio) return;
+  if (!notificationAudio) return;
 
-    notificationAudio.volume      = soundConfig.volume;
+  notificationAudio.volume = soundConfig.volume;
+  notificationAudio.currentTime = 0;
+  notificationAudio.loop = true; // ← loop it
+  notificationAudio.play().catch(() => {});
+
+  if (testStopTimer) clearTimeout(testStopTimer);
+  testStopTimer = setTimeout(() => {
+    notificationAudio.loop = false; // ← stop looping then pause
+    notificationAudio.pause();
     notificationAudio.currentTime = 0;
-    notificationAudio.loop        = true;   // ← loop it
-    notificationAudio.play().catch(() => {});
-
-    if (testStopTimer) clearTimeout(testStopTimer);
-    testStopTimer = setTimeout(() => {
-        notificationAudio.loop    = false;  // ← stop looping then pause
-        notificationAudio.pause();
-        notificationAudio.currentTime = 0;
-    }, soundConfig.duration);
+  }, soundConfig.duration);
 }
- 
+
 // ── Incident polling ──────────────────────────────────────────────────────
 async function checkNewIncidents() {
-    if (isInitialLoad) isInitialLoad = false;
-    if (window.__dashboardActive) return;
- 
-    try {
-        const response = await fetch('api/dashboard/get_incidents.php');
-        const result   = await response.json();
- 
-        if (result.success) {
-            // Sync — remove IDs no longer in DB
-            const activeIds = new Set(
-                ['fire', 'crime', 'flood'].flatMap(t =>
-                    (result.data[t] || []).map(i => i.id)
-                )
+  if (isInitialLoad) isInitialLoad = false;
+  if (window.__dashboardActive) return;
+
+  try {
+    const response = await fetch("api/dashboard/get_incidents.php");
+    const result = await response.json();
+
+    if (result.success) {
+      // Sync — remove IDs no longer in DB
+      const activeIds = new Set(
+        ["fire", "crime", "flood"].flatMap((t) =>
+          (result.data[t] || []).map((i) => i.id),
+        ),
+      );
+      knownIncidentIds.forEach((id) => {
+        if (!activeIds.has(id)) knownIncidentIds.delete(id);
+      });
+      localStorage.setItem(
+        "knownIncidentIds",
+        JSON.stringify([...knownIncidentIds]),
+      );
+
+      ["fire", "crime", "flood"].forEach((type) => {
+        (result.data[type] || []).forEach((incident) => {
+          if (!knownIncidentIds.has(incident.id)) {
+            knownIncidentIds.add(incident.id);
+            localStorage.setItem(
+              "knownIncidentIds",
+              JSON.stringify([...knownIncidentIds]),
             );
-            knownIncidentIds.forEach(id => {
-                if (!activeIds.has(id)) knownIncidentIds.delete(id);
-            });
-            localStorage.setItem('knownIncidentIds', JSON.stringify([...knownIncidentIds]));
- 
-            ['fire', 'crime', 'flood'].forEach(type => {
-                (result.data[type] || []).forEach(incident => {
-                    if (!knownIncidentIds.has(incident.id)) {
-                        knownIncidentIds.add(incident.id);
-                        localStorage.setItem(
-                            'knownIncidentIds',
-                            JSON.stringify([...knownIncidentIds])
-                        );
-                        if (!isInitialLoad && typeof showToast === 'function') {
-                            showToast('info', `New ${type} incident: ${incident.user.name}`);
-                            playNotificationSound();
-                        }
-                    }
-                });
-            });
-        }
-    } catch (error) {
-        console.error('Sidebar polling error:', error);
+            if (!isInitialLoad && typeof showToast === "function") {
+              showToast("info", `New ${type} incident: ${incident.user.name}`);
+              playNotificationSound();
+            }
+          }
+        });
+      });
     }
+  } catch (error) {
+    console.error("Sidebar polling error:", error);
+  }
 }
- 
+
 setInterval(checkNewIncidents, POLL_INTERVAL);
 checkNewIncidents();
