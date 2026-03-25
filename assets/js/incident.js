@@ -637,8 +637,6 @@ quickDateButtons.forEach((button) => {
       dateText.textContent = text;
       selectedDateRange = text;
 
-      console.log("selectedDateRange set to:", selectedDateRange);
-
       dateMenu.classList.add("hidden");
       dateIcon.style.transform = "rotate(0deg)";
       currentPage = 1;

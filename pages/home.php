@@ -8,7 +8,7 @@ require_once __DIR__ . '/../includes/auth_helper.php';
 
 // Check if user is logged in
 if (!AuthChecker::isLoggedIn()) {
-    header('Location: /safechain/auth/login.php');
+    header('Location: /');
     exit;
 }
 ?>

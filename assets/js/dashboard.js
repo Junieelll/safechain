@@ -240,7 +240,6 @@ async function fetchLiveIncidents() {
 
       if (isInitialLoad) isInitialLoad = false;
 
-      console.log(`✓ Updated at ${result.timestamp}`, result.count);
     }
   } catch (error) {
     console.error("Failed to fetch incidents:", error);

@@ -1042,10 +1042,3 @@ document.addEventListener("DOMContentLoaded", () => {
   if (exportBtn) exportBtn.addEventListener("click", showExportModal);
   if (filterBtn) filterBtn.addEventListener("click", showFilterModal);
 });
-
-// Fallback toast if not defined globally
-if (typeof showToast === "undefined") {
-  window.showToast = function (type, message) {
-    console.log(`[${type.toUpperCase()}] ${message}`);
-  };
-}
