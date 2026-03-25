@@ -356,7 +356,6 @@ function initializeAudio() {
   buildAudio();
   notificationAudio.volume = 0; 
   notificationAudio.play()
-    .play()
     .then(() => {
       notificationAudio.pause();
       notificationAudio.currentTime = 0;
