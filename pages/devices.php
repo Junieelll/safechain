@@ -17,7 +17,6 @@
   <script>
     tailwind.config = { darkMode: ["class", '[data-theme="dark"]'] };
   </script>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 
 <body class="min-h-screen flex transition-all duration-300 dark:bg-neutral-900">
@@ -38,24 +37,6 @@
           <i class="uil uil-plus text-lg"></i>
           Add LoRa Device
         </button>
-
-        <div class="flex flex-col sm:flex-row gap-4 mt-6">
-          <div class="relative flex-1">
-            <i class="uil uil-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="searchInput" placeholder="Search devices by name, ID, or location..."
-              class="w-full pl-11 pr-4 py-3 bg-white dark:bg-neutral-800 border-none rounded-xl shadow-sm focus:ring-2 focus:ring-emerald-500 transition-shadow">
-          </div>
-          
-          <button onclick="openModal()" class="px-5 py-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors shadow-sm font-medium flex items-center gap-2 whitespace-nowrap">
-            <i class="uil uil-plus text-lg"></i>
-            Add LoRa Device
-          </button>
-
-          <button onclick="openQrModal()" class="px-5 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shadow-sm font-medium flex items-center gap-2 whitespace-nowrap">
-            <i class="uil uil-qrcode-scan text-lg"></i>
-            Authorize Node (QR)
-          </button>
-        </div>
       </div>
 
       <!-- Stats Cards -->
@@ -180,115 +161,12 @@
 
       <!-- Toast -->
       <div id="toastContainer" class="fixed top-4 right-4 z-[99999] space-y-3 max-w-md w-full"></div>
-
-      <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3"></div>
-
-      <div id="qrModal" class="fixed inset-0 bg-neutral-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-        <div class="bg-white dark:bg-neutral-800 rounded-2xl w-full max-w-md shadow-xl overflow-hidden transform scale-95 transition-transform duration-300">
-          <div class="px-6 py-4 border-b border-gray-100 dark:border-neutral-700 flex justify-between items-center">
-            <h3 class="text-lg font-bold text-gray-800 dark:text-white">Scan Hardware QR</h3>
-            <button onclick="closeQrModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-              <i class="uil uil-times text-2xl"></i>
-            </button>
-          </div>
-          <div class="p-6">
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center">
-              Hold the Node's QR code up to your computer camera to authorize it.
-            </p>
-            <div id="qr-reader" class="w-full rounded-lg overflow-hidden border-2 border-dashed border-gray-300 dark:border-neutral-600"></div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </main>
   </main>
 
   <script src="assets/js/sidebar.js"></script>
   <script src="assets/js/toast.js"></script>
   <script src="assets/js/modal.js"></script>
   <script src="assets/js/devices.js"></script>
-
-  <script>
-    // ==========================================
-    // 🚀 QR SCANNER LOGIC
-    // ==========================================
-    let html5QrcodeScanner = null;
-
-    function openQrModal() {
-      const modal = document.getElementById('qrModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex'); // Add flex to center the content
-      
-      setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        modal.firstElementChild.classList.remove('scale-95');
-      }, 10);
-
-      html5QrcodeScanner = new Html5QrcodeScanner(
-        "qr-reader",
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        false
-      );
-      
-      html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-    }
-
-    function closeQrModal() {
-      const modal = document.getElementById('qrModal');
-      modal.classList.add('opacity-0');
-      modal.firstElementChild.classList.add('scale-95');
-      
-      if (html5QrcodeScanner) {
-        html5QrcodeScanner.clear().catch(error => console.error("Failed to clear scanner.", error));
-      }
-
-      setTimeout(() => {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-      }, 300);
-    }
-
-    function onScanSuccess(decodedText, decodedResult) {
-      closeQrModal();
-      
-      let macAddress = decodedText.trim();
-      if (macAddress.includes(',')) {
-        macAddress = macAddress.split(',')[0].trim();
-      }
-
-      authorizeHardware(macAddress);
-    }
-
-    function onScanFailure(error) {
-      // Ignore background scanning errors
-    }
-
-    async function authorizeHardware(macAddress) {
-      // Assuming you have a showToast function globally available
-      showToast('Info', 'Authorizing hardware: ' + macAddress, 'info');
-
-      try {
-        const response = await fetch('api/devices/index.php?action=authorize-node', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bt_remote_id: macAddress })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          showToast('Success', data.message, 'success');
-        } else {
-          showToast('Error', data.message || 'Failed to authorize hardware.', 'error');
-        }
-      } catch (err) {
-        console.error("Authorization Error: ", err);
-        showToast('Error', 'Network error while contacting the server.', 'error');
-      }
-    }
-  </script>
-
 </body>
 
 </html>
