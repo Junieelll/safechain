@@ -588,7 +588,8 @@ function notifyEmergencyContacts(
 
             // ── Content ───────────────────────────────────────
             $mail->isHTML(true);
-            $mail->Subject = "[SafeChain] {$typeLabel} Alert — {$residentName} needs help";
+            $mail->CharSet = 'UTF-8';
+            $mail->Subject = "SafeChain {$typeLabel} Alert - {$residentName} needs help";
             $mail->Body    = "
 <!DOCTYPE html>
 <html>
@@ -608,11 +609,7 @@ function notifyEmergencyContacts(
     </p>
     <table style='width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px;'>
       <tr style='background:#f9f9f9;'>
-        <td style='padding:10px 12px;font-weight:600;width:140px;'>Incident ID</td>
-        <td style='padding:10px 12px;'>{$incidentId}</td>
-      </tr>
-      <tr>
-        <td style='padding:10px 12px;font-weight:600;'>Type</td>
+        <td style='padding:10px 12px;font-weight:600;width:140px;'>Type</td>
         <td style='padding:10px 12px;'>{$typeLabel}</td>
       </tr>
       <tr style='background:#f9f9f9;'>
