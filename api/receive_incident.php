@@ -62,6 +62,15 @@ if ($row['device_status'] === 'deactivated') {
     exit;
 }
 
+// Missing device — tagged lost by resident, reject all signals
+if ($row['device_status'] === 'missing') {
+    echo json_encode([
+        'success' => false,
+        'message' => "Device '$device_id' has been reported missing",
+    ]);
+    exit;
+}
+
 // Device unlinked (resident_id is NULL) — drop silently
 if (empty($row['resident_id'])) {
     echo json_encode([
@@ -444,6 +453,12 @@ function handleGPSUpdate($conn, $data, $resident)
     // Gate: deactivated device cannot update GPS
     if ($resident['device_status'] === 'deactivated') {
         echo json_encode(['success' => false, 'message' => 'Device is deactivated']);
+        return;
+    }
+
+    // Gate: missing device cannot update GPS
+    if ($resident['device_status'] === 'missing') {
+        echo json_encode(['success' => false, 'message' => 'Device has been reported missing']);
         return;
     }
 
