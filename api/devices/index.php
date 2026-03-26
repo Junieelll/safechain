@@ -41,7 +41,7 @@ function jsonError(string $msg = 'Error', int $code = 400, $errors = null): void
 // ── GET list ──────────────────────────────────────────────────────────────────
 if ($method === 'GET' && $action === 'list') {
 
-    // Node (keychain) devices
+    // Node devices
     $nodeStmt = $conn->prepare("
         SELECT
             d.device_id,
@@ -206,6 +206,44 @@ elseif ($method === 'POST' && $action === 'deactivate-lora') {
     $upd->execute() ? jsonSuccess(null, 'LoRa device reactivated') : jsonError('Failed to reactivate', 500);
 }
 
+// ── POST authorize-node ──────────────────────────────────────────────────────
+elseif ($method === 'POST' && $action === 'authorize-node') {
+
+    if ($role !== Roles::ADMIN) {
+        jsonError('Only admins can authorize new hardware', 403);
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    $bt_remote_id = trim($input['bt_remote_id'] ?? '');
+    
+    // Optional: You can tag batches if you manufacture them in groups
+    $batch_number = trim($input['batch_number'] ?? 'BATCH-' . date('Ym'));
+
+    if (empty($bt_remote_id)) {
+        jsonError('MAC Address is required', 422);
+    }
+
+    // Check if it's already authorized
+    $check = $conn->prepare("SELECT bt_remote_id FROM authorized_hardware WHERE bt_remote_id = ?");
+    $check->bind_param("s", $bt_remote_id);
+    $check->execute();
+    if ($check->get_result()->num_rows > 0) {
+        $check->close();
+        jsonError('This hardware MAC is already authorized in the system.', 409);
+    }
+    $check->close();
+
+    // Insert into the whitelist
+    $ins = $conn->prepare("INSERT INTO authorized_hardware (bt_remote_id, batch_number, is_registered) VALUES (?, ?, 0)");
+    $ins->bind_param("ss", $bt_remote_id, $batch_number);
+    
+    if ($ins->execute()) {
+        jsonSuccess(null, "Hardware $bt_remote_id authorized successfully! Ready for user registration.", 201);
+    } else {
+        jsonError('Failed to authorize hardware: ' . $conn->error, 500);
+    }
+}
+
 // ── PUT edit-lora ─────────────────────────────────────────────────────────────
 elseif ($method === 'POST' && $action === 'edit-lora') {
 
@@ -254,7 +292,7 @@ elseif ($method === 'POST' && $action === 'edit-lora') {
         WHERE id = ?
     ");
     $upd->bind_param(
-        "sssddisssi",
+        "sssddisssi",   
         $device_type,
         $name,
         $location_label,
