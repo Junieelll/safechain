@@ -11,6 +11,12 @@ header('Access-Control-Allow-Methods: POST');
 
 require_once '../config/conn.php';
 require_once 'helpers/fcm_helper.php';
+require_once '../vendor/phpmailer/phpmailer/src/Exception.php';
+require_once '../vendor/phpmailer/phpmailer/src/PHPMailer.php';
+require_once '../vendor/phpmailer/phpmailer/src/SMTP.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception as MailException;
 
 // Get JSON data from Python script
 $input = file_get_contents('php://input');
@@ -158,6 +164,8 @@ function reverseGeocode($lat, $lng): string
 
 function handleNewIncident($conn, $data, $resident, bool $geofenceEnabled = false)
 {
+    global $config;
+
     $type = mysqli_real_escape_string($conn, $data['button'] ?? 'fire');
     $lat = floatval($data['lat']);
     $lng = floatval($data['lng']);
@@ -424,7 +432,10 @@ function handleNewIncident($conn, $data, $resident, bool $geofenceEnabled = fals
         $geocodedAddress
     ));
 
-    // ── 13. Response ──────────────────────────────────────────
+    // ── 13. Notify emergency contacts via email ─────────────
+    notifyEmergencyContacts($conn, $reporter_id, $resident['name'], $type, $geocodedAddress, $incidentId, $lat, $lng);
+
+    // ── 14. Response ──────────────────────────────────────────
     echo json_encode([
         'success' => true,
         'action' => 'created',
@@ -514,6 +525,133 @@ function handleGPSUpdate($conn, $data, $resident)
             'success' => false,
             'message' => 'No active incident found for this device',
         ]);
+    }
+}
+
+// ============================================================
+// EMERGENCY CONTACT EMAIL NOTIFIER
+// ============================================================
+
+function notifyEmergencyContacts(
+    $conn,
+    string $residentId,
+    string $residentName,
+    string $incidentType,
+    string $location,
+    string $incidentId,
+    float $lat,
+    float $lng
+): void {
+    global $config;
+
+    // Fetch emergency contacts that have an email
+    $stmt = $conn->prepare("
+        SELECT name, email, relationship, contact_number
+        FROM emergency_contacts
+        WHERE resident_id = ?
+          AND email IS NOT NULL
+          AND email != ''
+    ");
+    $stmt->bind_param('s', $residentId);
+    $stmt->execute();
+    $contacts = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    if (empty($contacts)) {
+        return;
+    }
+
+    $typeLabel  = ucfirst($incidentType);
+    $mapsUrl    = "https://www.google.com/maps?q={$lat},{$lng}";
+    $timestamp  = date('F j, Y g:i A');
+
+    foreach ($contacts as $contact) {
+        try {
+            $mail = new PHPMailer(true);
+
+            // ── SMTP config ───────────────────────────────────
+            $mail->isSMTP();
+            $mail->Host       = $config['mail']['host'];
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $config['mail']['username'];
+            $mail->Password   = $config['mail']['password'];
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port       = $config['mail']['port'];
+            $mail->Timeout    = 15;
+
+            // ── Recipients ────────────────────────────────────
+            $mail->setFrom(
+                $config['mail']['username'],
+                $config['mail']['from_name']
+            );
+            $mail->addAddress($contact['email'], $contact['name']);
+
+            // ── Content ───────────────────────────────────────
+            $mail->isHTML(true);
+            $mail->Subject = "[SafeChain] {$typeLabel} Alert — {$residentName} needs help";
+            $mail->Body    = "
+<!DOCTYPE html>
+<html>
+<body style='font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1a;'>
+  <div style='background:#EF4444;border-radius:12px 12px 0 0;padding:20px 24px;'>
+    <h2 style='color:#fff;margin:0;font-size:20px;'>
+      {$typeLabel} Emergency Alert
+    </h2>
+  </div>
+  <div style='border:1px solid #e5e5e5;border-top:none;border-radius:0 0 12px 12px;padding:24px;'>
+    <p style='margin:0 0 16px;'>
+      Hello <strong>{$contact['name']}</strong>,
+    </p>
+    <p style='margin:0 0 16px;'>
+      <strong>{$residentName}</strong> has triggered a
+      <strong>{$typeLabel}</strong> emergency alert via their SafeChain device.
+    </p>
+    <table style='width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px;'>
+      <tr style='background:#f9f9f9;'>
+        <td style='padding:10px 12px;font-weight:600;width:140px;'>Incident ID</td>
+        <td style='padding:10px 12px;'>{$incidentId}</td>
+      </tr>
+      <tr>
+        <td style='padding:10px 12px;font-weight:600;'>Type</td>
+        <td style='padding:10px 12px;'>{$typeLabel}</td>
+      </tr>
+      <tr style='background:#f9f9f9;'>
+        <td style='padding:10px 12px;font-weight:600;'>Location</td>
+        <td style='padding:10px 12px;'>{$location}</td>
+      </tr>
+      <tr>
+        <td style='padding:10px 12px;font-weight:600;'>Time</td>
+        <td style='padding:10px 12px;'>{$timestamp}</td>
+      </tr>
+      <tr style='background:#f9f9f9;'>
+        <td style='padding:10px 12px;font-weight:600;'>Relationship</td>
+        <td style='padding:10px 12px;'>{$contact['relationship']}</td>
+      </tr>
+    </table>
+    <a href='{$mapsUrl}'
+       style='display:inline-block;background:#EF4444;color:#fff;text-decoration:none;
+              padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;'>
+      View on Google Maps
+    </a>
+    <p style='margin:24px 0 0;font-size:12px;color:#888;'>
+      This is an automated alert from SafeChain Barangay Emergency System.
+      Barangay responders have already been notified.
+    </p>
+  </div>
+</body>
+</html>";
+
+            $mail->AltBody = "{$residentName} triggered a {$typeLabel} alert. "
+                           . "Location: {$location}. Time: {$timestamp}. "
+                           . "View map: {$mapsUrl}";
+
+            $mail->send();
+
+            error_log("[SafeChain] Email sent to {$contact['email']} ({$contact['name']}) for incident {$incidentId}");
+
+        } catch (MailException $e) {
+            error_log("[SafeChain] Email failed for {$contact['email']}: {$mail->ErrorInfo}");
+        }
     }
 }
 
