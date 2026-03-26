@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SafeChain LoRa Gateway Bridge Server
-Updated for Multi-line Gateway Output (with Emojis)
+Updated for Dynamic Integer IDs, Multi-line Parsing, & NVS Commits
 """
 
 import serial
@@ -19,37 +19,18 @@ import os
 SERIAL_PORT = 'COM11'  
 BAUD_RATE = 115200
 
-# API Endpoints
 LOCAL_API = 'http://localhost/safechain/api/receive_incident.php'
 REMOTE_API = 'https://safechain.site/api/receive_incident.php'
+MODE = 'both'
 
-MODE = 'both'  # 'local', 'remote', or 'both'
-
-# Device ID mapping
-DEVICE_MAP = {
-    'FOB01': 'SC-KC-001',
-    'FOB02': 'SC-KC-002',
-    'FOB03': 'SC-KC-003',
-    'FOB04': 'SC-KC-004',
-    'FOB05': 'SC-KC-005',
-    'FOB06': 'SC-KC-006',
-    'FOB07': 'SC-KC-007',
-    'FOB08': 'SC-KC-008',
-    'FOB09': 'SC-KC-009',
-    'FOB10': 'SC-KC-010',
-}
-
-# Type mapping for API
 TYPE_MAP = {
     'FIRE': 'fire',
     'FLOOD': 'flood',
     'CRIME': 'crime',
-    'SOS': 'crime'
+    'SOS': 'crime',
+    'SAFE': 'safe'
 }
 
-# ============================================
-# QUEUE & DATABASE (Unchanged)
-# ============================================
 DB_FILE = 'offline_queue.db'
 
 def init_queue_db():
@@ -77,59 +58,61 @@ def add_to_queue(packet):
         return False
 
 # ============================================
-# PARSING LOGIC (COMPLETELY REWRITTEN)
+# PARSING LOGIC
 # ============================================
-
-# State variable to hold data while reading multiple lines
 current_alert_state = {
     'active': False,
-    'type': None,     # FIRE, FLOOD, etc.
-    'fob_id': None,   # FOB01
+    'type': None,
+    'fob_id': None,   # Stores integers like '105'
+    'event_id': None, # 🚀 NEW: Added to track the NVS ID
     'lat': None,
     'lng': None,
     'start_time': 0
 }
 
 def process_gateway_line(line):
-    """
-    Parses multi-line output.
-    Returns a PACKET dict if an alert is fully assembled, otherwise None.
-    """
     global current_alert_state
     
-    # 1. Detect Start of Alarm (Keywords in the emoji lines)
     if "FIRE ALARM" in line:
-        current_alert_state = {'active': True, 'type': 'FIRE', 'fob_id': None, 'lat': None, 'lng': None, 'start_time': time.time()}
+        current_alert_state = {'active': True, 'type': 'FIRE', 'fob_id': None, 'event_id': None, 'lat': None, 'lng': None, 'start_time': time.time()}
         return None
         
     if "FLOOD ALERT" in line:
-        current_alert_state = {'active': True, 'type': 'FLOOD', 'fob_id': None, 'lat': None, 'lng': None, 'start_time': time.time()}
+        current_alert_state = {'active': True, 'type': 'FLOOD', 'fob_id': None, 'event_id': None, 'lat': None, 'lng': None, 'start_time': time.time()}
         return None
 
-    # 2. Extract Data if inside an active alert block
+    if "CRIME ALERT" in line or "SOS ALERT" in line:
+        current_alert_state = {'active': True, 'type': 'CRIME', 'fob_id': None, 'event_id': None, 'lat': None, 'lng': None, 'start_time': time.time()}
+        return None
+
+    if "MARKED SAFE" in line:
+        current_alert_state = {'active': True, 'type': 'SAFE', 'fob_id': None, 'event_id': None, 'lat': None, 'lng': None, 'start_time': time.time()}
+        return None
+
     if current_alert_state['active']:
-        
-        # Check for timeout (if we found a header but no data for 2 seconds, reset)
         if time.time() - current_alert_state['start_time'] > 2:
             current_alert_state['active'] = False
             return None
 
-        # Extract Node ID (e.g., "NODE ID : FOB01")
+        # Dynamically grabs whatever follows "NODE ID :" (e.g. 105)
         if "NODE ID" in line:
-            match = re.search(r'(FOB\d+)', line)
-            if match:
-                current_alert_state['fob_id'] = match.group(1)
+            parts = line.split(':')
+            if len(parts) > 1:
+                current_alert_state['fob_id'] = parts[1].strip()
 
-        # Extract Location (e.g., "LOCATION : 14.123, 121.123")
+        # 🚀 NEW: Grab the Event ID so we can commit/delete it from the Gateway's memory
+        if "EVENT ID" in line or "EventID=" in line:
+            match = re.search(r'(?:EVENT ID\s*[:=]\s*|EventID=)(\d+)', line, re.IGNORECASE)
+            if match:
+                current_alert_state['event_id'] = match.group(1)
+
         if "LOCATION" in line:
             try:
-                # Split by ':' then by ','
                 coords_str = line.split(':')[1].strip()
                 lat_str, lng_str = coords_str.split(',')
                 current_alert_state['lat'] = float(lat_str)
                 current_alert_state['lng'] = float(lng_str)
                 
-                # TRIGGER CONDITION: We have Type, ID, and Location
                 if current_alert_state['fob_id'] and current_alert_state['lat'] is not None:
                     return finalize_packet()
                     
@@ -139,49 +122,40 @@ def process_gateway_line(line):
     return None
 
 def finalize_packet():
-    """Builds the final packet and resets state"""
     global current_alert_state
     
     fob_id = current_alert_state['fob_id']
+    event_id = current_alert_state['event_id']
     raw_type = current_alert_state['type']
     
-    # Map to real values
-    device_id = DEVICE_MAP.get(fob_id)
+    device_id = fob_id 
     button_type = TYPE_MAP.get(raw_type, 'crime')
     
-    packet = None
-    
-    if device_id:
-        packet = {
-            'device_id': device_id,
-            'type': 'INCIDENT',
-            'button': button_type,
-            'lat': current_alert_state['lat'],
-            'lng': current_alert_state['lng'],
-            'fob_id': fob_id,
-            'alert_type': raw_type,
-            'timestamp': int(time.time())
-        }
-    else:
-        print(f"⚠ Unknown FOB ID: {fob_id} (Not in DEVICE_MAP)")
+    packet = {
+        'device_id': device_id, 
+        'event_id': event_id if event_id else '0', # 🚀 NEW: Add event_id to the payload
+        'type': 'INCIDENT',
+        'button': button_type,
+        'lat': current_alert_state['lat'],
+        'lng': current_alert_state['lng'],
+        'fob_id': fob_id,
+        'alert_type': raw_type,
+        'timestamp': int(time.time())
+    }
 
-    # Reset state
-    current_alert_state = {'active': False, 'type': None, 'fob_id': None, 'lat': None, 'lng': None, 'start_time': 0}
+    current_alert_state = {'active': False, 'type': None, 'fob_id': None, 'event_id': None, 'lat': None, 'lng': None, 'start_time': 0}
     return packet
 
 # ============================================
 # API SENDING
 # ============================================
-
 def send_to_server(packet, api_url, name):
     try:
-        # Headers needed for Hostinger/Cloudflare
         headers = {
             'User-Agent': 'SafeChain-Gateway/1.0',
             'Content-Type': 'application/json'
         }
         
-        # Strip internal fields before sending
         api_payload = {
             'device_id': packet['device_id'],
             'type': packet['type'],
@@ -194,7 +168,7 @@ def send_to_server(packet, api_url, name):
         resp = requests.post(api_url, json=api_payload, headers=headers, timeout=10)
         
         if resp.status_code == 200 and resp.json().get('success'):
-            print(f"  ✓ {name} Success: Incident ID {resp.json().get('incident_id')}")
+            print(f"  ✓ {name} Success")
             return True
         else:
             print(f"  ✗ {name} Failed: {resp.text[:100]}")
@@ -206,7 +180,6 @@ def send_to_server(packet, api_url, name):
 # ============================================
 # MAIN
 # ============================================
-
 def main():
     init_queue_db()
     
@@ -218,7 +191,6 @@ def main():
         return
 
     print("📡 Listening for multi-line gateway packets...")
-    print("   (Waiting for 'FIRE ALARM' or 'FLOOD ALERT' headers)")
 
     while True:
         try:
@@ -227,25 +199,34 @@ def main():
                 if not raw_line: continue
                 
                 print(f"[Gateway] {raw_line}")
-                
-                # Process the line
                 packet = process_gateway_line(raw_line)
                 
                 if packet:
                     print("\n" + "="*50)
-                    print(f"📦 ALERT DETECTED: {packet['alert_type']} from {packet['fob_id']}")
+                    print(f"📦 ALERT DETECTED: {packet['alert_type']} from Node {packet['device_id']}")
                     
-                    if packet['lat'] == 0 and packet['lng'] == 0:
+                    if packet['lat'] == 0.0 and packet['lng'] == 0.0:
                         print("⚠ WARNING: GPS IS 0.0, 0.0 (No GPS Fix)")
-                        # We still send it, relying on resident address lookup in PHP
                     
-                    # Send
+                    securely_saved = False # Track if it made it to the server or local DB
+
                     if MODE in ['local', 'both']:
-                        send_to_server(packet, LOCAL_API, 'Local')
+                        if send_to_server(packet, LOCAL_API, 'Local'):
+                            securely_saved = True
                     if MODE in ['remote', 'both']:
-                        if not send_to_server(packet, REMOTE_API, 'Remote'):
-                            add_to_queue(packet)
-                            print("  📥 Saved to offline queue")
+                        if send_to_server(packet, REMOTE_API, 'Remote'):
+                            securely_saved = True
+                        else:
+                            if add_to_queue(packet):
+                                print("  📥 Saved to offline queue")
+                                securely_saved = True
+                    
+                    # 🚀 THE NVS WIPE: Tell the Gateway the data is safely on the server!
+                    if securely_saved and packet.get('event_id') and packet['event_id'] != '0':
+                        commit_cmd = f"commit {packet['device_id']} {packet['event_id']}\n"
+                        ser.write(commit_cmd.encode('utf-8'))
+                        print(f"  [Gateway] Sent confirmation: {commit_cmd.strip()}")
+                        
                     print("="*50 + "\n")
                     
         except KeyboardInterrupt:
