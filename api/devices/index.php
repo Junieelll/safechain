@@ -48,6 +48,7 @@ if ($method === 'GET' && $action === 'list') {
             d.name        AS device_name,
             d.bt_remote_id,
             d.battery,
+            d.status,
             d.created_at,
             r.resident_id,
             r.name        AS owner_name,
@@ -275,6 +276,66 @@ elseif ($method === 'POST' && $action === 'edit-lora') {
     } else {
         jsonError('Failed to update: ' . $conn->error, 500);
     }
+}
+
+// ── POST deactivate-node ──────────────────────────────────────────────────────
+elseif ($method === 'POST' && $action === 'deactivate-node') {
+
+    if ($role !== Roles::ADMIN)
+        jsonError('Only admins can deactivate node devices', 403);
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    $device_id = trim($input['device_id'] ?? '');
+
+    if (empty($device_id))
+        jsonError('device_id is required', 422);
+
+    // Confirm device exists and is a node (not a lora device)
+    $check = $conn->prepare("SELECT device_id, status FROM devices WHERE device_id = ? LIMIT 1");
+    $check->bind_param("s", $device_id);
+    $check->execute();
+    $node = $check->get_result()->fetch_assoc();
+    $check->close();
+
+    if (!$node)
+        jsonError('Node device not found', 404);
+
+    if ($node['status'] === 'deactivated')
+        jsonError('Device is already deactivated', 422);
+
+    $upd = $conn->prepare("UPDATE devices SET `status` = 'deactivated' WHERE device_id = ?");
+    $upd->bind_param("s", $device_id);
+    $upd->execute() ? jsonSuccess(null, 'Node device deactivated') : jsonError('Failed to deactivate', 500);
+}
+
+// ── POST reactivate-node ──────────────────────────────────────────────────────
+elseif ($method === 'POST' && $action === 'reactivate-node') {
+
+    if ($role !== Roles::ADMIN)
+        jsonError('Only admins can reactivate node devices', 403);
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    $device_id = trim($input['device_id'] ?? '');
+
+    if (empty($device_id))
+        jsonError('device_id is required', 422);
+
+    $check = $conn->prepare("SELECT device_id, status FROM devices WHERE device_id = ? LIMIT 1");
+    $check->bind_param("s", $device_id);
+    $check->execute();
+    $node = $check->get_result()->fetch_assoc();
+    $check->close();
+
+    if (!$node)
+        jsonError('Node device not found', 404);
+
+    if ($node['status'] === 'active')
+        jsonError('Device is already active', 422);
+
+    $upd = $conn->prepare("UPDATE devices SET `status` = 'active' WHERE device_id = ?");
+    $upd->bind_param("s", $device_id);
+    $upd->execute() ? jsonSuccess(null, 'Node device reactivated') : jsonError('Failed to reactivate', 500);
+
 } else {
     jsonError('Invalid action or method', 405);
 }

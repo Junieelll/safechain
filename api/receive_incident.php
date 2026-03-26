@@ -31,12 +31,16 @@ foreach ($required as $field) {
     }
 }
 
-// Get resident info from device_id
+// Get device + resident info joined from the devices side
 $device_id = mysqli_real_escape_string($conn, $data['device_id']);
-$query = "SELECT resident_id, name, address, contact 
-              FROM residents 
-              WHERE device_id = '$device_id' AND is_archived = 0 
-              LIMIT 1";
+$query = "SELECT d.status AS device_status,
+                 r.resident_id, r.name, r.address, r.contact,
+                 r.status AS resident_status, r.false_report_count
+          FROM devices d
+          LEFT JOIN residents r ON d.resident_id = r.resident_id
+          WHERE d.device_id = '$device_id'
+            AND (r.is_archived = 0 OR r.is_archived IS NULL)
+          LIMIT 1";
 $result = mysqli_query($conn, $query);
 
 if (!$result || mysqli_num_rows($result) == 0) {
@@ -47,7 +51,37 @@ if (!$result || mysqli_num_rows($result) == 0) {
     exit;
 }
 
-$resident = mysqli_fetch_assoc($result);
+$row = mysqli_fetch_assoc($result);
+
+// Deactivated device — hard reject, no incident created
+if ($row['device_status'] === 'deactivated') {
+    echo json_encode([
+        'success' => false,
+        'message' => "Device '$device_id' is deactivated",
+    ]);
+    exit;
+}
+
+// Device unlinked (resident_id is NULL) — drop silently
+if (empty($row['resident_id'])) {
+    echo json_encode([
+        'success' => false,
+        'message' => "Device '$device_id' is not linked to any resident",
+    ]);
+    exit;
+}
+
+$resident = $row;
+
+// Restricted resident — too many false reports, reject incoming signal
+if ($row['resident_status'] === 'restricted') {
+    echo json_encode([
+        'success'  => false,
+        'message'  => "Resident is restricted due to {$row['false_report_count']} false report(s)",
+        'priority' => 'restricted',
+    ]);
+    exit;
+}
 
 // ── Geofence check ────────────────────────────────────────────────────────
 // Read the setting once here so both handlers can use it
@@ -407,6 +441,18 @@ function handleNewIncident($conn, $data, $resident, bool $geofenceEnabled = fals
 
 function handleGPSUpdate($conn, $data, $resident)
 {
+    // Gate: deactivated device cannot update GPS
+    if ($resident['device_status'] === 'deactivated') {
+        echo json_encode(['success' => false, 'message' => 'Device is deactivated']);
+        return;
+    }
+
+    // Gate: restricted resident cannot update GPS
+    if ($resident['resident_status'] === 'restricted') {
+        echo json_encode(['success' => false, 'message' => 'Resident is restricted']);
+        return;
+    }
+
     $reporter_id = mysqli_real_escape_string($conn, $resident['resident_id']);
     $device_id = mysqli_real_escape_string($conn, $data['device_id']);
 

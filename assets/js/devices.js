@@ -117,6 +117,7 @@ const statusPill = (s) =>
     active: `<span class="text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">Active</span>`,
     inactive: `<span class="text-xs font-medium text-red-500 bg-red-50 dark:bg-red-900/40 px-2 py-0.5 rounded-full">Inactive</span>`,
     maintenance: `<span class="text-xs font-medium text-yellow-600 bg-yellow-50 dark:bg-yellow-900/40 px-2 py-0.5 rounded-full">Maintenance</span>`,
+    missing: `<span class="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded-full flex items-center gap-1" style="animation:missingPulse 1.4s ease-in-out infinite;box-shadow:0 0 0 0 rgba(239,68,68,0.7);letter-spacing:0.04em;"><i class="uil uil-exclamation-circle" style="font-size:12px;"></i>MISSING</span>`,
   })[s] || "";
 
 const batteryColor = (b) =>
@@ -319,7 +320,7 @@ function gridCard(d) {
           <h3 class="text-sm font-semibold text-gray-800 dark:text-neutral-300">${d.device_id}</h3>
           <div class="flex items-center gap-2 mt-1">
             <span class="text-xs text-gray-400 dark:text-neutral-400">${typeLabel}</span>
-            ${!isNode ? statusPill(d.status) : ""}
+            ${!isNode ? statusPill(d.status) : (d.status === "missing" ? statusPill("missing") : "")}
           </div>
         </div>
       </div>
@@ -382,8 +383,12 @@ function confirmReactivate(raw) {
       class: "bg-emerald-500 hover:bg-emerald-600",
     },
     secondaryButton: { text: "Cancel" },
-    onPrimary: () => {
-      doReactivateLora(d.id);
+    onPrimary: async () => {
+      if (d._kind === "node") {
+        await doReactivateNode(d.device_id);
+      } else {
+        await doReactivateLora(d.id);
+      }
       return false;
     },
     onSecondary: () => modalManager.close("reactivateModal"),
@@ -849,7 +854,7 @@ function listCard(d) {
           <h3 class="text-sm font-semibold text-gray-800 dark:text-neutral-300">${d.device_id}</h3>
           <div class="flex items-center gap-2 mt-0.5">
             <span class="text-xs text-gray-400 dark:text-neutral-400">${typeLabel}</span>
-            ${!isNode ? statusPill(d.status) : ""}
+            ${!isNode ? statusPill(d.status) : (d.status === "missing" ? statusPill("missing") : "")}
           </div>
         </div>
         <div class="hidden md:flex items-center gap-10">
@@ -1216,10 +1221,11 @@ function confirmDeactivate(raw) {
     secondaryButton: { text: "Cancel" },
     onPrimary: async () => {
       modalManager.close("deactivateModal");
-      if (!isNode) {
+      if (isNode) {
+        await doDeactivateNode(d.device_id);
+      } else {
         await doDeactivateLora(d.id);
       }
-      // Node device deactivation: add your own endpoint if needed
     },
     onSecondary: () => modalManager.close("deactivateModal"),
   });
@@ -1242,6 +1248,47 @@ async function doDeactivateLora(id) {
     }
   } catch {
     showToast("Network error", "error");
+  }
+}
+
+async function doDeactivateNode(device_id) {
+  try {
+    const res = await fetch(`${API}?action=deactivate-node`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device_id }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      showToast("success", "Node device deactivated");
+      fetchDevices();
+    } else {
+      showToast("error", json.message || "Failed to deactivate");
+    }
+  } catch {
+    showToast("error", "Network error");
+  }
+}
+
+async function doReactivateNode(device_id) {
+  try {
+    const res = await fetch(`${API}?action=reactivate-node`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device_id }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      modalManager.close("reactivateModal");
+      showToast("success", "Node device reactivated");
+      fetchDevices();
+    } else {
+      showToast("error", json.message || "Failed to reactivate");
+      modalManager.setButtonLoading("reactivateModal", "primary", false);
+    }
+  } catch {
+    showToast("error", "Network error");
+    modalManager.setButtonLoading("reactivateModal", "primary", false);
   }
 }
 
@@ -1744,6 +1791,16 @@ const activeDropdownClasses = [
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
+  const missingStyle = document.createElement("style");
+  missingStyle.textContent = `
+    @keyframes missingPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); background-color: rgb(239,68,68); }
+      50%  { box-shadow: 0 0 0 6px rgba(239,68,68,0); background-color: rgb(220,38,38); }
+      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0);   background-color: rgb(239,68,68); }
+    }
+  `;
+  document.head.appendChild(missingStyle);
+
   document.getElementById("devicesContainer").style.transition =
     "opacity 0.3s ease-in-out";
   const dropBtn = document.getElementById("sortDropdownButton");
