@@ -1612,7 +1612,20 @@ function _handleQr(raw) {
   }
   const flash = document.getElementById("_qrSuccessFlash");
   const ftxt  = document.getElementById("_qrSuccessTxt");
-  if (flash) { if (ftxt) ftxt.textContent = mac; flash.classList.remove("hidden"); setTimeout(() => flash?.classList.add("hidden"), 1800); }
+  if (flash) {
+    if (ftxt) ftxt.textContent = mac;
+    flash.classList.remove("hidden");
+    setTimeout(() => {
+      flash?.classList.add("hidden");
+      // Hide the camera viewport — show the scanned result box instead
+      if (_qrActiveTab === "desktopCam") {
+        const camWrap = document.querySelector("#nodePanel_desktopCam .relative.bg-black");
+        const camSel  = document.querySelector("#nodePanel_desktopCam .flex.items-center.gap-2");
+        if (camWrap) camWrap.classList.add("hidden");
+        if (camSel)  camSel.classList.add("hidden");
+      }
+    }, 1800);
+  }
   _showScanned(mac, batch, extra);
 }
 
@@ -1638,7 +1651,14 @@ function _clearScan() {
   if (box) box.classList.add("hidden");
   const mi = document.getElementById("_manualMac");
   if (mi) mi.value = "";
-  if (_qrActiveTab === "desktopCam") _startQr();
+  if (_qrActiveTab === "desktopCam") {
+    // Restore the camera viewport that was hidden after a successful scan
+    const camWrap = document.querySelector("#nodePanel_desktopCam .relative.bg-black");
+    const camSel  = document.querySelector("#nodePanel_desktopCam .flex.items-center.gap-2");
+    if (camWrap) camWrap.classList.remove("hidden");
+    if (camSel)  camSel.classList.remove("hidden");
+    _startQr();
+  }
 }
 
 // ── Phone relay ───────────────────────────────────────────────────────────────
@@ -1676,9 +1696,21 @@ async function _initPhoneRelay() {
       const json = await res.json();
       if (json.success && json.mac) {
         _clearPhoneRelay();
+        // Replace the QR code div with a success indicator so the user
+        // knows the scan was received — stay on the phoneCam tab
+        const container = document.getElementById("_phoneQrDiv");
+        if (container) {
+          container.innerHTML = `
+            <div class="flex flex-col items-center gap-2 py-2">
+              <div class="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center">
+                <i class="uil uil-check text-white text-3xl"></i>
+              </div>
+              <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Phone scan received!</p>
+            </div>`;
+        }
+        const statusEl = document.getElementById("_phoneQrStatus");
+        if (statusEl) statusEl.textContent = "";
         _handleQr(json.mac);
-        // Switch to the manual tab so the user sees the scanned result clearly
-        _nodeTab('manual');
       }
     } catch {}
   }, 2000);
