@@ -1293,6 +1293,437 @@ async function doReactivateNode(device_id) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ADD DEVICE — picker modal (choose LoRa vs SafeChain node)
+// ─────────────────────────────────────────────────────────────────────────────
+function openAddDeviceModal() {
+  modalManager.create({
+    id: "addDevicePickerModal",
+    icon: "uil-plus-circle",
+    iconColor: "text-emerald-600",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/60",
+    title: "Add Device",
+    subtitle: "Choose the type of device to register",
+    body: `
+      <div class="grid grid-cols-2 gap-4 mt-2">
+        <button onclick="openAddNodeModal()"
+          class="group flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-neutral-200 dark:border-neutral-600
+                 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all cursor-pointer">
+          <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+            <i class="uil uil-mobile-android text-3xl text-white"></i>
+          </div>
+          <div class="text-center">
+            <p class="text-sm font-semibold text-gray-800 dark:text-neutral-200">SafeChain Node</p>
+            <p class="text-xs text-gray-400 dark:text-neutral-400 mt-1">Keychain ESP32 device — scan QR to authorize</p>
+          </div>
+          <span class="text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1">
+            <i class="uil uil-qrcode-scan text-base"></i> Scan QR
+          </span>
+        </button>
+        <button onclick="_openLoraFromPicker()"
+          class="group flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-neutral-200 dark:border-neutral-600
+                 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all cursor-pointer">
+          <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+            <i class="uil uil-wifi-router text-3xl text-white"></i>
+          </div>
+          <div class="text-center">
+            <p class="text-sm font-semibold text-gray-800 dark:text-neutral-200">LoRa Device</p>
+            <p class="text-xs text-gray-400 dark:text-neutral-400 mt-1">Gateway or repeater — configure location & frequency</p>
+          </div>
+          <span class="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+            <i class="uil uil-map-marker text-base"></i> Pin on Map
+          </span>
+        </button>
+      </div>`,
+    primaryButton: null,
+    secondaryButton: { text: "Cancel" },
+    onSecondary: () => modalManager.close("addDevicePickerModal"),
+  });
+  modalManager.show("addDevicePickerModal");
+}
+
+function _openLoraFromPicker() {
+  modalManager.close("addDevicePickerModal");
+  setTimeout(() => openAddLoraModal(), 150);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// QR SCANNER STATE
+// ─────────────────────────────────────────────────────────────────────────────
+let _qrStream       = null;
+let _qrAnimFrame    = null;
+let _qrScanned      = false;
+let _qrActiveTab    = "desktopCam";
+let _phoneSessionId = null;
+let _phoneTimer     = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADD SAFECHAIN NODE MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+function openAddNodeModal() {
+  modalManager.close("addDevicePickerModal");
+  _qrScanned = false;
+  _qrActiveTab = "desktopCam";
+  _phoneSessionId = null;
+
+  setTimeout(() => {
+    modalManager.create({
+      id: "addNodeModal",
+      icon: "uil-qrcode-scan",
+      iconColor: "text-blue-600",
+      iconBg: "bg-blue-100 dark:bg-blue-900/60",
+      title: "Authorize SafeChain Node",
+      subtitle: "Scan the QR code on the device or its packaging",
+      body: `
+        <div class="space-y-4">
+          <!-- Tab switcher -->
+          <div class="flex bg-[#F1F5F9] dark:bg-neutral-700 rounded-xl p-1 gap-1">
+            <button id="nodeTab_desktopCam" onclick="_nodeTab('desktopCam')"
+              class="flex-1 py-2 text-xs font-semibold rounded-lg transition-all bg-white dark:bg-neutral-600 text-gray-800 dark:text-neutral-200 shadow">
+              <i class="uil uil-webcam mr-1"></i>Desktop Camera
+            </button>
+            <button id="nodeTab_phoneCam" onclick="_nodeTab('phoneCam')"
+              class="flex-1 py-2 text-xs font-semibold rounded-lg transition-all text-gray-500 dark:text-neutral-400">
+              <i class="uil uil-mobile-android mr-1"></i>Use Phone
+            </button>
+            <button id="nodeTab_manual" onclick="_nodeTab('manual')"
+              class="flex-1 py-2 text-xs font-semibold rounded-lg transition-all text-gray-500 dark:text-neutral-400">
+              <i class="uil uil-keyboard mr-1"></i>Manual
+            </button>
+          </div>
+
+          <!-- Desktop Camera Panel -->
+          <div id="nodePanel_desktopCam" class="space-y-3">
+            <div class="relative bg-black rounded-2xl overflow-hidden" style="aspect-ratio:4/3;">
+              <video id="_qrVideo" autoplay playsinline muted class="w-full h-full object-cover"></video>
+              <canvas id="_qrCanvas" class="hidden absolute inset-0 w-full h-full"></canvas>
+              <div id="_qrOverlay" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <div class="relative w-52 h-52">
+                  <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg"></div>
+                  <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg"></div>
+                  <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg"></div>
+                  <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-400 rounded-br-lg"></div>
+                  <div style="position:absolute;left:8px;right:8px;height:2px;background:linear-gradient(90deg,transparent,#34d399,transparent);animation:_scanLine 2s ease-in-out infinite;"></div>
+                </div>
+                <p class="mt-3 text-xs text-white/70 bg-black/40 px-3 py-1 rounded-full">Point camera at QR code</p>
+              </div>
+              <div id="_qrNoCam" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-neutral-900 gap-3 p-4">
+                <i class="uil uil-camera-slash text-5xl text-neutral-500"></i>
+                <p class="text-sm text-white font-medium text-center">Camera not available</p>
+                <p class="text-xs text-neutral-400 text-center">Try "Use Phone" or enter MAC manually</p>
+              </div>
+              <div id="_qrSuccessFlash" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-emerald-500/90 gap-2">
+                <i class="uil uil-check-circle text-6xl text-white"></i>
+                <p class="text-white font-bold text-sm" id="_qrSuccessTxt"></p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-gray-500 dark:text-neutral-400 shrink-0">Camera:</label>
+              <select id="_camSelect" class="flex-1 text-xs bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-lg px-2 py-1.5 border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"></select>
+              <button onclick="_startQr()" id="_startQrBtn" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shrink-0">
+                <i class="uil uil-play"></i> Start
+              </button>
+            </div>
+          </div>
+
+          <!-- Phone Camera Panel -->
+          <div id="nodePanel_phoneCam" class="hidden space-y-3">
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 text-xs text-blue-700 dark:text-blue-300">
+              <i class="uil uil-info-circle mr-1"></i>
+              Scan the QR below with your phone. Your phone will open a scanner page — use it to scan the device QR and the result will appear here automatically.
+            </div>
+            <div class="flex flex-col items-center gap-3 py-3">
+              <div id="_phoneQrDiv" class="bg-white p-3 rounded-xl shadow-md inline-block"></div>
+              <p id="_phoneQrStatus" class="text-xs text-gray-500 dark:text-neutral-400 text-center">Generating link…</p>
+              <div id="_phonePolling" class="hidden flex items-center gap-2 text-xs text-emerald-600">
+                <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div> Waiting for phone scan…
+              </div>
+            </div>
+          </div>
+
+          <!-- Manual Panel -->
+          <div id="nodePanel_manual" class="hidden space-y-3">
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-700 dark:text-amber-300">
+              <i class="uil uil-exclamation-triangle mr-1"></i>
+              Enter the Bluetooth MAC address printed on the device label (AA:BB:CC:DD:EE:FF)
+            </div>
+            <div>
+              <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">MAC Address *</label>
+              <input id="_manualMac" type="text" placeholder="AA:BB:CC:DD:EE:FF" maxlength="17"
+                class="w-full px-3 py-2.5 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-xl text-sm font-mono border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400 uppercase"
+                oninput="_fmtMac(this)" />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-gray-600 dark:text-neutral-400 uppercase mb-1 block">Batch Number <span class="font-normal normal-case text-gray-400">(optional)</span></label>
+              <input id="_manualBatch" type="text" placeholder="e.g. BATCH-202506"
+                class="w-full px-3 py-2.5 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-xl text-sm border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+          </div>
+
+          <!-- Scanned result (all tabs) -->
+          <div id="_scannedBox" class="hidden bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-300 dark:border-emerald-700 rounded-xl p-4">
+            <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase mb-1 flex items-center gap-2">
+              <i class="uil uil-check-circle text-base"></i> Device Detected
+            </p>
+            <p class="text-sm font-mono font-bold text-gray-800 dark:text-neutral-200" id="_scannedMac">—</p>
+            <p class="text-xs text-gray-400 dark:text-neutral-400 mt-1" id="_scannedExtra"></p>
+            <button onclick="_clearScan()" class="mt-2 text-xs text-red-400 hover:text-red-600 transition">
+              <i class="uil uil-times-circle"></i> Clear & re-scan
+            </button>
+          </div>
+
+          <div id="_nodeErr" class="hidden text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2"></div>
+        </div>
+        <style>
+          @keyframes _scanLine {
+            0%   { top:8px; opacity:0; }
+            10%  { opacity:1; }
+            90%  { opacity:1; }
+            100% { top:calc(100% - 10px); opacity:0; }
+          }
+        </style>`,
+      primaryButton: { text: "Authorize Device", icon: "uil-shield-check", class: "bg-blue-600 hover:bg-blue-700" },
+      secondaryButton: { text: "Cancel" },
+      onPrimary: () => { _submitNode(); return false; },
+      onSecondary: () => { _stopQr(); _clearPhoneRelay(); modalManager.close("addNodeModal"); },
+    });
+
+    modalManager.show("addNodeModal");
+    setTimeout(() => _initNodeModal(), 200);
+  }, 150);
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function _nodeTab(tab) {
+  _qrActiveTab = tab;
+  ["desktopCam", "phoneCam", "manual"].forEach((t) => {
+    const btn   = document.getElementById(`nodeTab_${t}`);
+    const panel = document.getElementById(`nodePanel_${t}`);
+    if (!btn || !panel) return;
+    const active = t === tab;
+    btn.classList.toggle("bg-white",              active);
+    btn.classList.toggle("dark:bg-neutral-600",   active);
+    btn.classList.toggle("text-gray-800",         active);
+    btn.classList.toggle("dark:text-neutral-200", active);
+    btn.classList.toggle("shadow",                active);
+    btn.classList.toggle("text-gray-500",         !active);
+    btn.classList.toggle("dark:text-neutral-400", !active);
+    panel.classList.toggle("hidden",              !active);
+  });
+  if (tab !== "desktopCam") _stopQr();
+  if (tab === "phoneCam")   _initPhoneRelay();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function _initNodeModal() {
+  await _populateCams();
+  _startQr();
+}
+
+async function _populateCams() {
+  const sel = document.getElementById("_camSelect");
+  if (!sel) return;
+  try {
+    const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
+    tmp.getTracks().forEach((t) => t.stop());
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    const cams = devs.filter((d) => d.kind === "videoinput");
+    sel.innerHTML = cams.length
+      ? cams.map((c, i) => `<option value="${c.deviceId}">${c.label || "Camera " + (i + 1)}</option>`).join("")
+      : `<option value="">No cameras found</option>`;
+  } catch {
+    sel.innerHTML = `<option value="">Camera access denied</option>`;
+  }
+}
+
+// ── QR scanner ────────────────────────────────────────────────────────────────
+async function _startQr() {
+  _stopQr();
+  _qrScanned = false;
+  const video  = document.getElementById("_qrVideo");
+  const noCam  = document.getElementById("_qrNoCam");
+  const overlay= document.getElementById("_qrOverlay");
+  const btn    = document.getElementById("_startQrBtn");
+  const sel    = document.getElementById("_camSelect");
+  if (!video) return;
+  const deviceId = sel?.value;
+  try {
+    _qrStream = await navigator.mediaDevices.getUserMedia({
+      video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: "environment" },
+    });
+    video.srcObject = _qrStream;
+    await video.play();
+    if (overlay) overlay.classList.remove("hidden");
+    if (noCam)   noCam.classList.add("hidden");
+    if (btn) { btn.innerHTML = `<i class="uil uil-stop-circle"></i> Stop`; btn.onclick = _stopQr; }
+    _qrLoop();
+  } catch {
+    if (noCam)   noCam.classList.remove("hidden");
+    if (overlay) overlay.classList.add("hidden");
+  }
+}
+
+function _qrLoop() {
+  const video  = document.getElementById("_qrVideo");
+  const canvas = document.getElementById("_qrCanvas");
+  if (!video || !canvas || _qrScanned || !window.jsQR) return;
+  const ctx = canvas.getContext("2d");
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const img  = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = window.jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" });
+    if (code) { _handleQr(code.data); return; }
+  }
+  _qrAnimFrame = requestAnimationFrame(_qrLoop);
+}
+
+function _stopQr() {
+  if (_qrAnimFrame) { cancelAnimationFrame(_qrAnimFrame); _qrAnimFrame = null; }
+  if (_qrStream)    { _qrStream.getTracks().forEach((t) => t.stop()); _qrStream = null; }
+  const btn = document.getElementById("_startQrBtn");
+  if (btn) { btn.innerHTML = `<i class="uil uil-play"></i> Start`; btn.onclick = _startQr; }
+}
+
+// ── Parse QR ──────────────────────────────────────────────────────────────────
+function _handleQr(raw) {
+  if (_qrScanned) return;
+  _qrScanned = true;
+  _stopQr();
+  let mac = "", batch = "", extra = "";
+  try {
+    const p = JSON.parse(raw);
+    mac   = (p.mac || p.bt_mac || p.address || "").toUpperCase();
+    batch = p.batch || p.batch_number || "";
+    extra = p.model ? "Model: " + p.model : "";
+  } catch {
+    const u = raw.trim().toUpperCase();
+    let s = u;
+    for (const pfx of ["SC:", "SAFECHAIN:"]) { if (u.startsWith(pfx)) { s = u.slice(pfx.length); break; } }
+    mac = s.replace(/[^A-F0-9]/g, "").match(/.{1,2}/g)?.join(":") ?? s;
+  }
+  if (!_validMac(mac)) {
+    _nodeErr(`Invalid QR: "${raw.slice(0, 50)}"`);
+    _qrScanned = false;
+    setTimeout(() => _startQr(), 1500);
+    return;
+  }
+  const flash = document.getElementById("_qrSuccessFlash");
+  const ftxt  = document.getElementById("_qrSuccessTxt");
+  if (flash) { if (ftxt) ftxt.textContent = mac; flash.classList.remove("hidden"); setTimeout(() => flash?.classList.add("hidden"), 1800); }
+  _showScanned(mac, batch, extra);
+}
+
+function _validMac(mac) { return /^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(mac); }
+
+function _showScanned(mac, batch, extra) {
+  const box = document.getElementById("_scannedBox");
+  const mel = document.getElementById("_scannedMac");
+  const eel = document.getElementById("_scannedExtra");
+  if (mel) mel.textContent = mac;
+  if (eel) eel.textContent = [batch ? "Batch: " + batch : "", extra].filter(Boolean).join("  ·  ");
+  if (box) box.classList.remove("hidden");
+  const mi = document.getElementById("_manualMac");
+  const bi = document.getElementById("_manualBatch");
+  if (mi) mi.value = mac;
+  if (bi && batch) bi.value = batch;
+  _hideNodeErr();
+}
+
+function _clearScan() {
+  _qrScanned = false;
+  const box = document.getElementById("_scannedBox");
+  if (box) box.classList.add("hidden");
+  const mi = document.getElementById("_manualMac");
+  if (mi) mi.value = "";
+  if (_qrActiveTab === "desktopCam") _startQr();
+}
+
+// ── Phone relay ───────────────────────────────────────────────────────────────
+async function _initPhoneRelay() {
+  _clearPhoneRelay();
+  const container = document.getElementById("_phoneQrDiv");
+  const statusEl  = document.getElementById("_phoneQrStatus");
+  const pollEl    = document.getElementById("_phonePolling");
+  if (!container) return;
+  _phoneSessionId = "sc-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+  const base      = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, "");
+  const phoneUrl  = `${base}/qr-scan-relay.php?session=${_phoneSessionId}`;
+  container.innerHTML = "";
+  if (window.QRCode) {
+    try { new window.QRCode(container, { text: phoneUrl, width: 180, height: 180, correctLevel: window.QRCode.CorrectLevel.M }); } catch {}
+  } else {
+    container.innerHTML = `<p class="text-xs text-gray-500">QR lib not loaded</p>`;
+  }
+  if (statusEl) statusEl.innerHTML = `Scan with phone, then scan the device QR.<br><a href="${phoneUrl}" target="_blank" class="text-blue-500 text-[10px] break-all hover:underline">${phoneUrl}</a>`;
+  if (pollEl) pollEl.classList.remove("hidden");
+  _phoneTimer = setInterval(async () => {
+    try {
+      const res  = await fetch(`api/devices/qr_relay.php?session=${_phoneSessionId}`);
+      const json = await res.json();
+      if (json.success && json.mac) { _clearPhoneRelay(); _handleQr(json.mac); }
+    } catch {}
+  }, 2000);
+}
+
+function _clearPhoneRelay() {
+  if (_phoneTimer) { clearInterval(_phoneTimer); _phoneTimer = null; }
+  _phoneSessionId = null;
+  const pollEl = document.getElementById("_phonePolling");
+  if (pollEl) pollEl.classList.add("hidden");
+}
+
+// ── Submit ────────────────────────────────────────────────────────────────────
+async function _submitNode() {
+  const box = document.getElementById("_scannedBox");
+  const mel = document.getElementById("_scannedMac");
+  const mi  = document.getElementById("_manualMac");
+  const bi  = document.getElementById("_manualBatch");
+  let mac = "", batch = "";
+  if (box && !box.classList.contains("hidden") && mel) {
+    mac = mel.textContent.trim().toUpperCase();
+    const ext = document.getElementById("_scannedExtra")?.textContent || "";
+    batch = ext.includes("Batch:") ? ext.split("Batch:")[1].trim().split("·")[0].trim() : "";
+  }
+  if (!mac && _qrActiveTab === "manual" && mi) {
+    mac   = mi.value.trim().toUpperCase().replace(/[^A-F0-9]/g, "").match(/.{1,2}/g)?.join(":") ?? "";
+    batch = bi?.value.trim() || "";
+  }
+  if (!_validMac(mac)) {
+    _nodeErr("Please scan a valid QR code or enter a MAC address (AA:BB:CC:DD:EE:FF).");
+    modalManager.setButtonLoading("addNodeModal", "primary", false);
+    return;
+  }
+  try {
+    const res  = await fetch(`${API}?action=authorize-node`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bt_remote_id: mac, batch_number: batch || undefined }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      _stopQr(); _clearPhoneRelay();
+      modalManager.close("addNodeModal");
+      showToast("success", `Device ${mac} authorized! Resident can now pair it.`);
+      fetchDevices();
+    } else {
+      _nodeErr(json.message || "Failed to authorize device.");
+      modalManager.setButtonLoading("addNodeModal", "primary", false);
+    }
+  } catch {
+    _nodeErr("Network error — please try again.");
+    modalManager.setButtonLoading("addNodeModal", "primary", false);
+  }
+}
+
+function _nodeErr(msg) { const e = document.getElementById("_nodeErr"); if (e) { e.textContent = msg; e.classList.remove("hidden"); } }
+function _hideNodeErr() { const e = document.getElementById("_nodeErr"); if (e) e.classList.add("hidden"); }
+function _fmtMac(input) {
+  let v = input.value.replace(/[^0-9A-Fa-f]/g, "").toUpperCase();
+  v = v.match(/.{1,2}/g)?.join(":") ?? v;
+  input.value = v.slice(0, 17);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ADD LORA MODAL  (Leaflet map + Nominatim reverse geocode)
 // ─────────────────────────────────────────────────────────────────────────────
 function openAddLoraModal() {

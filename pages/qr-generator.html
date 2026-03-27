@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeChain — Test QR Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.10);
+      padding: 32px;
+      max-width: 520px;
+      width: 100%;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #ecfdf5; color: #059669;
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      padding: 4px 10px; border-radius: 20px; margin-bottom: 12px;
+    }
+    h1 { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    p  { font-size: 13px; color: #64748b; margin-bottom: 24px; line-height: 1.5; }
+
+    label { display: block; font-size: 11px; font-weight: 700; color: #374151;
+            text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .field { margin-bottom: 16px; }
+    input, select {
+      width: 100%; padding: 10px 14px; border: 2px solid #e2e8f0;
+      border-radius: 12px; font-size: 13px; color: #0f172a;
+      font-family: inherit; outline: none; transition: border-color .15s;
+    }
+    input:focus, select:focus { border-color: #27C291; }
+    input[type="text"] { font-family: monospace; letter-spacing: 1px; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .btn {
+      width: 100%; padding: 12px; border: none; border-radius: 14px;
+      background: linear-gradient(135deg, #27C291, #20A577);
+      color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: opacity .15s, transform .1s;
+      margin-top: 4px;
+    }
+    .btn:hover { opacity: .9; }
+    .btn:active { transform: scale(.98); }
+    .btn-outline {
+      background: #f1f5f9; color: #64748b; margin-top: 8px;
+    }
+
+    .qr-section {
+      display: none;
+      flex-direction: column; align-items: center;
+      margin-top: 28px; padding-top: 24px;
+      border-top: 2px dashed #e2e8f0;
+    }
+    .qr-section.show { display: flex; }
+    .qr-title { font-size: 12px; font-weight: 700; color: #27C291;
+                text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    #qrOutput {
+      background: #fff; padding: 12px; border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.12);
+      display: inline-block;
+    }
+    .qr-meta {
+      margin-top: 14px; text-align: center;
+      font-family: monospace; font-size: 15px; font-weight: 800;
+      color: #0f172a; letter-spacing: 1px;
+    }
+    .qr-sub { font-size: 11px; color: #94a3b8; margin-top: 4px; font-family: sans-serif; }
+
+    .samples {
+      margin-top: 24px; padding: 16px;
+      background: #f8fafc; border-radius: 14px;
+    }
+    .samples h3 { font-size: 12px; font-weight: 700; color: #374151;
+                  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+    .sample-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 0; border-bottom: 1px solid #e2e8f0; cursor: pointer;
+    }
+    .sample-item:last-child { border: none; }
+    .sample-mac { font-family: monospace; font-size: 13px; font-weight: 600; color: #0f172a; }
+    .sample-label { font-size: 11px; color: #94a3b8; }
+    .use-btn {
+      font-size: 11px; color: #27C291; font-weight: 700;
+      background: #ecfdf5; border: none; padding: 4px 10px;
+      border-radius: 8px; cursor: pointer;
+    }
+
+    .format-note {
+      background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px;
+      padding: 12px 14px; font-size: 12px; color: #92400e; margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    code { background: #fef3c7; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="badge">🔧 Dev Tool</div>
+  <h1>SafeChain QR Generator</h1>
+  <p>Generate test QR codes to authorize SafeChain Node devices without real hardware.<br>
+     Print or display them on screen, then scan with the admin dashboard.</p>
+
+  <div class="format-note">
+    <strong>QR Format:</strong> The scanner accepts several formats:<br>
+    • <code>SC:AA:BB:CC:DD:EE:FF</code> — simple prefix format<br>
+    • <code>{"mac":"AA:BB:CC:DD:EE:FF","batch":"BATCH-202506"}</code> — JSON<br>
+    • Plain MAC: <code>AA:BB:CC:DD:EE:FF</code>
+  </div>
+
+  <div class="field">
+    <label>Bluetooth MAC Address</label>
+    <input type="text" id="macInput" placeholder="AA:BB:CC:DD:EE:FF" maxlength="17"
+           oninput="formatMac(this)" value="AA:BB:CC:DD:EE:01" />
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <label>Batch Number</label>
+      <input type="text" id="batchInput" placeholder="e.g. BATCH-202506" />
+    </div>
+    <div class="field">
+      <label>Model</label>
+      <input type="text" id="modelInput" placeholder="e.g. KC-ESP32-C3" />
+    </div>
+  </div>
+
+  <div class="field">
+    <label>QR Format</label>
+    <select id="formatSelect">
+      <option value="prefix">SC: prefix  (SC:AA:BB:CC:DD:EE:FF)</option>
+      <option value="json" selected>JSON  (recommended)</option>
+      <option value="plain">Plain MAC only</option>
+    </select>
+  </div>
+
+  <button class="btn" onclick="generateQR()">Generate QR Code</button>
+
+  <!-- QR Output -->
+  <div class="qr-section" id="qrSection">
+    <div class="qr-title">✓ QR Code Ready — Scan with Admin Dashboard</div>
+    <div id="qrOutput"></div>
+    <div class="qr-meta" id="qrMac"></div>
+    <div class="qr-sub" id="qrRaw"></div>
+    <button class="btn btn-outline" onclick="printQR()">🖨 Print / Save as Image</button>
+  </div>
+
+  <!-- Sample MACs -->
+  <div class="samples">
+    <h3>Sample Test MACs</h3>
+    <div class="sample-item" onclick="useSample('AA:BB:CC:DD:EE:01', 'KC-001', 'BATCH-2025A')">
+      <div>
+        <div class="sample-mac">AA:BB:CC:DD:EE:01</div>
+        <div class="sample-label">Test Device KC-001 · BATCH-2025A</div>
+      </div>
+      <button class="use-btn">Use</button>
+    </div>
+    <div class="sample-item" onclick="useSample('11:22:33:44:55:AA', 'KC-002', 'BATCH-2025A')">
+      <div>
+        <div class="sample-mac">11:22:33:44:55:AA</div>
+        <div class="sample-label">Test Device KC-002 · BATCH-2025A</div>
+      </div>
+      <button class="use-btn">Use</button>
+    </div>
+    <div class="sample-item" onclick="useSample('DE:AD:BE:EF:CA:FE', 'KC-003', 'BATCH-2026A')">
+      <div>
+        <div class="sample-mac">DE:AD:BE:EF:CA:FE</div>
+        <div class="sample-label">Test Device KC-003 · BATCH-2026A</div>
+      </div>
+      <button class="use-btn">Use</button>
+    </div>
+    <div class="sample-item" onclick="useSample('1C:DB:D4:85:5F:25', 'Safechain001', 'BATCH-2026A')">
+      <div>
+        <div class="sample-mac">1C:DB:D4:85:5F:25</div>
+        <div class="sample-label">Real device in DB · Safechain001</div>
+      </div>
+      <button class="use-btn">Use</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let qrInstance = null;
+
+  function formatMac(input) {
+    let v = input.value.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+    v = v.match(/.{1,2}/g)?.join(':') ?? v;
+    input.value = v.slice(0, 17);
+  }
+
+  function buildQrText() {
+    const mac    = document.getElementById('macInput').value.trim().toUpperCase();
+    const batch  = document.getElementById('batchInput').value.trim();
+    const model  = document.getElementById('modelInput').value.trim();
+    const format = document.getElementById('formatSelect').value;
+
+    if (format === 'prefix') return `SC:${mac}`;
+    if (format === 'plain')  return mac;
+
+    // JSON
+    const obj = { mac };
+    if (batch) obj.batch = batch;
+    if (model) obj.model = model;
+    return JSON.stringify(obj);
+  }
+
+  function generateQR() {
+    const mac = document.getElementById('macInput').value.trim().toUpperCase();
+    if (!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(mac)) {
+      alert('Please enter a valid MAC address: AA:BB:CC:DD:EE:FF');
+      return;
+    }
+
+    const text = buildQrText();
+
+    const out = document.getElementById('qrOutput');
+    out.innerHTML = '';
+
+    if (qrInstance) {
+      try { qrInstance.clear(); } catch {}
+    }
+
+    qrInstance = new QRCode(out, {
+      text,
+      width:  240,
+      height: 240,
+      colorDark: '#0f172a',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+
+    document.getElementById('qrMac').textContent = mac;
+    document.getElementById('qrRaw').textContent = 'Raw: ' + (text.length > 60 ? text.slice(0, 60) + '…' : text);
+    document.getElementById('qrSection').classList.add('show');
+  }
+
+  function useSample(mac, model, batch) {
+    document.getElementById('macInput').value  = mac;
+    document.getElementById('modelInput').value = model;
+    document.getElementById('batchInput').value = batch;
+    document.getElementById('formatSelect').value = 'json';
+    generateQR();
+  }
+
+  function printQR() {
+    const out = document.getElementById('qrOutput');
+    const img = out.querySelector('img') || out.querySelector('canvas');
+    if (!img) { window.print(); return; }
+
+    let src = '';
+    if (img.tagName === 'CANVAS') {
+      src = img.toDataURL('image/png');
+    } else {
+      src = img.src;
+    }
+
+    const mac = document.getElementById('qrMac').textContent;
+    const w = window.open('', '_blank');
+    w.document.write(`
+      <html><body style="display:flex;flex-direction:column;align-items:center;font-family:monospace;padding:40px;background:#fff">
+        <img src="${src}" style="width:240px;height:240px;image-rendering:pixelated" />
+        <p style="font-size:14px;font-weight:700;margin-top:12px">${mac}</p>
+        <p style="font-size:11px;color:#666;margin-top:4px">SafeChain Node Device</p>
+        <script>window.onload=()=>{window.print();}<\/script>
+      </body></html>
+    `);
+    w.document.close();
+  }
+
+  // Auto-generate on load
+  window.addEventListener('DOMContentLoaded', () => generateQR());
+</script>
+</body>
+</html>

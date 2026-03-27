@@ -31,11 +31,11 @@
           <h1 class="text-bs font-semibold text-[#4b4b4b] dark:text-neutral-400">Device Management</h1>
           <p class="text-sm text-neutral-500 dark:text-neutral-500">Monitor and manage infrastructure devices</p>
         </div>
-        <!-- Add LoRa button (admin only — hide with PHP if needed) -->
-        <button onclick="openAddLoraModal()"
-          class="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-2xl text-xs font-medium hover:opacity-90 transition ">
+        <!-- Add Device button -->
+        <button onclick="openAddDeviceModal()"
+          class="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-2xl text-xs font-medium hover:opacity-90 transition">
           <i class="uil uil-plus text-lg"></i>
-          Add LoRa Device
+          Add Device
         </button>
       </div>
 
@@ -166,6 +166,8 @@
   <script src="assets/js/sidebar.js"></script>
   <script src="assets/js/toast.js"></script>
   <script src="assets/js/modal.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="assets/js/devices.js"></script>
 </body>
 
