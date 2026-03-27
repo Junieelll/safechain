@@ -1361,9 +1361,11 @@ let _phoneTimer     = null;
 // ─────────────────────────────────────────────────────────────────────────────
 function openAddNodeModal() {
   modalManager.close("addDevicePickerModal");
-  _qrScanned = false;
-  _qrActiveTab = "desktopCam";
-  _phoneSessionId = null;
+  _qrScanned      = false;
+  _qrActiveTab    = "desktopCam";
+  // One session for the whole modal — tab switches never change it,
+  // so the phone link stays valid as long as the modal is open.
+  _phoneSessionId = "sc-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
 
   setTimeout(() => {
     modalManager.create({
@@ -1393,7 +1395,7 @@ function openAddNodeModal() {
 
           <!-- Desktop Camera Panel -->
           <div id="nodePanel_desktopCam" class="space-y-3">
-            <div class="relative bg-black rounded-2xl overflow-hidden" style="aspect-ratio:4/3;">
+            <div id="_camWrap" class="relative bg-black rounded-2xl overflow-hidden" style="aspect-ratio:4/3;">
               <video id="_qrVideo" autoplay playsinline muted class="w-full h-full object-cover"></video>
               <canvas id="_qrCanvas" class="hidden absolute inset-0 w-full h-full"></canvas>
               <div id="_qrOverlay" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -1416,7 +1418,7 @@ function openAddNodeModal() {
                 <p class="text-white font-bold text-sm" id="_qrSuccessTxt"></p>
               </div>
             </div>
-            <div class="flex items-center gap-2">
+            <div id="_camRow" class="flex items-center gap-2">
               <label class="text-xs text-gray-500 dark:text-neutral-400 shrink-0">Camera:</label>
               <select id="_camSelect" class="flex-1 text-xs bg-[#F1F5F9] dark:bg-neutral-700 dark:text-neutral-300 rounded-lg px-2 py-1.5 border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400"></select>
               <button onclick="_startQr()" id="_startQrBtn" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shrink-0">
@@ -1510,7 +1512,10 @@ function _nodeTab(tab) {
     panel.classList.toggle("hidden",              !active);
   });
   if (tab !== "desktopCam") _stopQr();
-  if (tab === "phoneCam")   _initPhoneRelay();
+  // Leaving phoneCam: pause polling but keep the session so the QR on the
+  // phone stays valid — no re-scan of the relay link needed.
+  if (tab !== "phoneCam" && _phoneTimer) { clearInterval(_phoneTimer); _phoneTimer = null; }
+  if (tab === "phoneCam") _initPhoneRelay();
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -1612,17 +1617,20 @@ function _handleQr(raw) {
   }
   const flash = document.getElementById("_qrSuccessFlash");
   const ftxt  = document.getElementById("_qrSuccessTxt");
+  if (_qrActiveTab === "desktopCam") {
+    // Hide the Camera row IMMEDIATELY — Start button must not be clickable
+    const camRow = document.getElementById("_camRow");
+    if (camRow) camRow.classList.add("hidden");
+  }
   if (flash) {
     if (ftxt) ftxt.textContent = mac;
     flash.classList.remove("hidden");
     setTimeout(() => {
-      flash?.classList.add("hidden");
-      // Hide the camera viewport — show the scanned result box instead
+      flash.classList.add("hidden");
+      // Hide the video viewport after the flash animation finishes
       if (_qrActiveTab === "desktopCam") {
-        const camWrap = document.querySelector("#nodePanel_desktopCam .relative.bg-black");
-        const camSel  = document.querySelector("#nodePanel_desktopCam .flex.items-center.gap-2");
+        const camWrap = document.getElementById("_camWrap");
         if (camWrap) camWrap.classList.add("hidden");
-        if (camSel)  camSel.classList.add("hidden");
       }
     }, 1800);
   }
@@ -1647,47 +1655,82 @@ function _showScanned(mac, batch, extra) {
 
 function _clearScan() {
   _qrScanned = false;
+  // Hide the scanned result box
   const box = document.getElementById("_scannedBox");
   if (box) box.classList.add("hidden");
+  // Clear manual input
   const mi = document.getElementById("_manualMac");
   if (mi) mi.value = "";
+  // Always dismiss the success flash in case it's still animating
+  const flash = document.getElementById("_qrSuccessFlash");
+  if (flash) flash.classList.add("hidden");
+
   if (_qrActiveTab === "desktopCam") {
-    // Restore the camera viewport that was hidden after a successful scan
-    const camWrap = document.querySelector("#nodePanel_desktopCam .relative.bg-black");
-    const camSel  = document.querySelector("#nodePanel_desktopCam .flex.items-center.gap-2");
+    // Restore camera wrap and controls row, then restart the scanner
+    const camWrap = document.getElementById("_camWrap");
+    const camRow  = document.getElementById("_camRow");
     if (camWrap) camWrap.classList.remove("hidden");
-    if (camSel)  camSel.classList.remove("hidden");
+    if (camRow)  camRow.classList.remove("hidden");
     _startQr();
+  } else if (_qrActiveTab === "phoneCam") {
+    // Keep the SAME _phoneSessionId — the phone user's link stays valid.
+    // Just clear the server-side stored MAC so polling won't re-detect the
+    // old result, then rebuild the QR UI (same URL) and resume polling.
+    if (_phoneTimer) { clearInterval(_phoneTimer); _phoneTimer = null; }
+    const relayApi = window.location.origin + "/api/devices/qr_relay.php";
+    // Tell the relay backend to wipe the stored MAC for this session
+    fetch(relayApi, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session: _phoneSessionId }),
+    }).catch(() => {});
+    // Force _initPhoneRelay to re-render the QR widget (same URL, same session)
+    const container = document.getElementById("_phoneQrDiv");
+    if (container) { container.innerHTML = ""; delete container.dataset.sessionId; }
+    const statusEl = document.getElementById("_phoneQrStatus");
+    if (statusEl) statusEl.textContent = "Generating link…";
+    const pollEl = document.getElementById("_phonePolling");
+    if (pollEl) pollEl.classList.add("hidden");
+    _initPhoneRelay();
   }
 }
 
 // ── Phone relay ───────────────────────────────────────────────────────────────
 async function _initPhoneRelay() {
-  _clearPhoneRelay();
+  // Stop any active poll timer — DON'T clear _phoneSessionId or the QR div
+  // unless the session has actually changed (set by openAddNodeModal or _clearScan).
+  if (_phoneTimer) { clearInterval(_phoneTimer); _phoneTimer = null; }
+
   const container = document.getElementById("_phoneQrDiv");
   const statusEl  = document.getElementById("_phoneQrStatus");
   const pollEl    = document.getElementById("_phonePolling");
-  if (!container) return;
-  _phoneSessionId = "sc-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+  if (!container || !_phoneSessionId) return;
 
-  // FIX: Use the document's resolved <base href> so we land on the correct
-  //      root-level path even when devices.php is served from a subdirectory.
-  //      document.querySelector('base').href is already an absolute URL
-  //      (browsers resolve it relative to the document location).
-  const baseEl   = document.querySelector('base');
-  const baseHref = baseEl ? baseEl.href : (window.location.origin + '/');
-  const phoneUrl = new URL('qr-scan-relay.php', baseHref).href + `?session=${_phoneSessionId}`;
+  const baseEl   = document.querySelector("base");
+  const baseHref = baseEl ? baseEl.href : window.location.origin + "/";
+  const phoneUrl = new URL("qr-scan-relay.php", baseHref).href + "?session=" + _phoneSessionId;
+  const relayApi = window.location.origin + "/api/devices/qr_relay.php";
 
-  // The relay API is always at <origin>/api/devices/qr_relay.php
-  const relayApi = window.location.origin + '/api/devices/qr_relay.php';
-
-  container.innerHTML = "";
-  if (window.QRCode) {
-    try { new window.QRCode(container, { text: phoneUrl, width: 180, height: 180, correctLevel: window.QRCode.CorrectLevel.M }); } catch {}
-  } else {
-    container.innerHTML = `<p class="text-xs text-gray-500">QR lib not loaded</p>`;
+  // Only rebuild the QR code widget when the session ID has changed
+  // (first open, or after _clearScan issued a new session).
+  if (container.dataset.sessionId !== _phoneSessionId) {
+    container.dataset.sessionId = _phoneSessionId;
+    container.innerHTML = "";
+    if (window.QRCode) {
+      try {
+        new window.QRCode(container, { text: phoneUrl, width: 180, height: 180, correctLevel: window.QRCode.CorrectLevel.M });
+      } catch {}
+    } else {
+      container.innerHTML = `<p class="text-xs text-gray-500">QR lib not loaded</p>`;
+    }
+    if (statusEl) statusEl.innerHTML =
+      `Scan with your phone, then scan the device QR.<br>` +
+      `<a href="${phoneUrl}" target="_blank" class="text-blue-500 text-[10px] break-all hover:underline">${phoneUrl}</a>`;
   }
-  if (statusEl) statusEl.innerHTML = `Scan with your phone, then scan the device QR.<br><a href="${phoneUrl}" target="_blank" class="text-blue-500 text-[10px] break-all hover:underline">${phoneUrl}</a>`;
+
+  // If a scan was already received on this session, don't restart polling
+  if (_qrScanned) { if (pollEl) pollEl.classList.add("hidden"); return; }
+
   if (pollEl) pollEl.classList.remove("hidden");
 
   _phoneTimer = setInterval(async () => {
@@ -1695,21 +1738,19 @@ async function _initPhoneRelay() {
       const res  = await fetch(`${relayApi}?session=${_phoneSessionId}`);
       const json = await res.json();
       if (json.success && json.mac) {
-        _clearPhoneRelay();
-        // Replace the QR code div with a success indicator so the user
-        // knows the scan was received — stay on the phoneCam tab
-        const container = document.getElementById("_phoneQrDiv");
-        if (container) {
-          container.innerHTML = `
-            <div class="flex flex-col items-center gap-2 py-2">
-              <div class="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center">
-                <i class="uil uil-check text-white text-3xl"></i>
-              </div>
-              <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Phone scan received!</p>
-            </div>`;
-        }
-        const statusEl = document.getElementById("_phoneQrStatus");
-        if (statusEl) statusEl.textContent = "";
+        if (_phoneTimer) { clearInterval(_phoneTimer); _phoneTimer = null; }
+        if (pollEl) pollEl.classList.add("hidden");
+        // Show "received" state in place of the QR code
+        const c = document.getElementById("_phoneQrDiv");
+        if (c) c.innerHTML = `
+          <div class="flex flex-col items-center gap-2 py-2">
+            <div class="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center">
+              <i class="uil uil-check text-white text-3xl"></i>
+            </div>
+            <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Phone scan received!</p>
+          </div>`;
+        const se = document.getElementById("_phoneQrStatus");
+        if (se) se.textContent = "";
         _handleQr(json.mac);
       }
     } catch {}

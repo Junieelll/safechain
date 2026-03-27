@@ -1,100 +1,105 @@
 <?php
 /**
- * SafeChain — QR Relay API
- * Place at:  api/devices/qr_relay.php
+ * api/devices/qr_relay.php
  *
- * GET  ?session=xxx          → check if phone has submitted a MAC
- * POST {session, mac, batch} → phone submits scanned MAC
+ * Tiny relay between the mobile QR scanner page and the admin dashboard.
  *
- * Uses a simple DB table `qr_sessions` or just a temp file (easier).
- * We use the /tmp folder with session files — zero DB dependency.
+ * GET  ?session=X          → poll: returns { success, mac, batch } if a result
+ *                            was stored for that session, { success:false } otherwise.
+ * POST { session, mac, batch } → store: phone page posts the scanned MAC here.
+ * DELETE { session }       → reset: admin dashboard calls this when the user
+ *                            clicks "Clear & re-scan" so the old MAC is wiped
+ *                            and the same session link can be reused.
+ *
+ * Storage: one small JSON file per session in the system temp directory.
+ * Files older than 30 minutes are treated as expired.
  */
 
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header("Content-Type: application/json");
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
+// Pre-flight
+if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") { http_response_code(204); exit; }
 
-$method = $_SERVER['REQUEST_METHOD'];
+define("RELAY_TTL",    1800);   // seconds a session file lives (30 min)
+define("SESSION_DIR",  sys_get_temp_dir());
+define("FILE_PREFIX",  "sc_relay_");
 
-// Sessions live in /tmp/sc_qr_<session_id>.json  (TTL: 10 minutes)
-define('SESSION_TTL', 600);
-define('SESSION_DIR', sys_get_temp_dir());
+// ── helpers ──────────────────────────────────────────────────────────────────
 
-function sessionFile(string $id): string {
-    // Sanitize session id — only alphanum/dash
-    $safe = preg_replace('/[^a-zA-Z0-9\-]/', '', $id);
-    return SESSION_DIR . '/sc_qr_' . $safe . '.json';
+function sessionFile(string $session): string {
+    // Sanitise: only allow the characters our JS generates
+    $safe = preg_replace('/[^a-zA-Z0-9\-]/', '', $session);
+    if (!$safe) return "";
+    return SESSION_DIR . DIRECTORY_SEPARATOR . FILE_PREFIX . $safe . ".json";
 }
 
-function isValidMac(string $mac): bool {
-    return (bool) preg_match('/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/i', $mac);
+function respond(array $data, int $code = 200): void {
+    http_response_code($code);
+    echo json_encode($data);
+    exit;
 }
 
-// ── GET — poll for result ─────────────────────────────────────────────────────
-if ($method === 'GET') {
-    $session = trim($_GET['session'] ?? '');
-    if (!$session) {
-        echo json_encode(['success' => false, 'message' => 'session required']);
-        exit;
-    }
+// ── route ─────────────────────────────────────────────────────────────────────
+
+$method = $_SERVER["REQUEST_METHOD"];
+
+// ── GET — poll ────────────────────────────────────────────────────────────────
+if ($method === "GET") {
+    $session = trim($_GET["session"] ?? "");
+    if (!$session) respond(["success" => false, "message" => "Missing session"], 400);
 
     $file = sessionFile($session);
-    if (!file_exists($file)) {
-        echo json_encode(['success' => false, 'pending' => true]);
-        exit;
-    }
+    if (!$file || !file_exists($file)) respond(["success" => false]);
 
     $data = json_decode(file_get_contents($file), true);
+    if (!$data) respond(["success" => false]);
 
-    // Expire check
-    if (!$data || time() - ($data['created_at'] ?? 0) > SESSION_TTL) {
+    // Expire old sessions
+    if ((time() - ($data["ts"] ?? 0)) > RELAY_TTL) {
         @unlink($file);
-        echo json_encode(['success' => false, 'pending' => true, 'expired' => true]);
-        exit;
+        respond(["success" => false]);
     }
 
-    // Return result
-    echo json_encode([
-        'success' => true,
-        'mac'     => $data['mac'],
-        'batch'   => $data['batch'] ?? '',
-    ]);
-
-    // Clean up once consumed
-    @unlink($file);
-    exit;
+    respond(["success" => true, "mac" => $data["mac"], "batch" => $data["batch"] ?? ""]);
 }
 
-// ── POST — phone submits scanned MAC ──────────────────────────────────────────
-if ($method === 'POST') {
-    $input   = json_decode(file_get_contents('php://input'), true);
-    $session = trim($input['session'] ?? '');
-    $mac     = strtoupper(trim($input['mac'] ?? ''));
-    $batch   = trim($input['batch'] ?? '');
+// ── POST — store ──────────────────────────────────────────────────────────────
+if ($method === "POST") {
+    $body    = json_decode(file_get_contents("php://input"), true) ?? [];
+    $session = trim($body["session"] ?? "");
+    $mac     = strtoupper(trim($body["mac"]   ?? ""));
+    $batch   = trim($body["batch"]  ?? "");
 
-    if (!$session) {
-        echo json_encode(['success' => false, 'message' => 'session required']);
-        exit;
-    }
-    if (!isValidMac($mac)) {
-        echo json_encode(['success' => false, 'message' => 'invalid MAC address']);
-        exit;
-    }
+    if (!$session) respond(["success" => false, "message" => "Missing session"], 400);
+    if (!preg_match('/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/', $mac))
+        respond(["success" => false, "message" => "Invalid MAC address"], 400);
 
-    // Clean up any previous file for this session
     $file = sessionFile($session);
-    file_put_contents($file, json_encode([
-        'session'    => $session,
-        'mac'        => $mac,
-        'batch'      => $batch,
-        'created_at' => time(),
+    if (!$file) respond(["success" => false, "message" => "Invalid session"], 400);
+
+    $ok = file_put_contents($file, json_encode([
+        "mac"   => $mac,
+        "batch" => $batch,
+        "ts"    => time(),
     ]));
 
-    echo json_encode(['success' => true, 'message' => 'MAC received']);
-    exit;
+    respond($ok !== false ? ["success" => true] : ["success" => false, "message" => "Storage error"], $ok !== false ? 200 : 500);
 }
 
-echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+// ── DELETE — reset (same session, wipe stored MAC so it can be reused) ────────
+if ($method === "DELETE") {
+    $body    = json_decode(file_get_contents("php://input"), true) ?? [];
+    $session = trim($body["session"] ?? "");
+
+    if (!$session) respond(["success" => false, "message" => "Missing session"], 400);
+
+    $file = sessionFile($session);
+    if ($file && file_exists($file)) @unlink($file);
+
+    respond(["success" => true]);
+}
+
+respond(["success" => false, "message" => "Method not allowed"], 405);
