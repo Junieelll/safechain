@@ -99,14 +99,31 @@
       font-size: 13px; cursor: pointer;
     }
 
-    .error-msg { color: #f87171; font-size: 12px; margin-top: 10px; text-align: center; }
+    .error-msg { color: #f87171; font-size: 12px; margin-top: 10px; text-align: center; line-height: 1.6; }
     .sent-msg  { color: #27C291;  font-size: 13px; margin-top: 12px; text-align: center; font-weight: 600; }
+    .hidden    { display: none !important; }
+
+    /* HTTPS warning banner */
+    .https-warn {
+      width: 100%; max-width: 380px;
+      background: #fef3c7; border: 2px solid #f59e0b;
+      border-radius: 14px; padding: 14px 16px;
+      color: #92400e; font-size: 12px; text-align: center;
+      line-height: 1.6;
+    }
+    .https-warn strong { display: block; font-size: 13px; margin-bottom: 4px; }
   </style>
 </head>
 <body>
   <div class="logo">SAFECHAIN</div>
   <h1>Scan Device QR</h1>
   <p>Point your phone's camera at the QR code<br>on the SafeChain keychain device</p>
+
+  <!-- HTTPS / secure-context warning (shown if needed) -->
+  <div id="httpsWarn" class="https-warn hidden">
+    <strong>⚠️ Secure Connection Required</strong>
+    Camera access requires HTTPS. Please ask your admin to open this link over a secure (https://) connection.
+  </div>
 
   <div class="cam-wrap" id="camWrap">
     <video id="vid" autoplay playsinline muted></video>
@@ -140,33 +157,80 @@
   <div class="error-msg" id="errMsg"></div>
   <div class="sent-msg hidden" id="sentMsg">✓ Sent! You can close this page.</div>
 
-  <!-- jsQR -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
   <script>
     const SESSION = new URLSearchParams(location.search).get("session") || "";
+
+    // ── Build an absolute URL for the relay API so it works regardless of
+    //    which subdirectory this page is served from.
+    //    The qr_relay.php is always at <origin>/api/devices/qr_relay.php
+    const RELAY_URL = window.location.origin + "/api/devices/qr_relay.php";
+
     let stream, raf, scanned = false, scannedMac = "", scannedBatch = "";
 
+    // ── HTTPS / getUserMedia availability check ──────────────────────────────
+    function checkSecureContext() {
+      // isSecureContext is false on plain HTTP (except localhost)
+      if (!window.isSecureContext || !navigator.mediaDevices) {
+        document.getElementById("httpsWarn").classList.remove("hidden");
+        document.getElementById("camWrap").classList.add("hidden");
+        return false;
+      }
+      return true;
+    }
+
     async function init() {
+      if (!checkSecureContext()) return;
+
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        document.getElementById("vid").srcObject = stream;
-        await document.getElementById("vid").play();
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" }
+        });
+        const vid = document.getElementById("vid");
+        vid.srcObject = stream;
+        await vid.play();
         tick();
       } catch (e) {
-        document.getElementById("errMsg").textContent = "Camera access denied. Please allow camera and reload.";
+        // Give the user a specific, actionable message instead of the generic one
+        let msg = "Camera error — please try again.";
+        if (e.name === "NotAllowedError" || e.name === "PermissionDeniedError") {
+          msg = "Camera permission denied. Go to your browser settings, allow camera for this site, then reload.";
+        } else if (e.name === "NotFoundError" || e.name === "DevicesNotFoundError") {
+          msg = "No camera found on this device.";
+        } else if (e.name === "NotReadableError" || e.name === "TrackStartError") {
+          msg = "Camera is in use by another app. Close it and reload this page.";
+        } else if (e.name === "OverconstrainedError") {
+          // Rear camera not available — fall back to any camera
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const vid = document.getElementById("vid");
+            vid.srcObject = stream;
+            await vid.play();
+            tick();
+            return;
+          } catch (e2) {
+            msg = "Could not access any camera: " + e2.message;
+          }
+        } else {
+          msg = "Camera error: " + e.message;
+        }
+        document.getElementById("errMsg").textContent = msg;
       }
     }
 
     function tick() {
       const vid = document.getElementById("vid");
       const cvs = document.getElementById("cvs");
+
+      // Safety guard — jsQR should be loaded by now, but double-check
+      if (!window.jsQR) { raf = requestAnimationFrame(tick); return; }
+
       const ctx = cvs.getContext("2d");
 
       if (vid.readyState === vid.HAVE_ENOUGH_DATA && !scanned) {
         cvs.width  = vid.videoWidth;
         cvs.height = vid.videoHeight;
         ctx.drawImage(vid, 0, 0, cvs.width, cvs.height);
-        const img = ctx.getImageData(0, 0, cvs.width, cvs.height);
+        const img  = ctx.getImageData(0, 0, cvs.width, cvs.height);
         const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" });
 
         if (code) {
@@ -180,6 +244,7 @@
     function handleResult(raw) {
       scanned = true;
       cancelAnimationFrame(raf);
+      // Stop camera stream
       if (stream) stream.getTracks().forEach(t => t.stop());
 
       let mac = "", batch = "", extra = "";
@@ -198,18 +263,23 @@
       if (!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(mac)) {
         document.getElementById("errMsg").textContent = `Invalid QR: "${raw.slice(0, 50)}"`;
         scanned = false;
-        if (stream) init(); else tick();
+        // Restart camera
+        init();
         return;
       }
 
       scannedMac   = mac;
       scannedBatch = batch;
 
+      // Show success flash inside the cam-wrap
       const flash = document.getElementById("successFlash");
       document.getElementById("successMac").textContent = mac;
       flash.classList.add("show");
+
+      // After flash: HIDE the camera view entirely, show the result card
       setTimeout(() => {
         flash.classList.remove("show");
+        document.getElementById("camWrap").classList.add("hidden"); // ← FIX: hide scanner
         document.getElementById("resultMac").textContent = mac;
         document.getElementById("resultSub").textContent = batch ? "Batch: " + batch : (extra || "");
         document.getElementById("resultBox").classList.add("show");
@@ -218,7 +288,7 @@
 
     async function sendResult() {
       if (!SESSION) {
-        document.getElementById("errMsg").textContent = "No session ID in URL.";
+        document.getElementById("errMsg").textContent = "No session ID in URL. Please re-scan the QR from the admin dashboard.";
         return;
       }
       const btn = document.getElementById("sendBtn");
@@ -226,7 +296,7 @@
       btn.disabled = true;
 
       try {
-        const res  = await fetch("api/devices/qr_relay.php", {
+        const res  = await fetch(RELAY_URL, {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({ session: SESSION, mac: scannedMac, batch: scannedBatch }),
@@ -248,14 +318,37 @@
     }
 
     function rescan() {
-      scanned = false;
+      scanned    = false;
       scannedMac = "";
       document.getElementById("resultBox").classList.remove("show");
+      document.getElementById("camWrap").classList.remove("hidden"); // show camera again
       document.getElementById("errMsg").textContent = "";
       init();
     }
 
-    init();
+    // Load jsQR dynamically and only call init() once it's ready.
+    // Primary: jsDelivr  (cdnjs path 404s for jsQR 1.4.0)
+    // Fallback: unpkg
+    (function loadJsQR() {
+      const URLS = [
+        'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js',
+        'https://unpkg.com/jsqr@1.4.0/dist/jsQR.min.js',
+      ];
+      let idx = 0;
+      function tryNext() {
+        if (idx >= URLS.length) {
+          document.getElementById('errMsg').textContent =
+            'Failed to load QR scanner library. Check your internet connection and reload.';
+          return;
+        }
+        const s = document.createElement('script');
+        s.src = URLS[idx++];
+        s.onload = () => init();
+        s.onerror = () => tryNext();
+        document.head.appendChild(s);
+      }
+      tryNext();
+    })();
   </script>
 </body>
 </html>

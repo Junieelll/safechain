@@ -1565,7 +1565,9 @@ async function _startQr() {
 function _qrLoop() {
   const video  = document.getElementById("_qrVideo");
   const canvas = document.getElementById("_qrCanvas");
-  if (!video || !canvas || _qrScanned || !window.jsQR) return;
+  if (!video || !canvas || _qrScanned) return;
+  // jsQR may still be loading — keep looping until it arrives
+  if (!window.jsQR) { _qrAnimFrame = requestAnimationFrame(_qrLoop); return; }
   const ctx = canvas.getContext("2d");
   if (video.readyState === video.HAVE_ENOUGH_DATA) {
     canvas.width  = video.videoWidth;
@@ -1647,21 +1649,37 @@ async function _initPhoneRelay() {
   const pollEl    = document.getElementById("_phonePolling");
   if (!container) return;
   _phoneSessionId = "sc-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-  const base      = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, "");
-  const phoneUrl  = `${base}/qr-scan-relay.php?session=${_phoneSessionId}`;
+
+  // FIX: Use the document's resolved <base href> so we land on the correct
+  //      root-level path even when devices.php is served from a subdirectory.
+  //      document.querySelector('base').href is already an absolute URL
+  //      (browsers resolve it relative to the document location).
+  const baseEl   = document.querySelector('base');
+  const baseHref = baseEl ? baseEl.href : (window.location.origin + '/');
+  const phoneUrl = new URL('qr-scan-relay.php', baseHref).href + `?session=${_phoneSessionId}`;
+
+  // The relay API is always at <origin>/api/devices/qr_relay.php
+  const relayApi = window.location.origin + '/api/devices/qr_relay.php';
+
   container.innerHTML = "";
   if (window.QRCode) {
     try { new window.QRCode(container, { text: phoneUrl, width: 180, height: 180, correctLevel: window.QRCode.CorrectLevel.M }); } catch {}
   } else {
     container.innerHTML = `<p class="text-xs text-gray-500">QR lib not loaded</p>`;
   }
-  if (statusEl) statusEl.innerHTML = `Scan with phone, then scan the device QR.<br><a href="${phoneUrl}" target="_blank" class="text-blue-500 text-[10px] break-all hover:underline">${phoneUrl}</a>`;
+  if (statusEl) statusEl.innerHTML = `Scan with your phone, then scan the device QR.<br><a href="${phoneUrl}" target="_blank" class="text-blue-500 text-[10px] break-all hover:underline">${phoneUrl}</a>`;
   if (pollEl) pollEl.classList.remove("hidden");
+
   _phoneTimer = setInterval(async () => {
     try {
-      const res  = await fetch(`api/devices/qr_relay.php?session=${_phoneSessionId}`);
+      const res  = await fetch(`${relayApi}?session=${_phoneSessionId}`);
       const json = await res.json();
-      if (json.success && json.mac) { _clearPhoneRelay(); _handleQr(json.mac); }
+      if (json.success && json.mac) {
+        _clearPhoneRelay();
+        _handleQr(json.mac);
+        // Switch to the manual tab so the user sees the scanned result clearly
+        _nodeTab('manual');
+      }
     } catch {}
   }, 2000);
 }
@@ -1703,7 +1721,7 @@ async function _submitNode() {
     if (json.success) {
       _stopQr(); _clearPhoneRelay();
       modalManager.close("addNodeModal");
-      showToast("success", `Device ${mac} authorized! Resident can now pair it.`);
+      showToast("success", `✓ ${mac} added to hardware whitelist. It will appear in the device list once a resident pairs it.`);
       fetchDevices();
     } else {
       _nodeErr(json.message || "Failed to authorize device.");

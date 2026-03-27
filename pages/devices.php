@@ -166,8 +166,8 @@
   <script src="assets/js/sidebar.js"></script>
   <script src="assets/js/toast.js"></script>
   <script src="assets/js/modal.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="assets/js/devices.js"></script>
 </body>
 
