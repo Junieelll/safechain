@@ -104,14 +104,14 @@
             <label for="search" class="text-xs text-gray-700 dark:text-gray-200">Search</label>
             <div class="search-input relative w-full">
               <i
-                class="uil uil-search dark:text-gray-200 absolute top-1/2 -translate-y-1/2 left-2 text-xl"></i>
+                class="uil uil-search text-gray-500 dark:text-gray-200 absolute top-1/2 -translate-y-1/2 left-4 text-lg"></i>
               <input
                 type="text"
                 name="search"
                 id="search"
                 autocomplete="off"
                 placeholder="Search residents..."
-                class="py-3 pl-9 pr-9 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-gray-200 rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border-2 border-transparent focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-500 transition" />
+                class="py-3 pl-11 pr-9 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-gray-200 rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border-2 border-transparent focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-500 transition" />
               <button
                 id="searchClearBtn"
                 class="hidden absolute top-1/2 -translate-y-1/2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
