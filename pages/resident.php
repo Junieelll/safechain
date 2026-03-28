@@ -160,6 +160,43 @@
               </div>
             </div>
 
+            <!-- Status Filter -->
+            <div class="sort flex flex-col gap-1 min-w-[180px]">
+              <label for="statusDropdownButton" class="text-xs text-gray-700 dark:text-gray-200">Status</label>
+              <div class="relative max-h-[46px]">
+                <button
+                  id="statusDropdownButton"
+                  class="w-full h-full bg-[#F1F5F9] dark:bg-neutral-700 rounded-lg px-4 py-[10px] border-2 border-transparent text-left flex items-center justify-between focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-500 transition">
+                  <span id="statusSelectedText" class="text-gray-700 dark:text-gray-200 text-xs">All Status</span>
+                  <i
+                    id="statusDropdownIcon"
+                    class="uil uil-angle-down text-xl text-gray-400 dark:text-gray-200 transition-transform duration-200"></i>
+                </button>
+
+                <div
+                  id="statusDropdownMenu"
+                  class="hidden absolute z-10 w-full mt-2 bg-white dark:bg-neutral-700 dark:border-gray-800 border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                  <div class="py-1">
+                    <button
+                      class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                      data-value="all">
+                      All Status
+                    </button>
+                    <button
+                      class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                      data-value="active">
+                      Active
+                    </button>
+                    <button
+                      class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                      data-value="restricted">
+                      Restricted
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="clear-filter-btn flex flex-col justify-end">
               <button
                 id="exportBtn"

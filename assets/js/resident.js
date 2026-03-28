@@ -5,6 +5,7 @@ let currentPage = 1;
 const itemsPerPage = 5;
 let searchQuery = "";
 let selectedSort = "newest";
+let selectedStatus = "all";
 
 async function fetchResidents() {
   try {
@@ -52,6 +53,12 @@ const sortSelectedText = document.getElementById("sortSelectedText");
 const sortDropdownItems = sortDropdownMenu.querySelectorAll(".dropdown-item");
 const exportBtn = document.getElementById("exportBtn");
 const tableBody = document.querySelector("tbody");
+
+const statusDropdownButton = document.getElementById("statusDropdownButton");
+const statusDropdownMenu = document.getElementById("statusDropdownMenu");
+const statusDropdownIcon = document.getElementById("statusDropdownIcon");
+const statusSelectedText = document.getElementById("statusSelectedText");
+const statusDropdownItems = statusDropdownMenu.querySelectorAll(".dropdown-item");
 
 // Add CSS transition to tbody
 tableBody.style.transition =
@@ -224,13 +231,17 @@ function filterAndSortResidents() {
   // Filter by search
   filteredResidents = residentsData.filter((resident) => {
     const searchLower = searchQuery.toLowerCase();
-    return (
-      resident.name.toLowerCase().includes(searchLower) ||
-      resident.id.toLowerCase().includes(searchLower) ||
-      resident.address.toLowerCase().includes(searchLower) ||
-      resident.contact.includes(searchQuery) ||
-      resident.deviceId.toLowerCase().includes(searchLower)
-    );
+    const matchesSearch =
+      (resident.name     ?? "").toLowerCase().includes(searchLower) ||
+      (resident.id       ?? "").toLowerCase().includes(searchLower) ||
+      (resident.address  ?? "").toLowerCase().includes(searchLower) ||
+      (resident.contact  ?? "").includes(searchQuery) ||
+      (resident.deviceId ?? "").toLowerCase().includes(searchLower);
+
+    const matchesStatus =
+      selectedStatus === "all" || (resident.status ?? "active") === selectedStatus;
+
+    return matchesSearch && matchesStatus;
   });
 
   // Sort
@@ -242,10 +253,10 @@ function filterAndSortResidents() {
       filteredResidents.sort((a, b) => a.registeredDate - b.registeredDate);
       break;
     case "ascending":
-      filteredResidents.sort((a, b) => a.name.localeCompare(b.name));
+      filteredResidents.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
       break;
     case "descending":
-      filteredResidents.sort((a, b) => b.name.localeCompare(a.name));
+      filteredResidents.sort((a, b) => (b.name ?? "").localeCompare(a.name ?? ""));
       break;
   }
 }
@@ -329,7 +340,7 @@ function renderTable() {
             ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400">
             🚩 ${falseCount} false report${falseCount > 1 ? "s" : ""}
           </span>`
-                  : "";
+            : "";
 
         const restrictBtn = isRestricted
           ? `<button onclick="liftRestriction('${resident.id}')" title="Lift Restriction"
@@ -548,6 +559,41 @@ sortDropdownItems.forEach((item) => {
   });
 });
 
+// Status Dropdown Toggle
+statusDropdownButton.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const isHidden = statusDropdownMenu.classList.contains("hidden");
+
+  if (isHidden) {
+    statusDropdownMenu.classList.remove("hidden");
+    statusDropdownIcon.style.transform = "rotate(180deg)";
+  } else {
+    statusDropdownMenu.classList.add("hidden");
+    statusDropdownIcon.style.transform = "rotate(0deg)";
+  }
+});
+
+// Status Dropdown Selection
+statusDropdownItems.forEach((item) => {
+  item.addEventListener("click", (e) => {
+    const value = e.target.getAttribute("data-value");
+    const text = e.target.textContent.trim();
+
+    selectedStatus = value;
+    statusSelectedText.textContent = text;
+
+    statusDropdownItems.forEach((i) =>
+      i.classList.remove(...activeDropdownClasses),
+    );
+    e.target.classList.add(...activeDropdownClasses);
+
+    statusDropdownMenu.classList.add("hidden");
+    statusDropdownIcon.style.transform = "rotate(0deg)";
+    currentPage = 1;
+    renderTable();
+  });
+});
+
 // Export functionality
 exportBtn.addEventListener("click", () => {
   // Show export modal
@@ -723,10 +769,12 @@ function exportResidents() {
   showToast("success", "Residents exported successfully!");
 }
 
-// Close dropdown when clicking outside
+// Close dropdowns when clicking outside
 document.addEventListener("click", () => {
   sortDropdownMenu.classList.add("hidden");
   sortDropdownIcon.style.transform = "rotate(0deg)";
+  statusDropdownMenu.classList.add("hidden");
+  statusDropdownIcon.style.transform = "rotate(0deg)";
 });
 
 function editResident(id) {
@@ -1075,7 +1123,7 @@ function liftRestriction(id) {
       <div class="flex items-start gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
         <i class="uil uil-info-circle text-amber-500 text-sm mt-0.5 flex-shrink-0"></i>
         <p class="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
-          This action is logged. The resident will be able to submit incident reports again after this change.
+          The resident will be able to submit incident reports again after this change.
         </p>
       </div>
     </div>
