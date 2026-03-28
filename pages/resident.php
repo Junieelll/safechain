@@ -110,8 +110,14 @@
                 name="search"
                 id="search"
                 autocomplete="off"
-                placeholder="Search incidents..."
-                class="py-3 pl-9 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-gray-200 rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border-2 border-transparent focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-500  transition" />
+                placeholder="Search residents..."
+                class="py-3 pl-9 pr-9 bg-[#F1F5F9] dark:bg-neutral-700 dark:text-gray-200 rounded-lg focus:outline-none text-sm placeholder:text-xs w-full border-2 border-transparent focus:outline-none focus:ring-4 focus:ring-emerald-100 focus:border-emerald-400 dark:focus:ring-emerald-900/60 dark:focus:border-emerald-500 transition" />
+              <button
+                id="searchClearBtn"
+                class="hidden absolute top-1/2 -translate-y-1/2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+                onclick="clearSearch()">
+                <i class="uil uil-times text-xl"></i>
+              </button>
             </div>
           </div>
 

@@ -509,11 +509,23 @@ function changePage(page) {
 }
 
 // Search functionality
+const searchClearBtn = document.getElementById("searchClearBtn");
+
 searchInput.addEventListener("input", (e) => {
   searchQuery = e.target.value;
   currentPage = 1;
+  searchClearBtn.classList.toggle("hidden", searchQuery === "");
   renderTable();
 });
+
+function clearSearch() {
+  searchInput.value = "";
+  searchQuery = "";
+  currentPage = 1;
+  searchClearBtn.classList.add("hidden");
+  searchInput.focus();
+  renderTable();
+}
 
 const activeDropdownClasses = [
   "bg-emerald-50",
