@@ -12,6 +12,7 @@ try {
             r.contact,
             r.profile_picture_url,
             r.false_report_count,
+            r.status,
             r.registered_date AS registeredDate,
             d.device_id AS deviceId
         FROM residents r
@@ -37,6 +38,7 @@ try {
             'profilePicture' => $row['profile_picture_url'], // ← map it here
             'registeredDate' => $row['registeredDate'],
             'falseReportCount' => (int) ($row['false_report_count'] ?? 0),
+            'status'           => $row['status'] ?? 'active',
         ];
     }
 

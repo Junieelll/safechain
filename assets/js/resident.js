@@ -314,25 +314,44 @@ function renderTable() {
           : `<div class="w-10 h-10 ${color} rounded-full flex items-center p-4 justify-center text-white font-semibold text-sm">${initials}</div>`;
 
         const falseCount = resident.falseReportCount ?? 0;
+        const isRestricted = resident.status === "restricted";
+
+        const statusBadge = isRestricted
+          ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-800">
+              <i class="uil uil-ban text-xs"></i> Restricted
+            </span>`
+          : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              <i class="uil uil-check-circle text-xs"></i> Active
+            </span>`;
+
         const falseBadge =
           falseCount > 0
-            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400">
-            🚩 ${falseCount} false report
+            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400">
+            🚩 ${falseCount} false report${falseCount > 1 ? "s" : ""}
           </span>`
                   : "";
 
+        const restrictBtn = isRestricted
+          ? `<button onclick="liftRestriction('${resident.id}')" title="Lift Restriction"
+               class="text-gray-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 dark:hover:text-amber-400 transition-colors bg-[#F1F5F9] dark:bg-neutral-700 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
+               <i class="uil uil-lock-open-alt text-xl"></i>
+             </button>`
+          : "";
+
         return `
-      <tr class="hover:bg-gray-50 dark:hover:bg-black/20 transition item-enter" style="animation-delay: ${
-        index * 0.05
-      }s">
+      <tr class="hover:bg-gray-50 dark:hover:bg-black/20 transition item-enter ${isRestricted ? "bg-red-50/40 dark:bg-red-950/10" : ""}" style="animation-delay: ${index * 0.05}s">
         <td class="px-6 py-4">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 ${color} rounded-full flex items-center justify-center text-white font-semibold text-sm">
+            <div class="relative w-10 h-10 ${color} rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
               ${avatarHtml}
+              ${isRestricted ? `<span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border-2 border-white dark:border-neutral-800"><i class="uil uil-ban text-white" style="font-size:8px"></i></span>` : ""}
             </div>
-            <div class="flex flex-col">
+            <div class="flex flex-col gap-0.5">
               <span class="text-xs font-medium text-gray-800 dark:text-gray-200">${resident.name}</span>
-              ${falseBadge}
+              <div class="flex items-center gap-1 flex-wrap">
+                ${statusBadge}
+                ${falseBadge}
+              </div>
             </div>
           </div>
         </td>
@@ -347,14 +366,11 @@ function renderTable() {
         )}</td>
         <td class="px-6 py-4">
           <div class="flex items-center gap-2">
-            <button onclick="editResident('${
-              resident.id
-            }')" class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] dark:hover:bg-blue-900/20 dark:hover:text-blue-500 dark:bg-neutral-700 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
+            <button onclick="editResident('${resident.id}')" class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] dark:hover:bg-blue-900/20 dark:hover:text-blue-500 dark:bg-neutral-700 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
               <i class="uil uil-pen text-xl"></i>
             </button>
-            <button onclick="archiveResident('${
-              resident.id
-            }')" class="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-neutral-700 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
+            ${restrictBtn}
+            <button onclick="archiveResident('${resident.id}')" class="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-500 transition-colors bg-[#F1F5F9] dark:bg-neutral-700 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
               <i class="uil uil-archive-alt text-xl"></i>
             </button>
           </div>
@@ -1030,6 +1046,87 @@ async function confirmArchiveResident() {
   }
 
   modalManager.close("archiveModal");
+}
+
+// Lift Restriction Modal Functions
+function liftRestriction(id) {
+  const resident = residentsData.find((r) => r.id === id);
+  if (!resident) return;
+
+  window.currentLiftingId = id;
+
+  const liftBody = `
+    <div class="space-y-4">
+      <div class="flex items-center justify-center">
+        <div class="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/30 rounded-xl border border-red-200 dark:border-red-800">
+          <i class="uil uil-ban text-red-500 text-sm"></i>
+          <span class="text-xs font-semibold text-red-600 dark:text-red-400">Currently Restricted</span>
+          <span class="text-xs text-red-400 dark:text-red-500">·</span>
+          <span class="text-xs text-red-500 dark:text-red-400 font-mono">${resident.falseReportCount} false report${resident.falseReportCount !== 1 ? "s" : ""}</span>
+        </div>
+      </div>
+      <p class="text-xs text-gray-600 dark:text-gray-300 text-center leading-relaxed">
+        Are you sure you want to lift the restriction on
+        <span class="font-semibold text-gray-800 dark:text-white">${resident.name}</span>?
+        Their status will be restored to
+        <span class="font-semibold text-emerald-600">Active</span>
+        and their false report count will be reset to 0.
+      </p>
+      <div class="flex items-start gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+        <i class="uil uil-info-circle text-amber-500 text-sm mt-0.5 flex-shrink-0"></i>
+        <p class="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+          This action is logged. The resident will be able to submit incident reports again after this change.
+        </p>
+      </div>
+    </div>
+  `;
+
+  modalManager.create({
+    id: "liftModal",
+    icon: "uil-lock-open-alt",
+    iconColor: "text-amber-500",
+    iconBg: "bg-amber-100 dark:bg-amber-900/40",
+    title: "Lift Restriction",
+    subtitle: "Restore resident's access to the system.",
+    body: liftBody,
+    primaryButton: {
+      text: "Yes, Lift Restriction",
+      icon: "uil-lock-open-alt",
+      class: "bg-amber-500 hover:bg-amber-600",
+    },
+    secondaryButton: { text: "Cancel" },
+    onPrimary: confirmLiftRestriction,
+    onSecondary: () => modalManager.close("liftModal"),
+  });
+
+  modalManager.show("liftModal");
+}
+
+async function confirmLiftRestriction() {
+  const id = window.currentLiftingId;
+  if (!id) return;
+
+  try {
+    const response = await fetch("api/residents/update_resident_status.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status: "active", resetFalseCount: true }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      const name = residentsData.find((r) => r.id === id)?.name || "Resident";
+      await fetchResidents();
+      modalManager.close("liftModal");
+      showToast("success", `Restriction lifted for ${name}.`);
+    } else {
+      showToast("error", "Failed to lift restriction: " + result.error);
+    }
+  } catch (error) {
+    console.error("Lift restriction error:", error);
+    showToast("error", "Failed to lift restriction. Please try again.");
+  }
 }
 
 // Select All functionality
