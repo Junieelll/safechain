@@ -1600,9 +1600,8 @@ function generateReport() {
         </div>
       </div>
     `,
-    primaryButton: { text: "Close" },
     secondaryButton: { text: "Cancel" },
-    onPrimary: () => modalManager.close("reportModal"),
+    onSecondary: () => modalManager.close("reportModal"),
   });
 
   modalManager.show("reportModal");
