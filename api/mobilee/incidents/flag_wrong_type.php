@@ -84,7 +84,7 @@ $stmt->close();
 // ─── 2. Update incident — set is_wrong_type, keep status as false_alarm ───
 $stmt = $conn->prepare(
     "UPDATE incidents 
-     SET is_wrong_type = 1, status = 'false_alarm', updated_at = NOW()
+     SET is_wrong_type = 1, updated_at = NOW()
      WHERE id = ?"
 );
 $stmt->bind_param('s', $incidentId);
