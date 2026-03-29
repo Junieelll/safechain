@@ -49,7 +49,7 @@ if (!is_array($officials)) $officials = [];
 // ── Fetch incident + report details ──────────────────────────────────────
 $query = "
     SELECT 
-        i.id, i.type, i.location, i.status, i.is_false_alarm,
+        i.id, i.type, i.location, i.status, i.is_false_alarm, i.is_wrong_type,
         DATE_FORMAT(i.date_time, '%M %e, %Y') as date_reported,
         DATE_FORMAT(i.date_time, '%h:%i %p') as time_reported,
         i.latitude as lat, i.longitude as lng,
@@ -88,25 +88,33 @@ if (!$incident) {
     exit;
 }
 
-// ── Fetch false alarm flag details if applicable ─────────────────────────
-$falseAlarmFlag = null;
-if ($incident['status'] === 'false_alarm' || $incident['is_false_alarm']) {
+// ── Fetch flag details (false alarm OR wrong type) ───────────────────────
+$incidentFlag = null;
+$isFalseAlarm = ($incident['status'] === 'false_alarm' || !empty($incident['is_false_alarm']));
+$isWrongType  = !empty($incident['is_wrong_type']);
+
+if ($isFalseAlarm || $isWrongType) {
+    $flagType   = $isWrongType ? 'wrong_type' : 'false_alarm';
     $flagResult = mysqli_query($conn, "
         SELECT 
             f.flag_reason,
+            f.flag_type,
             f.created_at,
             u.name AS flagged_by_name,
             u.role AS flagged_by_role
         FROM incident_flags f
         LEFT JOIN users u ON f.flagged_by = u.user_id
         WHERE f.incident_id = '$incidentId'
+          AND f.flag_type = '$flagType'
         ORDER BY f.created_at DESC
         LIMIT 1
     ");
     if ($flagResult && mysqli_num_rows($flagResult) > 0) {
-        $falseAlarmFlag = mysqli_fetch_assoc($flagResult);
+        $incidentFlag = mysqli_fetch_assoc($flagResult);
     }
 }
+// Keep backward-compat alias
+$falseAlarmFlag = $isFalseAlarm ? $incidentFlag : null;
 
 // ── Fetch evidence attachments ───────────────────────────────────────────
 $evidenceList = [];
@@ -152,6 +160,8 @@ $typeLabels = [
 $typeLabel = $typeLabels[$incident['type']] ?? 'INCIDENT';
 if ($incident['status'] === 'false_alarm' || !empty($incident['is_false_alarm'])) {
     $typeLabel .= ' (FALSE ALARM)';
+} elseif (!empty($incident['is_wrong_type'])) {
+    $typeLabel .= ' (WRONG TYPE)';
 }
 
 $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) : AuthChecker::getName();
@@ -289,7 +299,7 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                         <?= htmlspecialchars($incident['submitted_by'] ?? $adminName) ?>
                     </div>
 
-                    <?php if ($incident['status'] === 'false_alarm' || !empty($incident['is_false_alarm'])): ?>
+                    <?php if ($isFalseAlarm || $isWrongType): ?>
                     <div style="
                         border: 2px solid #333;
                         border-radius: 4px;
@@ -311,16 +321,18 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                             flex-shrink: 0;
                             transform: rotate(-2deg);
                             font-family: serif;
-                        ">FALSE ALARM</div>
+                        "><?= $isFalseAlarm ? 'FALSE ALARM' : 'WRONG TYPE' ?></div>
                         <div style="font-size: 10px; color: #333; line-height: 1.6;">
                             <strong style="font-size: 11px; display: block; margin-bottom: 2px;">
-                                This incident has been classified as a FALSE ALARM.
+                                <?= $isFalseAlarm
+                                    ? 'This incident has been classified as a FALSE ALARM.'
+                                    : 'This incident has been flagged as the WRONG EMERGENCY TYPE.' ?>
                             </strong>
-                            <?php if ($falseAlarmFlag): ?>
-                                Flagged by: <strong><?= htmlspecialchars($falseAlarmFlag['flagged_by_name'] ?? 'Responder') ?></strong>
-                                (<?= ucfirst(htmlspecialchars($falseAlarmFlag['flagged_by_role'] ?? '')) ?>)
+                            <?php if ($incidentFlag): ?>
+                                Flagged by: <strong><?= htmlspecialchars($incidentFlag['flagged_by_name'] ?? 'Responder') ?></strong>
+                                (<?= ucfirst(htmlspecialchars($incidentFlag['flagged_by_role'] ?? '')) ?>)
                                 &nbsp;&mdash;&nbsp;
-                                <?= date('F j, Y \a\t h:i A', strtotime($falseAlarmFlag['created_at'])) ?>
+                                <?= date('F j, Y \a\t h:i A', strtotime($incidentFlag['created_at'])) ?>
                             <?php else: ?>
                                 No additional flag details on record.
                             <?php endif; ?>
@@ -352,11 +364,17 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                         </div>
                         <div class="list-item">
                             Status:
-                            <?php if ($incident['status'] === 'false_alarm' || !empty($incident['is_false_alarm'])): ?>
+                            <?php if ($isFalseAlarm): ?>
                                 <strong>False Alarm</strong>
-                                <?php if ($falseAlarmFlag): ?>
-                                    — flagged by <?= htmlspecialchars($falseAlarmFlag['flagged_by_name'] ?? 'Responder') ?>
-                                    on <?= date('F j, Y', strtotime($falseAlarmFlag['created_at'])) ?>
+                                <?php if ($incidentFlag): ?>
+                                    — flagged by <?= htmlspecialchars($incidentFlag['flagged_by_name'] ?? 'Responder') ?>
+                                    on <?= date('F j, Y', strtotime($incidentFlag['created_at'])) ?>
+                                <?php endif; ?>
+                            <?php elseif ($isWrongType): ?>
+                                <strong>Resolved — Wrong Emergency Type</strong>
+                                <?php if ($incidentFlag): ?>
+                                    — flagged by <?= htmlspecialchars($incidentFlag['flagged_by_name'] ?? 'Responder') ?>
+                                    on <?= date('F j, Y', strtotime($incidentFlag['created_at'])) ?>
                                 <?php endif; ?>
                             <?php else: ?>
                                 <?= ucfirst(htmlspecialchars($incident['status'])) ?>
@@ -516,29 +534,35 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                         </div>
                     <?php endif; ?>
 
-                    <!-- FALSE ALARM SECTION -->
-                    <?php if (($incident['status'] === 'false_alarm' || !empty($incident['is_false_alarm'])) && $falseAlarmFlag): ?>
+                    <!-- FLAG DETERMINATION SECTION -->
+                    <?php if (($isFalseAlarm || $isWrongType) && $incidentFlag): ?>
                         <?php
-                            // Shift roman numerals for this section
-                            $falseAlarmRoman = !empty($incident['follow_up_notes']) ? 'VIII' : 'VII';
+                            $flagRoman = !empty($incident['follow_up_notes']) ? 'VIII' : 'VII';
+                            $flagSectionTitle = $isFalseAlarm ? 'FALSE ALARM DETERMINATION' : 'WRONG EMERGENCY TYPE DETERMINATION';
+                            $flagSectionDesc  = $isFalseAlarm
+                                ? 'This incident was determined to be a false alarm upon on-site assessment by the responding personnel.'
+                                : 'Upon on-site assessment, the responding personnel determined that an emergency did occur but was incorrectly categorized by the reporter.';
+                            $flagNote = $isFalseAlarm
+                                ? 'No emergency response action was required. The original reporter\'s account has been noted accordingly per barangay protocol.'
+                                : 'The incident has been documented under the correct emergency classification for record-keeping and statistical accuracy.';
                         ?>
-                        <div class="section-title"><?= $falseAlarmRoman ?>. FALSE ALARM DETERMINATION</div>
+                        <div class="section-title"><?= $flagRoman ?>. <?= $flagSectionTitle ?></div>
                         <div class="section-content indent">
                             <div class="list-item">
-                                This incident was determined to be a false alarm upon on-site assessment by the responding personnel.
+                                <?= $flagSectionDesc ?>
                             </div>
                             <div class="list-item">
-                                Flagged By: <strong><?= htmlspecialchars($falseAlarmFlag['flagged_by_name'] ?? 'N/A') ?></strong>
-                                — <?= ucfirst(htmlspecialchars($falseAlarmFlag['flagged_by_role'] ?? 'Responder')) ?>
+                                Flagged By: <strong><?= htmlspecialchars($incidentFlag['flagged_by_name'] ?? 'N/A') ?></strong>
+                                — <?= ucfirst(htmlspecialchars($incidentFlag['flagged_by_role'] ?? 'Responder')) ?>
                             </div>
                             <div class="list-item">
-                                Date Flagged: <?= date('F j, Y \a\t h:i A', strtotime($falseAlarmFlag['created_at'])) ?>
+                                Date Flagged: <?= date('F j, Y \a\t h:i A', strtotime($incidentFlag['created_at'])) ?>
                             </div>
                             <div class="list-item">
-                                Reason Given: <em><?= nl2br(htmlspecialchars($falseAlarmFlag['flag_reason'])) ?></em>
+                                Reason Given: <em><?= nl2br(htmlspecialchars($incidentFlag['flag_reason'])) ?></em>
                             </div>
                             <div class="list-item" style="margin-top: 6px; font-style: italic; font-size: 10px; color: #555;">
-                                No emergency response action was required. The original reporter's account has been noted accordingly per barangay protocol.
+                                <?= $flagNote ?>
                             </div>
                         </div>
                     <?php endif; ?>
