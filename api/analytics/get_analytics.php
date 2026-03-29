@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+   
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
@@ -80,6 +84,7 @@ $summarySQL = "SELECT
     SUM(CASE WHEN i.status = 'resolved'   THEN 1 ELSE 0 END) as resolved,
     SUM(CASE WHEN i.status = 'responding' THEN 1 ELSE 0 END) as responding,
     SUM(CASE WHEN i.status = 'pending'    THEN 1 ELSE 0 END) as pending,
+    COUNT(CASE WHEN i.status = 'false_alarm' OR i.is_false_alarm = 1 THEN 1 END) AS falseAlarm,
     AVG(
         CASE
             WHEN ir.incident_id IS NOT NULL
@@ -96,6 +101,7 @@ $summary = mysqli_fetch_assoc($summaryResult);
 
 $total = intval($summary['total']);
 $resolved = intval($summary['resolved']);
+$falseAlarm = intval($summary['falseAlarm']);
 $resolutionRate = $total > 0 ? round(($resolved / $total) * 100, 1) : 0;
 $avgResponse = formatSeconds($summary['avg_response_time_seconds']);
 
@@ -183,7 +189,7 @@ $tableSQL = "SELECT
     ir.response_time_minutes, ir.response_time_seconds, ir.severity_level
 FROM incidents i
 LEFT JOIN incident_reports ir ON i.id = ir.incident_id
-$where AND i.status = 'resolved'
+$where AND (i.status = 'resolved' OR i.status = 'false_alarm' OR i.is_false_alarm = 1)
 ORDER BY i.date_time DESC
 LIMIT 10";
 
@@ -201,8 +207,41 @@ while ($row = mysqli_fetch_assoc($tableResult)) {
         'location' => $row['location'],
         'timeReported' => date('M d, Y g:i A', strtotime($row['date_time'])),
         'responseTime' => formatSeconds($totalSeconds),
-        'status' => ucfirst($row['status']),
+        'status' => ($row['status'] === 'false_alarm' || !empty($row['is_false_alarm'])) ? 'False Alarm' : ucfirst($row['status']),
         'severity' => $row['severity_level'] ?? 'N/A',
+    ];
+}
+
+// ── False alarm table rows (for export) ───────────────────
+$falseAlarmSQL = "SELECT 
+    i.id, i.type, i.reporter, i.location, i.date_time,
+    ir.response_time_minutes, ir.response_time_seconds,
+    f.flag_reason,
+    u.name AS flagged_by_name
+FROM incidents i
+LEFT JOIN incident_reports ir ON i.id = ir.incident_id
+LEFT JOIN incident_flags f ON f.incident_id = i.id
+LEFT JOIN users u ON f.flagged_by = u.user_id
+WHERE i.is_archived = 0
+  AND (i.status = 'false_alarm' OR i.is_false_alarm = 1)
+  $dateCondition $typeCondition
+ORDER BY i.date_time DESC
+LIMIT 50";
+
+$falseAlarmResult = mysqli_query($conn, $falseAlarmSQL);
+$falseAlarmData = [];
+while ($row = mysqli_fetch_assoc($falseAlarmResult)) {
+    $totalSec = (intval($row['response_time_minutes'] ?? 0) * 60)
+              + intval($row['response_time_seconds'] ?? 0);
+    $falseAlarmData[] = [
+        'id'           => $row['id'],
+        'type'         => ucfirst($row['type']),
+        'resident'     => $row['reporter'],
+        'location'     => $row['location'],
+        'timeReported' => date('M d, Y g:i A', strtotime($row['date_time'])),
+        'responseTime' => formatSeconds($totalSec),
+        'flagReason'   => $row['flag_reason'] ?? null,
+        'flaggedBy'    => $row['flagged_by_name'] ?? null,
     ];
 }
 
@@ -235,6 +274,7 @@ echo json_encode([
         'resolved' => $resolved,
         'responding' => intval($summary['responding']),
         'pending' => intval($summary['pending']),
+        'falseAlarm' => $falseAlarm,
         'resolutionRate' => $resolutionRate . '%',
         'avgResponseTime' => $avgResponse,
     ],
@@ -249,6 +289,7 @@ echo json_encode([
     'trendLabels' => $trendLabels,
     'trendData' => $trendData,
     'tableData' => $tableData,
+    'falseAlarms' => $falseAlarmData,
 ]);
 
 mysqli_close($conn);

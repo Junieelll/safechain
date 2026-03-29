@@ -832,13 +832,31 @@ function populateResponderBanner(incident) {
     incident.responder_name ?? incident.dispatched_by ?? incident.dispatched_to;
 
   if (incident.status === "responding") {
-    statusEl.textContent = "Currently responding";
-    statusEl.className = "text-xs text-blue-600 dark:text-blue-400";
+    // Label will be overwritten by updateLastSeenLabel tick once Pusher/seed fires
+    // Set a safe default in case there's no location data yet
+    if (incident.responder_location?.updated_at) {
+      // will be updated by updateLastSeenLabel seed call below
+    } else {
+      statusEl.textContent = "Dispatched — awaiting location";
+      statusEl.className = "text-xs text-blue-500 dark:text-blue-400 font-medium";
+    }
     const trackBtn = document.getElementById("trackResponderBtn");
     if (trackBtn) { trackBtn.style.display = "flex"; }
   } else if (incident.status === "resolved") {
-    statusEl.textContent = "Resolved this incident";
-    statusEl.className = "text-xs text-emerald-500 dark:text-emerald-400";
+    statusEl.textContent = incident.dispatched_at
+      ? `Resolved on ${new Date(incident.dispatched_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+      : "Resolved this incident";
+    statusEl.className = "text-xs text-emerald-500 dark:text-emerald-400 font-medium";
+    const trackBtn = document.getElementById("trackResponderBtn");
+    if (trackBtn) { trackBtn.style.display = "none"; }
+  } else if (incident.status === "false_alarm") {
+    statusEl.textContent = "Flagged as false alarm";
+    statusEl.className = "text-xs text-gray-400 dark:text-gray-500 font-medium";
+    const trackBtn = document.getElementById("trackResponderBtn");
+    if (trackBtn) { trackBtn.style.display = "none"; }
+  } else {
+    statusEl.textContent = "Assigned";
+    statusEl.className = "text-xs text-gray-500 dark:text-gray-400";
     const trackBtn = document.getElementById("trackResponderBtn");
     if (trackBtn) { trackBtn.style.display = "none"; }
   }
@@ -1840,7 +1858,7 @@ function trackResponder() {
       const name = currentIncident?.responder_name ?? currentIncident?.dispatched_by ?? 'Responder';
       responderMarker = L.marker(latlng, { icon: makeResponderIcon() })
         .addTo(map)
-        .bindPopup(`<b>${name}</b><br><span style="font-size:11px;color:#6b7280;">Live location</span>`);
+        .bindPopup(`<b>${name}</b><br><span style="font-size:11px;color:#6b7280;">On scene</span>`);
     }
   }
 
@@ -1874,20 +1892,36 @@ function trackResponder() {
     const tick = () => {
       const el = document.getElementById('responderStatus');
       if (!el || !lastPingTime) return;
+
+      // If incident is no longer responding, stop ticking and clear label
+      if (currentIncident && currentIncident.status !== 'responding') {
+        clearInterval(liveTickInterval);
+        liveTickInterval = null;
+        return;
+      }
+
       const secAgo = Math.floor((Date.now() - lastPingTime.getTime()) / 1000);
       const minAgo = Math.floor(secAgo / 60);
       const hrAgo  = Math.floor(minAgo / 60);
+
       if (secAgo < 5) {
         el.textContent = '● Live — just now';
-      } else if (secAgo < 60) {
+        el.className = 'text-xs text-blue-500 dark:text-blue-400 font-medium';
+      } else if (secAgo < 30) {
         el.textContent = `● Live — ${secAgo}s ago`;
+        el.className = 'text-xs text-blue-500 dark:text-blue-400 font-medium';
+      } else if (secAgo < 60) {
+        el.textContent = `Last seen — ${secAgo}s ago`;
+        el.className = 'text-xs text-gray-500 dark:text-gray-400 font-medium';
       } else if (minAgo < 60) {
-        el.textContent = `● Live — ${minAgo}m ago`;
+        el.textContent = `Last seen — ${minAgo}m ago`;
+        el.className = 'text-xs text-gray-500 dark:text-gray-400 font-medium';
       } else {
         const remainingMin = minAgo % 60;
         el.textContent = remainingMin > 0
-          ? `● Live — ${hrAgo}h ${remainingMin}m ago`
-          : `● Live — ${hrAgo}h ago`;
+          ? `Last seen — ${hrAgo}h ${remainingMin}m ago`
+          : `Last seen — ${hrAgo}h ago`;
+        el.className = 'text-xs text-gray-400 dark:text-gray-500 font-medium';
       }
     };
 

@@ -536,17 +536,23 @@ const activeDropdownClasses = [
   "dark:text-emerald-300",
 ];
 
+
+// Close all dropdowns helper
+function closeAllDropdowns() {
+  sortDropdownMenu.classList.add("hidden");
+  sortDropdownIcon.style.transform = "rotate(0deg)";
+  statusDropdownMenu.classList.add("hidden");
+  statusDropdownIcon.style.transform = "rotate(0deg)";
+}
+
 // Sort Dropdown Toggle
 sortDropdownButton.addEventListener("click", (e) => {
   e.stopPropagation();
   const isHidden = sortDropdownMenu.classList.contains("hidden");
-
+  closeAllDropdowns();
   if (isHidden) {
     sortDropdownMenu.classList.remove("hidden");
     sortDropdownIcon.style.transform = "rotate(180deg)";
-  } else {
-    sortDropdownMenu.classList.add("hidden");
-    sortDropdownIcon.style.transform = "rotate(0deg)";
   }
 });
 
@@ -575,13 +581,10 @@ sortDropdownItems.forEach((item) => {
 statusDropdownButton.addEventListener("click", (e) => {
   e.stopPropagation();
   const isHidden = statusDropdownMenu.classList.contains("hidden");
-
+  closeAllDropdowns();
   if (isHidden) {
     statusDropdownMenu.classList.remove("hidden");
     statusDropdownIcon.style.transform = "rotate(180deg)";
-  } else {
-    statusDropdownMenu.classList.add("hidden");
-    statusDropdownIcon.style.transform = "rotate(0deg)";
   }
 });
 
@@ -782,12 +785,7 @@ function exportResidents() {
 }
 
 // Close dropdowns when clicking outside
-document.addEventListener("click", () => {
-  sortDropdownMenu.classList.add("hidden");
-  sortDropdownIcon.style.transform = "rotate(0deg)";
-  statusDropdownMenu.classList.add("hidden");
-  statusDropdownIcon.style.transform = "rotate(0deg)";
-});
+document.addEventListener("click", () => closeAllDropdowns());
 
 function editResident(id) {
   const resident = residentsData.find((r) => r.id === id);

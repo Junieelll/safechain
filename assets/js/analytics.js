@@ -64,6 +64,12 @@ function updateStatisticsCards(summary, changes) {
   if (responseEl) responseEl.textContent = summary.avgResponseTime;
   if (resolutionEl) resolutionEl.textContent = summary.resolutionRate;
 
+  // Show false alarm count if present
+  const falseAlarmEl = document.querySelector('[data-stat="falseAlarm"]');
+  if (falseAlarmEl && summary.falseAlarm != null) {
+    falseAlarmEl.textContent = summary.falseAlarm;
+  }
+
   if (changes) {
     updateBadge('[data-badge="total"]', changes.total);
     updateBadge('[data-badge="response"]', changes.avgResponseTime);
@@ -173,7 +179,7 @@ function updateIncidentTable(rows) {
       <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">${inc.responseTime}</td>
       <td class="px-6 py-4">
         <span class="px-3 py-1 inline-flex text-xs font-semibold rounded-full ${getStatusClass(inc.status)}">
-          ${inc.status}
+          ${inc.status === "False_alarm" ? "False Alarm" : inc.status}
         </span>
       </td>
     </tr>
@@ -190,6 +196,10 @@ function getStatusClass(status) {
       "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
     Pending:
       "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+    "False Alarm":
+      "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    "False_alarm":
+      "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   };
   return classes[status] || "";
 }
@@ -816,8 +826,10 @@ window.executeExport = async function (format) {
     };
 
     if (exportConfig.includeData.summary) exportData.summary = result.summary;
-    if (exportConfig.includeData.incidents)
+    if (exportConfig.includeData.incidents) {
       exportData.incidents = result.tableData;
+    }
+    exportData.falseAlarms = result.falseAlarms || [];
     if (exportConfig.includeData.charts)
       exportData.charts = {
         typeDistribution: result.typeDistribution,
@@ -855,14 +867,30 @@ function downloadCSV(data) {
     csv += `Resolution Rate,${data.summary.resolutionRate}\n`;
     csv += `Resolved,${data.summary.resolved}\n`;
     csv += `Responding,${data.summary.responding}\n`;
-    csv += `Pending,${data.summary.pending}\n\n`;
+    csv += `Pending,${data.summary.pending}\n`;
+    if (data.summary.falseAlarm != null) {
+      csv += `False Alarms,${data.summary.falseAlarm}\n`;
+    }
+    csv += "\n";
   }
 
   if (data.incidents) {
+    const regularIncidents = data.incidents.filter(
+      (inc) => inc.status !== "False Alarm" && inc.status !== "False_alarm",
+    );
     csv += "=== INCIDENT DETAILS ===\n";
     csv += "ID,Type,Resident,Location,Time Reported,Response Time,Status\n";
-    data.incidents.forEach((inc) => {
+    regularIncidents.forEach((inc) => {
       csv += `${inc.id},${inc.type},"${inc.resident}","${inc.location}",${inc.timeReported},${inc.responseTime},${inc.status}\n`;
+    });
+    csv += "\n";
+  }
+
+  if (data.falseAlarms && data.falseAlarms.length > 0) {
+    csv += "=== FALSE ALARM INCIDENTS ===\n";
+    csv += "ID,Type,Resident,Location,Time Reported,Response Time\n";
+    data.falseAlarms.forEach((inc) => {
+      csv += `${inc.id},${inc.type},"${inc.resident}","${inc.location}",${inc.timeReported},${inc.responseTime}\n`;
     });
     csv += "\n";
   }
@@ -911,6 +939,12 @@ async function downloadPDF(data) {
   const resolvedIncidents = incidents.filter(
     (inc) => inc.status === "Resolved",
   );
+  const falseAlarmIncidents = data.falseAlarms || incidents.filter(
+    (inc) => inc.status === "False Alarm",
+  );
+  const regularIncidents = incidents.filter(
+    (inc) => inc.status !== "False Alarm" && inc.status !== "False_alarm",
+  );
 
   let contentHTML = `
     <div class="report-title">
@@ -928,6 +962,9 @@ async function downloadPDF(data) {
       <div class="list-item">Average Response Time: <strong>${summary.avgResponseTime ?? "N/A"}</strong></div>
       <div class="list-item">Resolution Rate: <strong>${summary.resolutionRate ?? "N/A"}</strong></div>
       <div class="list-item">Resolved: ${summary.resolved ?? 0}</div>
+      <div class="list-item">Pending: ${summary.pending ?? 0}</div>
+      <div class="list-item">Responding: ${summary.responding ?? 0}</div>
+      ${summary.falseAlarm != null ? `<div class="list-item">False Alarms: <strong>${summary.falseAlarm}</strong></div>` : ""}
     </div>
   `;
 
@@ -962,17 +999,41 @@ async function downloadPDF(data) {
     `;
   }
 
-  if (resolvedIncidents.length) {
+  if (regularIncidents.length) {
     contentHTML += sec("INCIDENT DETAILS");
 
-    // Each incident is its own independent div — NOT nested inside a parent wrapper
-    incidents.forEach((inc, i) => {
+    regularIncidents.forEach((inc, i) => {
       contentHTML += `
       <div class="list-item">
         <strong>${i + 1}. ${esc(inc.id)}</strong> — ${esc(inc.type)}<br>
         &nbsp;&nbsp;&nbsp;Resident: ${esc(inc.resident)}<br>
         &nbsp;&nbsp;&nbsp;Location: ${esc(inc.location)}<br>
         &nbsp;&nbsp;&nbsp;Time Reported: ${esc(inc.timeReported)} &nbsp;|&nbsp; Response Time: ${esc(inc.responseTime)}<br>
+        &nbsp;&nbsp;&nbsp;Status: ${esc(inc.status)}
+      </div>
+    `;
+    });
+  }
+
+  if (falseAlarmIncidents.length) {
+    contentHTML += sec("FALSE ALARM INCIDENTS");
+    contentHTML += `
+      <div class="section-content">
+        <div class="list-item" style="font-style:italic;font-size:10px;color:#555;margin-bottom:6px;">
+          The following incidents were assessed on-site and determined to be false alarms by the responding personnel.
+        </div>
+      </div>
+    `;
+
+    falseAlarmIncidents.forEach((inc, i) => {
+      contentHTML += `
+      <div class="list-item">
+        <strong>${i + 1}. ${esc(inc.id)}</strong> — ${esc(inc.type)}<br>
+        &nbsp;&nbsp;&nbsp;Resident: ${esc(inc.resident)}<br>
+        &nbsp;&nbsp;&nbsp;Location: ${esc(inc.location)}<br>
+        &nbsp;&nbsp;&nbsp;Time Reported: ${esc(inc.timeReported)}<br>
+        ${inc.flaggedBy ? `&nbsp;&nbsp;&nbsp;Flagged By: ${esc(inc.flaggedBy)}<br>` : ""}
+        ${inc.flagReason ? `&nbsp;&nbsp;&nbsp;Reason: <em>${esc(inc.flagReason)}</em>` : ""}
       </div>
     `;
     });

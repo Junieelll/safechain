@@ -49,7 +49,7 @@ if (!is_array($officials)) $officials = [];
 // ── Fetch incident + report details ──────────────────────────────────────
 $query = "
     SELECT 
-        i.id, i.type, i.location, i.status,
+        i.id, i.type, i.location, i.status, i.is_false_alarm,
         DATE_FORMAT(i.date_time, '%M %e, %Y') as date_reported,
         DATE_FORMAT(i.date_time, '%h:%i %p') as time_reported,
         i.latitude as lat, i.longitude as lng,
@@ -86,6 +86,26 @@ $incident = mysqli_fetch_assoc($result);
 if (!$incident) {
     header('Location: admin/incidents');
     exit;
+}
+
+// ── Fetch false alarm flag details if applicable ─────────────────────────
+$falseAlarmFlag = null;
+if ($incident['status'] === 'false_alarm' || $incident['is_false_alarm']) {
+    $flagResult = mysqli_query($conn, "
+        SELECT 
+            f.flag_reason,
+            f.created_at,
+            u.name AS flagged_by_name,
+            u.role AS flagged_by_role
+        FROM incident_flags f
+        LEFT JOIN users u ON f.flagged_by = u.user_id
+        WHERE f.incident_id = '$incidentId'
+        ORDER BY f.created_at DESC
+        LIMIT 1
+    ");
+    if ($flagResult && mysqli_num_rows($flagResult) > 0) {
+        $falseAlarmFlag = mysqli_fetch_assoc($flagResult);
+    }
 }
 
 // ── Fetch evidence attachments ───────────────────────────────────────────
@@ -130,6 +150,9 @@ $typeLabels = [
     'crime' => 'CRIME INCIDENT',
 ];
 $typeLabel = $typeLabels[$incident['type']] ?? 'INCIDENT';
+if ($incident['status'] === 'false_alarm' || !empty($incident['is_false_alarm'])) {
+    $typeLabel .= ' (FALSE ALARM)';
+}
 
 $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) : AuthChecker::getName();
 ?>
@@ -266,6 +289,45 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                         <?= htmlspecialchars($incident['submitted_by'] ?? $adminName) ?>
                     </div>
 
+                    <?php if ($incident['status'] === 'false_alarm' || !empty($incident['is_false_alarm'])): ?>
+                    <div style="
+                        border: 2px solid #333;
+                        border-radius: 4px;
+                        padding: 10px 14px;
+                        margin: 10px 0 14px 0;
+                        display: flex;
+                        align-items: flex-start;
+                        gap: 10px;
+                        background: #fff;
+                    ">
+                        <div style="
+                            font-size: 22px;
+                            font-weight: 900;
+                            letter-spacing: 3px;
+                            border: 3px solid #333;
+                            color: #333;
+                            padding: 2px 8px;
+                            line-height: 1.2;
+                            flex-shrink: 0;
+                            transform: rotate(-2deg);
+                            font-family: serif;
+                        ">FALSE ALARM</div>
+                        <div style="font-size: 10px; color: #333; line-height: 1.6;">
+                            <strong style="font-size: 11px; display: block; margin-bottom: 2px;">
+                                This incident has been classified as a FALSE ALARM.
+                            </strong>
+                            <?php if ($falseAlarmFlag): ?>
+                                Flagged by: <strong><?= htmlspecialchars($falseAlarmFlag['flagged_by_name'] ?? 'Responder') ?></strong>
+                                (<?= ucfirst(htmlspecialchars($falseAlarmFlag['flagged_by_role'] ?? '')) ?>)
+                                &nbsp;&mdash;&nbsp;
+                                <?= date('F j, Y \a\t h:i A', strtotime($falseAlarmFlag['created_at'])) ?>
+                            <?php else: ?>
+                                No additional flag details on record.
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
                     <!-- I. INCIDENT OVERVIEW -->
                     <div class="section-title">I. INCIDENT OVERVIEW</div>
                     <div class="section-content indent">
@@ -289,7 +351,16 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                             Severity Level: <?= ucfirst(htmlspecialchars($incident['severity_level'] ?? 'N/A')) ?>
                         </div>
                         <div class="list-item">
-                            Status: <?= ucfirst(htmlspecialchars($incident['status'])) ?>
+                            Status:
+                            <?php if ($incident['status'] === 'false_alarm' || !empty($incident['is_false_alarm'])): ?>
+                                <strong>False Alarm</strong>
+                                <?php if ($falseAlarmFlag): ?>
+                                    — flagged by <?= htmlspecialchars($falseAlarmFlag['flagged_by_name'] ?? 'Responder') ?>
+                                    on <?= date('F j, Y', strtotime($falseAlarmFlag['created_at'])) ?>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <?= ucfirst(htmlspecialchars($incident['status'])) ?>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -442,6 +513,33 @@ $adminName = isset($_GET['admin_name']) ? htmlspecialchars($_GET['admin_name']) 
                         <div class="section-title">VII. FOLLOW-UP NOTES</div>
                         <div class="section-content">
                             <div class="list-item"><?= nl2br(htmlspecialchars($incident['follow_up_notes'])) ?></div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- FALSE ALARM SECTION -->
+                    <?php if (($incident['status'] === 'false_alarm' || !empty($incident['is_false_alarm'])) && $falseAlarmFlag): ?>
+                        <?php
+                            // Shift roman numerals for this section
+                            $falseAlarmRoman = !empty($incident['follow_up_notes']) ? 'VIII' : 'VII';
+                        ?>
+                        <div class="section-title"><?= $falseAlarmRoman ?>. FALSE ALARM DETERMINATION</div>
+                        <div class="section-content indent">
+                            <div class="list-item">
+                                This incident was determined to be a false alarm upon on-site assessment by the responding personnel.
+                            </div>
+                            <div class="list-item">
+                                Flagged By: <strong><?= htmlspecialchars($falseAlarmFlag['flagged_by_name'] ?? 'N/A') ?></strong>
+                                — <?= ucfirst(htmlspecialchars($falseAlarmFlag['flagged_by_role'] ?? 'Responder')) ?>
+                            </div>
+                            <div class="list-item">
+                                Date Flagged: <?= date('F j, Y \a\t h:i A', strtotime($falseAlarmFlag['created_at'])) ?>
+                            </div>
+                            <div class="list-item">
+                                Reason Given: <em><?= nl2br(htmlspecialchars($falseAlarmFlag['flag_reason'])) ?></em>
+                            </div>
+                            <div class="list-item" style="margin-top: 6px; font-style: italic; font-size: 10px; color: #555;">
+                                No emergency response action was required. The original reporter's account has been noted accordingly per barangay protocol.
+                            </div>
                         </div>
                     <?php endif; ?>
 
