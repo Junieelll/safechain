@@ -58,7 +58,8 @@ const statusDropdownButton = document.getElementById("statusDropdownButton");
 const statusDropdownMenu = document.getElementById("statusDropdownMenu");
 const statusDropdownIcon = document.getElementById("statusDropdownIcon");
 const statusSelectedText = document.getElementById("statusSelectedText");
-const statusDropdownItems = statusDropdownMenu.querySelectorAll(".dropdown-item");
+const statusDropdownItems =
+  statusDropdownMenu.querySelectorAll(".dropdown-item");
 
 // Add CSS transition to tbody
 tableBody.style.transition =
@@ -232,14 +233,15 @@ function filterAndSortResidents() {
   filteredResidents = residentsData.filter((resident) => {
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch =
-      (resident.name     ?? "").toLowerCase().includes(searchLower) ||
-      (resident.id       ?? "").toLowerCase().includes(searchLower) ||
-      (resident.address  ?? "").toLowerCase().includes(searchLower) ||
-      (resident.contact  ?? "").includes(searchQuery) ||
+      (resident.name ?? "").toLowerCase().includes(searchLower) ||
+      (resident.id ?? "").toLowerCase().includes(searchLower) ||
+      (resident.address ?? "").toLowerCase().includes(searchLower) ||
+      (resident.contact ?? "").includes(searchQuery) ||
       (resident.deviceId ?? "").toLowerCase().includes(searchLower);
 
     const matchesStatus =
-      selectedStatus === "all" || (resident.status ?? "active") === selectedStatus;
+      selectedStatus === "all" ||
+      (resident.status ?? "active") === selectedStatus;
 
     return matchesSearch && matchesStatus;
   });
@@ -253,10 +255,14 @@ function filterAndSortResidents() {
       filteredResidents.sort((a, b) => a.registeredDate - b.registeredDate);
       break;
     case "ascending":
-      filteredResidents.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+      filteredResidents.sort((a, b) =>
+        (a.name ?? "").localeCompare(b.name ?? ""),
+      );
       break;
     case "descending":
-      filteredResidents.sort((a, b) => (b.name ?? "").localeCompare(a.name ?? ""));
+      filteredResidents.sort((a, b) =>
+        (b.name ?? "").localeCompare(a.name ?? ""),
+      );
       break;
   }
 }
@@ -338,9 +344,12 @@ function renderTable() {
         const falseBadge =
           falseCount > 0
             ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400">
-            🚩 ${falseCount} false report${falseCount > 1 ? "s" : ""}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3">
+              <path fill-rule="evenodd" d="M3 2.25a.75.75 0 0 1 .75.75v.54l1.838-.46a9.75 9.75 0 0 1 6.725.738l.108.054A8.25 8.25 0 0 0 18 4.524l3.11-.732a.75.75 0 0 1 .917.81 47.784 47.784 0 0 0 .005 10.337.75.75 0 0 1-.574.812l-3.114.733a9.75 9.75 0 0 1-6.594-.77l-.108-.054a8.25 8.25 0 0 0-5.69-.625l-2.202.55V21a.75.75 0 0 1-1.5 0V3A.75.75 0 0 1 3 2.25Z" clip-rule="evenodd" />
+            </svg>
+            ${falseCount} false report${falseCount > 1 ? "s" : ""}
           </span>`
-            : "";
+                : "";
 
         const restrictBtn = isRestricted
           ? `<button onclick="liftRestriction('${resident.id}')" title="Lift Restriction"
@@ -535,7 +544,6 @@ const activeDropdownClasses = [
   "dark:border-emerald-700/20",
   "dark:text-emerald-300",
 ];
-
 
 // Close all dropdowns helper
 function closeAllDropdowns() {
