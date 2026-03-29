@@ -81,7 +81,7 @@ if (!$stmt->execute()) {
 }
 $stmt->close();
 
-// ─── 2. Update incident — set is_wrong_type, keep status as false_alarm ───
+// ─── 2. Update incident — set is_wrong_type
 $stmt = $conn->prepare(
     "UPDATE incidents 
      SET is_wrong_type = 1, updated_at = NOW()
@@ -92,7 +92,7 @@ $stmt->execute();
 $stmt->close();
 
 // ─── 3. Log to incident_timeline ──────────────────────────────────────────
-$timelineTitle = 'Flagged as Wrong Emergency Type';
+$timelineTitle = 'Flagged as Wrong Emergency';
 $timelineDesc  = "{$actorName} flagged this incident as the wrong emergency type. Reason: {$reason}";
 $stmt = $conn->prepare(
     "INSERT INTO incident_timeline (incident_id, title, description, actor, user_id)

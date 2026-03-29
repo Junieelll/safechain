@@ -37,6 +37,7 @@ function handle_get(mysqli $conn, string $id, array $user): void
             r.resident_id         AS reporter_resident_id,
             r.medical_conditions  AS reporter_medical_conditions,
             f.flag_reason          AS flag_reason,
+            f.flag_type            AS flag_type,
             u.name                 AS responder_name,
             u.profile_picture      AS responder_avatar
         FROM incidents i
@@ -156,7 +157,9 @@ function format_detail(array $row, array $corroborators = [], int $rescueCount =
         'created_at'                  => $row['created_at'],
         'updated_at'                  => $row['updated_at'],
         'is_false_alarm'              => (bool) $row['is_false_alarm'],
+        'is_wrong_type'               => (bool) ($row['is_wrong_type'] ?? false),
         'flag_reason'                 => $row['flag_reason'] ?? null,
+        'flag_type'                   => $row['flag_type'] ?? null,
         'responder_name'              => $row['responder_name'] ?? null,
         'responder_avatar'            => $row['responder_avatar'] ?? null,
         'confidence_score'            => intval($row['confidence_score'] ?? 1),
