@@ -1,13 +1,26 @@
 <?php
 /**
- * SafeChain - Receive Incident API
- * Receives LoRa data from Python listener and saves to database
+ * SafeChain — Receive Incident API
+ * Accepts POST payloads from the Python Gateway Bridge.
+ *
+ * Supported types:
+ *   INCIDENT   — Emergency alert (fire / flood / crime)
+ *   GPS_UPDATE — Live location update for an active incident
+ *   HEARTBEAT  — Periodic device telemetry (battery %, RSSI, GPS)
+ *
  * Place in: api/receive_incident.php
  */
 
+// ── CORS & preflight ─────────────────────────────────────────────────────────
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, User-Agent, Accept');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
 
 require_once '../config/conn.php';
 require_once 'helpers/fcm_helper.php';
@@ -18,18 +31,29 @@ require_once '../vendor/phpmailer/phpmailer/src/SMTP.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as MailException;
 
-// Get JSON data from Python script
+// ── Parse body ───────────────────────────────────────────────────────────────
 $input = file_get_contents('php://input');
-$data = json_decode($input, true);
+$data  = json_decode($input, true);
 
-// Validate input
 if (!$data) {
-    echo json_encode(['success' => false, 'message' => 'Invalid JSON data']);
+    echo json_encode(['success' => false, 'message' => 'Invalid JSON body']);
     exit;
 }
 
-// Validate required fields
-$required = ['device_id', 'button', 'lat', 'lng', 'type'];
+// ── Route by type FIRST ───────────────────────────────────────────────────────
+// Each handler performs its own field validation and security checks.
+// Previously the required-field check and full security gate ran here for ALL
+// types, which caused HEARTBEAT requests (no 'button' field) to fail
+// immediately with "Missing field: button".
+$packetType = $data['type'] ?? '';
+
+if ($packetType === 'HEARTBEAT') {
+    handleHeartbeat($conn, $data);
+    exit;
+}
+
+// For INCIDENT and GPS_UPDATE, validate the shared required fields now.
+$required = ['device_id', 'button', 'lat', 'lng'];
 foreach ($required as $field) {
     if (!isset($data[$field])) {
         echo json_encode(['success' => false, 'message' => "Missing field: $field"]);
@@ -37,58 +61,46 @@ foreach ($required as $field) {
     }
 }
 
-// Get device + resident info joined from the devices side
+// ── Shared device + resident lookup ─────────────────────────────────────────
+// Used by INCIDENT and GPS_UPDATE handlers.
 $device_id = mysqli_real_escape_string($conn, $data['device_id']);
-$query = "SELECT d.status AS device_status,
-                 r.resident_id, r.name, r.address, r.contact,
-                 r.status AS resident_status, r.false_report_count
-          FROM devices d
-          LEFT JOIN residents r ON d.resident_id = r.resident_id
-          WHERE d.device_id = '$device_id'
-            AND (r.is_archived = 0 OR r.is_archived IS NULL)
-          LIMIT 1";
-$result = mysqli_query($conn, $query);
 
-if (!$result || mysqli_num_rows($result) == 0) {
-    echo json_encode([
-        'success' => false,
-        'message' => "Device '$device_id' not registered",
-    ]);
+$result = mysqli_query($conn, "
+    SELECT d.status AS device_status,
+           r.resident_id, r.name, r.address, r.contact,
+           r.status AS resident_status, r.false_report_count
+    FROM devices d
+    LEFT JOIN residents r ON d.resident_id = r.resident_id
+    WHERE d.device_id = '$device_id'
+      AND (r.is_archived = 0 OR r.is_archived IS NULL)
+    LIMIT 1
+");
+
+if (!$result || mysqli_num_rows($result) === 0) {
+    echo json_encode(['success' => false, 'message' => "Device '$device_id' not registered"]);
     exit;
 }
 
 $row = mysqli_fetch_assoc($result);
 
-// Deactivated device — hard reject, no incident created
+// ── Security gates ───────────────────────────────────────────────────────────
 if ($row['device_status'] === 'deactivated') {
-    echo json_encode([
-        'success' => false,
-        'message' => "Device '$device_id' is deactivated",
-    ]);
+    echo json_encode(['success' => false, 'message' => "Device '$device_id' is deactivated"]);
     exit;
 }
 
-// Missing device — tagged lost by resident, reject all signals
 if ($row['device_status'] === 'missing') {
-    echo json_encode([
-        'success' => false,
-        'message' => "Device '$device_id' has been reported missing",
-    ]);
+    echo json_encode(['success' => false, 'message' => "Device '$device_id' has been reported missing"]);
     exit;
 }
 
-// Device unlinked (resident_id is NULL) — drop silently
 if (empty($row['resident_id'])) {
-    echo json_encode([
-        'success' => false,
-        'message' => "Device '$device_id' is not linked to any resident",
-    ]);
+    echo json_encode(['success' => false, 'message' => "Device '$device_id' is not linked to any resident"]);
     exit;
 }
 
 $resident = $row;
 
-// Restricted resident — too many false reports, reject incoming signal
 if ($row['resident_status'] === 'restricted') {
     echo json_encode([
         'success'  => false,
@@ -98,10 +110,104 @@ if ($row['resident_status'] === 'restricted') {
     exit;
 }
 
-// ── Geofence check ────────────────────────────────────────────────────────
-// Read the setting once here so both handlers can use it
-$geofenceRow = mysqli_query($conn, "SELECT setting_value FROM system_settings WHERE setting_key = 'geofence_enabled' LIMIT 1");
+// ── Geofence setting ─────────────────────────────────────────────────────────
+$geofenceRow     = mysqli_query($conn, "SELECT setting_value FROM system_settings WHERE setting_key = 'geofence_enabled' LIMIT 1");
 $geofenceEnabled = ($geofenceRow && ($r = mysqli_fetch_assoc($geofenceRow))) ? $r['setting_value'] === '1' : false;
+
+// ── Route validated requests ─────────────────────────────────────────────────
+if ($packetType === 'INCIDENT') {
+    handleNewIncident($conn, $data, $resident, $geofenceEnabled);
+} elseif ($packetType === 'GPS_UPDATE') {
+    handleGPSUpdate($conn, $data, $resident);
+} else {
+    echo json_encode(['success' => false, 'message' => "Unknown packet type: $packetType"]);
+}
+
+mysqli_close($conn);
+
+// ============================================================
+// HEARTBEAT HANDLER
+// ============================================================
+// Lightweight path — no security gates, no incident creation.
+// Purpose: keep device battery % and last_seen fresh in the DB
+// so the admin dashboard can show live device health.
+//
+// Security posture:
+//   - Device must exist in the 'devices' table (basic authenticity check).
+//   - Deactivated / missing devices still update telemetry — the admin
+//     explicitly wants to know these devices are still transmitting.
+//   - No resident linkage required (an unassigned but valid device can
+//     still report its health).
+//
+// Required fields: device_id, lat, lng, battery, rssi
+// SQL note: assumes devices table has a 'last_seen' DATETIME column and a
+//           'battery' TINYINT UNSIGNED column. Run this migration if needed:
+//   ALTER TABLE devices
+//     ADD COLUMN battery   TINYINT UNSIGNED DEFAULT NULL,
+//     ADD COLUMN last_seen DATETIME         DEFAULT NULL;
+// ============================================================
+function handleHeartbeat($conn, array $data): void
+{
+    // Field validation
+    foreach (['device_id', 'lat', 'lng', 'battery'] as $field) {
+        if (!isset($data[$field])) {
+            echo json_encode(['success' => false, 'message' => "Heartbeat missing field: $field"]);
+            return;
+        }
+    }
+
+    $device_id = mysqli_real_escape_string($conn, $data['device_id']);
+    $lat       = floatval($data['lat']);
+    $lng       = floatval($data['lng']);
+    $battery   = intval($data['battery']);
+    $rssi      = intval($data['rssi'] ?? 0);
+
+    // Clamp battery to valid range
+    $battery = max(0, min(100, $battery));
+
+    // Confirm the device exists (any status is allowed for telemetry)
+    $check = mysqli_query($conn, "SELECT device_id, status FROM devices WHERE device_id = '$device_id' LIMIT 1");
+    if (!$check || mysqli_num_rows($check) === 0) {
+        echo json_encode(['success' => false, 'message' => "Heartbeat: device '$device_id' not found"]);
+        return;
+    }
+
+    $device = mysqli_fetch_assoc($check);
+
+    // Update battery and last_seen
+    $updated = mysqli_query($conn, "
+        UPDATE devices
+        SET battery   = $battery,
+            last_seen = NOW()
+        WHERE device_id = '$device_id'
+    ");
+
+    if (!$updated) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Heartbeat DB update failed: ' . mysqli_error($conn),
+        ]);
+        return;
+    }
+
+    error_log(sprintf(
+        '[SafeChain] HEARTBEAT device=%s status=%s batt=%d%% rssi=%ddBm lat=%.6f lng=%.6f',
+        $device_id, $device['status'], $battery, $rssi, $lat, $lng
+    ));
+
+    echo json_encode([
+        'success'   => true,
+        'type'      => 'HEARTBEAT',
+        'device_id' => $device_id,
+        'battery'   => $battery,
+        'rssi'      => $rssi,
+        'timestamp' => date('Y-m-d H:i:s'),
+    ]);
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
 
 /**
  * Ray-casting point-in-polygon for the Gulod boundary.
@@ -114,7 +220,7 @@ function isInsideGulod(float $lat, float $lng): bool
     $inside = false;
     $n = count($coords);
     for ($i = 0, $j = $n - 1; $i < $n; $j = $i++) {
-        $xi = $coords[$i][0]; $yi = $coords[$i][1]; // lng, lat
+        $xi = $coords[$i][0]; $yi = $coords[$i][1];
         $xj = $coords[$j][0]; $yj = $coords[$j][1];
         if ((($yi > $lat) !== ($yj > $lat)) &&
             ($lng < ($xj - $xi) * ($lat - $yi) / ($yj - $yi) + $xi)) {
@@ -124,33 +230,22 @@ function isInsideGulod(float $lat, float $lng): bool
     return $inside;
 }
 
-// Handle different packet types
-if ($data['type'] === 'INCIDENT') {
-    handleNewIncident($conn, $data, $resident, $geofenceEnabled);
-} elseif ($data['type'] === 'GPS_UPDATE') {
-    handleGPSUpdate($conn, $data, $resident);
-}
-
-// ============================================================
-// HELPERS
-// ============================================================
-
 /**
  * Reverse geocode lat/lng → street, barangay, city via Nominatim
  */
-function reverseGeocode($lat, $lng): string
+function reverseGeocode(float $lat, float $lng): string
 {
-    $url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng";
+    $url  = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng";
     $opts = ['http' => ['header' => "User-Agent: SafeChain/1.0\r\n"]];
-    $response = @file_get_contents($url, false, stream_context_create($opts));
+    $resp = @file_get_contents($url, false, stream_context_create($opts));
 
-    if ($response) {
-        $json = json_decode($response, true);
-        $a = $json['address'] ?? [];
+    if ($resp) {
+        $json = json_decode($resp, true);
+        $a    = $json['address'] ?? [];
         $parts = array_filter([
             $a['road'] ?? $a['pedestrian'] ?? $a['path'] ?? null,
             $a['suburb'] ?? $a['village'] ?? $a['neighbourhood'] ?? $a['quarter'] ?? null,
-            $a['city'] ?? $a['town'] ?? $a['municipality'] ?? null,
+            $a['city']   ?? $a['town']    ?? $a['municipality']  ?? null,
         ]);
         return implode(', ', $parts) ?: "$lat, $lng";
     }
@@ -161,54 +256,42 @@ function reverseGeocode($lat, $lng): string
 // ============================================================
 // INCIDENT HANDLER
 // ============================================================
-
-function handleNewIncident($conn, $data, $resident, bool $geofenceEnabled = false)
+function handleNewIncident($conn, array $data, array $resident, bool $geofenceEnabled): void
 {
-    global $config;
-
-    $type = mysqli_real_escape_string($conn, $data['button'] ?? 'fire');
-    $lat = floatval($data['lat']);
-    $lng = floatval($data['lng']);
+    $type        = mysqli_real_escape_string($conn, $data['button'] ?? 'fire');
+    $lat         = floatval($data['lat']);
+    $lng         = floatval($data['lng']);
     $reporter_id = mysqli_real_escape_string($conn, $resident['resident_id']);
-    $device_id = mysqli_real_escape_string($conn, $data['device_id']);
+    $device_id   = mysqli_real_escape_string($conn, $data['device_id']);
     $reporter_name = mysqli_real_escape_string($conn, $resident['name']);
 
-    // ── Geofence rejection ────────────────────────────────────
+    // Geofence rejection
     if ($geofenceEnabled && !isInsideGulod($lat, $lng)) {
         echo json_encode([
             'success' => false,
-            'message' => 'Incident location is outside Barangay Gulod boundary (geofence is enabled)',
-            'lat' => $lat,
-            'lng' => $lng,
+            'message' => 'Incident location is outside Barangay Gulod boundary (geofence enabled)',
+            'lat' => $lat, 'lng' => $lng,
         ]);
-        exit;
+        return;
     }
 
-    // Validate type
+    // Type validation
     $validTypes = ['fire', 'crime', 'flood'];
     if (!in_array($type, $validTypes)) {
         echo json_encode(['success' => false, 'message' => 'Invalid incident type']);
-        exit;
+        return;
     }
 
-    // ── Type-specific proximity thresholds ────────────────────
-    $proximityThresholds = [
-        'fire' => 0.00045,  // ~50 m
-        'flood' => 0.0018,   // ~200 m
-        'crime' => 0.00027,  // ~30 m
-    ];
-    $proximityThreshold = $proximityThresholds[$type] ?? 0.00045;
+    // Type-specific proximity thresholds
+    $proximityThresholds = ['fire' => 0.00045, 'flood' => 0.0018, 'crime' => 0.00027];
+    $proximityThreshold  = $proximityThresholds[$type] ?? 0.00045;
 
-    // ── Type-specific time windows ────────────────────────────
-    $timeWindows = [
-        'fire' => 15,
-        'flood' => 30,
-        'crime' => 5,
-    ];
-    $timeWindow = $timeWindows[$type] ?? 15;
+    // Type-specific time windows (minutes)
+    $timeWindows = ['fire' => 15, 'flood' => 30, 'crime' => 5];
+    $timeWindow  = $timeWindows[$type] ?? 15;
 
-    // ── 1. Look for a nearby active incident to corroborate ───
-    $nearbyQuery = "
+    // Look for a nearby active incident to corroborate
+    $nearbyResult = mysqli_query($conn, "
         SELECT id, confidence_score, corroborated_by
         FROM incidents
         WHERE type           = '$type'
@@ -222,141 +305,93 @@ function handleNewIncident($conn, $data, $resident, bool $geofenceEnabled = fals
           AND created_at    >= DATE_SUB(NOW(), INTERVAL $timeWindow MINUTE)
         ORDER BY created_at DESC
         LIMIT 1
-    ";
-
-    $nearbyResult = mysqli_query($conn, $nearbyQuery);
+    ");
 
     if ($nearbyResult && mysqli_num_rows($nearbyResult) > 0) {
 
-        // ── CORROBORATION PATH ────────────────────────────────
-        $existing = mysqli_fetch_assoc($nearbyResult);
+        // ── CORROBORATION PATH ────────────────────────────────────────────
+        $existing    = mysqli_fetch_assoc($nearbyResult);
         $incident_id = mysqli_real_escape_string($conn, $existing['id']);
 
-        // ── 2. Check if this resident already reported / corroborated ──
-        $alreadyQuery = "
+        $alreadyResult = mysqli_query($conn, "
             SELECT 'original' AS source
             FROM incidents
-            WHERE id          = '$incident_id'
-              AND reporter_id = '$reporter_id'
-
+            WHERE id = '$incident_id' AND reporter_id = '$reporter_id'
             UNION
-
             SELECT 'corroboration' AS source
             FROM incident_corroborations
-            WHERE incident_id = '$incident_id'
-              AND resident_id = '$reporter_id'
+            WHERE incident_id = '$incident_id' AND resident_id = '$reporter_id'
             LIMIT 1
-        ";
+        ");
 
-        $alreadyResult = mysqli_query($conn, $alreadyQuery);
-        // Fetch the row immediately — num_rows check then fetch_assoc both advance cursor
-        $alreadyRow = ($alreadyResult && mysqli_num_rows($alreadyResult) > 0)
-            ? mysqli_fetch_assoc($alreadyResult)
-            : null;
+        $alreadyRow      = ($alreadyResult && mysqli_num_rows($alreadyResult) > 0)
+                            ? mysqli_fetch_assoc($alreadyResult) : null;
         $alreadyReported = $alreadyRow !== null;
+        $needs_rescue    = $alreadyReported ? 1 : 0;
 
-        // Rescue = only when they re-trigger (already reported before)
-        $needs_rescue = $alreadyReported ? 1 : 0;
-
-        // ── 3. INSERT or UPDATE corroboration record ──────────
         if ($alreadyReported) {
             if ($alreadyRow['source'] === 'original') {
-                // Update GPS + flag rescue directly on the incident
                 mysqli_query($conn, "
-        UPDATE incidents SET
-            latitude     = $lat,
-            longitude    = $lng,
-            needs_rescue = 1,
-            updated_at   = NOW()
-        WHERE id = '$incident_id'
-    ");
+                    UPDATE incidents SET latitude = $lat, longitude = $lng,
+                        needs_rescue = 1, updated_at = NOW()
+                    WHERE id = '$incident_id'
+                ");
             } else {
-                // Corroborator re-triggered — update their corroboration GPS
                 mysqli_query($conn, "
-                    UPDATE incident_corroborations SET
-                        lat          = $lat,
-                        lng          = $lng,
-                        needs_rescue = 1,
-                        reported_at  = NOW()
-                    WHERE incident_id = '$incident_id'
-                      AND resident_id = '$reporter_id'
+                    UPDATE incident_corroborations
+                    SET lat = $lat, lng = $lng, needs_rescue = 1, reported_at = NOW()
+                    WHERE incident_id = '$incident_id' AND resident_id = '$reporter_id'
                 ");
             }
         } else {
-            // Brand-new corroborator — insert fresh record
             mysqli_query($conn, "
                 INSERT INTO incident_corroborations
                     (incident_id, resident_id, device_id, lat, lng, needs_rescue)
-                VALUES
-                    ('$incident_id', '$reporter_id', '$device_id', $lat, $lng, 0)
+                VALUES ('$incident_id', '$reporter_id', '$device_id', $lat, $lng, 0)
             ");
         }
 
-        // ── 4. Bump confidence score ONLY for new corroborators ──────
         if (!$alreadyReported) {
             mysqli_query($conn, "
-        UPDATE incidents SET
-            confidence_score = confidence_score + 1,
-            corroborated_by  = corroborated_by  + 1,
-            updated_at       = NOW()
-        WHERE id = '$incident_id'
-    ");
+                UPDATE incidents SET
+                    confidence_score = confidence_score + 1,
+                    corroborated_by  = corroborated_by  + 1,
+                    updated_at       = NOW()
+                WHERE id = '$incident_id'
+            ");
         }
 
-        // ── 6. FCM notifications ──────────────────────────────
         $newConfidence = intval($existing['confidence_score']) + 1;
 
         if ($needs_rescue) {
             sendFCMToAllResponders($conn, [
-                'id' => $incident_id,
-                'type' => $type,
-                'location' => "$lat, $lng",
+                'id' => $incident_id, 'type' => $type, 'location' => "$lat, $lng",
                 'extra' => " RESCUE NEEDED: {$resident['name']} (Device: {$data['device_id']})",
             ]);
-            error_log(sprintf(
-                "[SafeChain] ⚠️ RESCUE SIGNAL: %s needs rescue at incident %s (%.6f, %.6f)",
-                $resident['name'],
-                $incident_id,
-                $lat,
-                $lng
-            ));
         } elseif ($newConfidence === 3) {
             sendFCMToAllResponders($conn, [
-                'id' => $incident_id,
-                'type' => $type,
-                'location' => "$lat, $lng",
-                'extra' => " HIGH CONFIDENCE: {$newConfidence} residents reporting",
+                'id' => $incident_id, 'type' => $type, 'location' => "$lat, $lng",
+                'extra' => " HIGH CONFIDENCE: $newConfidence residents reporting",
             ]);
-            error_log(sprintf(
-                "[SafeChain]  HIGH CONFIDENCE: Incident %s now has %d reports",
-                $incident_id,
-                $newConfidence
-            ));
         }
 
-        // ── 7. Response ───────────────────────────────────────
         echo json_encode([
-            'success' => true,
-            'action' => $alreadyReported ? 'rescue_signal' : 'corroborated',
-            'incident_id' => $incident_id,
+            'success'          => true,
+            'action'           => $alreadyReported ? 'rescue_signal' : 'corroborated',
+            'incident_id'      => $incident_id,
             'confidence_score' => $newConfidence,
-            'needs_rescue' => (bool) $needs_rescue,
-            'reporter' => $resident['name'],
-            'reporter_id' => $reporter_id,
-            'timestamp' => date('Y-m-d H:i:s'),
+            'needs_rescue'     => (bool) $needs_rescue,
+            'reporter'         => $resident['name'],
+            'reporter_id'      => $reporter_id,
+            'timestamp'        => date('Y-m-d H:i:s'),
         ]);
         return;
     }
 
-    // ── NEW INCIDENT PATH ─────────────────────────────────────
+    // ── NEW INCIDENT PATH ─────────────────────────────────────────────────────
 
-    // ── 8. Generate incident ID ───────────────────────────────
-    $lastResult = mysqli_query($conn, "
-        SELECT id FROM incidents
-        ORDER BY created_at DESC
-        LIMIT 1
-    ");
-
+    // Generate incident ID
+    $lastResult = mysqli_query($conn, "SELECT id FROM incidents ORDER BY created_at DESC LIMIT 1");
     if ($lastResult && mysqli_num_rows($lastResult) > 0) {
         $lastIncident = mysqli_fetch_assoc($lastResult);
         preg_match('/(\d+)$/', $lastIncident['id'], $matches);
@@ -364,21 +399,16 @@ function handleNewIncident($conn, $data, $resident, bool $geofenceEnabled = fals
     } else {
         $newNumber = 1001;
     }
-
     $incidentId = 'EMG-' . date('Y') . '-' . $newNumber;
 
-    // ── 9. Reverse geocode ────────────────────────────────────
     $geocodedAddress = reverseGeocode($lat, $lng);
-    $location = mysqli_real_escape_string($conn, $geocodedAddress);
+    $location        = mysqli_real_escape_string($conn, $geocodedAddress);
 
-    // ── 10. Insert new incident ───────────────────────────────
-    // Use date_time from Python if provided (for queued offline incidents
-    // that were recorded locally but pushed later). Falls back to NOW().
     $incidentDateTime = !empty($data['date_time'])
         ? "'" . mysqli_real_escape_string($conn, $data['date_time']) . "'"
         : 'NOW()';
 
-    $insertQuery = "
+    $inserted = mysqli_query($conn, "
         INSERT INTO incidents
             (id, type, location, reporter, reporter_id, device_id,
              date_time, status, is_archived, latitude, longitude,
@@ -387,132 +417,104 @@ function handleNewIncident($conn, $data, $resident, bool $geofenceEnabled = fals
             ('$incidentId', '$type', '$location', '$reporter_name',
              '$reporter_id', '$device_id', $incidentDateTime, 'pending', 0,
              $lat, $lng, 1, 0, 0)
-    ";
+    ");
 
-    if (!mysqli_query($conn, $insertQuery)) {
+    if (!$inserted) {
         echo json_encode([
             'success' => false,
             'message' => 'Failed to save incident: ' . mysqli_error($conn),
         ]);
-        exit;
+        return;
     }
 
-    // ── 11. Initial timeline entry ────────────────────────────
+    // Initial timeline entry
     $initDesc = mysqli_real_escape_string(
         $conn,
         "Emergency reported by {$resident['name']} via device {$data['device_id']}"
     );
     mysqli_query($conn, "
-        INSERT INTO incident_timeline
-            (incident_id, title, description, actor, user_id)
-        VALUES (
-            '$incidentId',
-            'Incident reported',
-            '$initDesc',
-            '$reporter_name',
-            '$reporter_id'
-        )
+        INSERT INTO incident_timeline (incident_id, title, description, actor, user_id)
+        VALUES ('$incidentId', 'Incident reported', '$initDesc', '$reporter_name', '$reporter_id')
     ");
 
-    // ── 12. Notify responders ─────────────────────────────────
     sendFCMToAllResponders($conn, [
-        'id' => $incidentId,
-        'type' => $type,
-        'location' => $geocodedAddress,
+        'id' => $incidentId, 'type' => $type, 'location' => $geocodedAddress,
     ]);
 
     error_log(sprintf(
-        "[SafeChain] New %s: %s by %s (%s) at (%.6f, %.6f) — %s",
-        strtoupper($type),
-        $incidentId,
-        $resident['name'],
-        $reporter_id,
-        $lat,
-        $lng,
-        $geocodedAddress
+        '[SafeChain] New %s: %s by %s (%s) at (%.6f, %.6f) — %s',
+        strtoupper($type), $incidentId, $resident['name'],
+        $reporter_id, $lat, $lng, $geocodedAddress
     ));
 
-    // ── 13. Notify emergency contacts via email ─────────────
-    notifyEmergencyContacts($conn, $reporter_id, $resident['name'], $type, $geocodedAddress, $incidentId, $lat, $lng);
+    notifyEmergencyContacts(
+        $conn, $reporter_id, $resident['name'],
+        $type, $geocodedAddress, $incidentId, $lat, $lng
+    );
 
-    // ── 14. Response ──────────────────────────────────────────
     echo json_encode([
-        'success' => true,
-        'action' => 'created',
-        'incident_id' => $incidentId,
-        'type' => $type,
+        'success'          => true,
+        'action'           => 'created',
+        'incident_id'      => $incidentId,
+        'type'             => $type,
         'confidence_score' => 1,
-        'needs_rescue' => false,
-        'reporter' => $resident['name'],
-        'reporter_id' => $reporter_id,
-        'device_id' => $device_id,
-        'location' => [
-            'lat' => $lat,
-            'lng' => $lng,
-            'address' => $geocodedAddress,
-        ],
-        'timestamp' => date('Y-m-d H:i:s'),
+        'needs_rescue'     => false,
+        'reporter'         => $resident['name'],
+        'reporter_id'      => $reporter_id,
+        'device_id'        => $device_id,
+        'location'         => ['lat' => $lat, 'lng' => $lng, 'address' => $geocodedAddress],
+        'timestamp'        => date('Y-m-d H:i:s'),
     ]);
 }
 
 // ============================================================
 // GPS UPDATE HANDLER
 // ============================================================
-
-function handleGPSUpdate($conn, $data, $resident)
+function handleGPSUpdate($conn, array $data, array $resident): void
 {
-    // Gate: deactivated device cannot update GPS
     if ($resident['device_status'] === 'deactivated') {
         echo json_encode(['success' => false, 'message' => 'Device is deactivated']);
         return;
     }
-
-    // Gate: missing device cannot update GPS
     if ($resident['device_status'] === 'missing') {
         echo json_encode(['success' => false, 'message' => 'Device has been reported missing']);
         return;
     }
-
-    // Gate: restricted resident cannot update GPS
     if ($resident['resident_status'] === 'restricted') {
         echo json_encode(['success' => false, 'message' => 'Resident is restricted']);
         return;
     }
 
     $reporter_id = mysqli_real_escape_string($conn, $resident['resident_id']);
-    $device_id = mysqli_real_escape_string($conn, $data['device_id']);
+    $device_id   = mysqli_real_escape_string($conn, $data['device_id']);
 
-    $query = "SELECT id FROM incidents
-              WHERE reporter_id = '$reporter_id'
-                AND device_id   = '$device_id'
-                AND status      IN ('pending', 'responding')
-                AND is_archived = 0
-              ORDER BY created_at DESC
-              LIMIT 1";
-
-    $result = mysqli_query($conn, $query);
+    $result = mysqli_query($conn, "
+        SELECT id FROM incidents
+        WHERE reporter_id = '$reporter_id'
+          AND device_id   = '$device_id'
+          AND status      IN ('pending', 'responding')
+          AND is_archived = 0
+        ORDER BY created_at DESC
+        LIMIT 1
+    ");
 
     if ($result && mysqli_num_rows($result) > 0) {
-        $incident = mysqli_fetch_assoc($result);
+        $incident    = mysqli_fetch_assoc($result);
         $incident_id = mysqli_real_escape_string($conn, $incident['id']);
-        $lat = floatval($data['lat']);
-        $lng = floatval($data['lng']);
+        $lat         = floatval($data['lat']);
+        $lng         = floatval($data['lng']);
 
-        // Only update coordinates — location string stays as initial geocoded address
-        $updateQuery = "UPDATE incidents SET
-                            latitude   = $lat,
-                            longitude  = $lng,
-                            updated_at = NOW()
-                        WHERE id = '$incident_id'";
-
-        if (mysqli_query($conn, $updateQuery)) {
+        if (mysqli_query($conn, "
+            UPDATE incidents SET latitude = $lat, longitude = $lng, updated_at = NOW()
+            WHERE id = '$incident_id'
+        ")) {
             echo json_encode([
-                'success' => true,
-                'type' => 'GPS_UPDATE',
+                'success'     => true,
+                'type'        => 'GPS_UPDATE',
                 'incident_id' => $incident_id,
                 'reporter_id' => $reporter_id,
-                'location' => ['lat' => $lat, 'lng' => $lng],
-                'timestamp' => date('Y-m-d H:i:s'),
+                'location'    => ['lat' => $lat, 'lng' => $lng],
+                'timestamp'   => date('Y-m-d H:i:s'),
             ]);
         } else {
             echo json_encode([
@@ -521,17 +523,13 @@ function handleGPSUpdate($conn, $data, $resident)
             ]);
         }
     } else {
-        echo json_encode([
-            'success' => false,
-            'message' => 'No active incident found for this device',
-        ]);
+        echo json_encode(['success' => false, 'message' => 'No active incident found for this device']);
     }
 }
 
 // ============================================================
 // EMERGENCY CONTACT EMAIL NOTIFIER
 // ============================================================
-
 function notifyEmergencyContacts(
     $conn,
     string $residentId,
@@ -539,37 +537,30 @@ function notifyEmergencyContacts(
     string $incidentType,
     string $location,
     string $incidentId,
-    float $lat,
-    float $lng
+    float  $lat,
+    float  $lng
 ): void {
     global $config;
 
-    // Fetch emergency contacts that have an email
     $stmt = $conn->prepare("
         SELECT name, email, relationship, contact_number
         FROM emergency_contacts
-        WHERE resident_id = ?
-          AND email IS NOT NULL
-          AND email != ''
+        WHERE resident_id = ? AND email IS NOT NULL AND email != ''
     ");
     $stmt->bind_param('s', $residentId);
     $stmt->execute();
     $contacts = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
-    if (empty($contacts)) {
-        return;
-    }
+    if (empty($contacts)) return;
 
-    $typeLabel  = ucfirst($incidentType);
-    $mapsUrl    = "https://www.google.com/maps?q={$lat},{$lng}";
-    $timestamp  = date('F j, Y g:i A');
+    $typeLabel = ucfirst($incidentType);
+    $mapsUrl   = "https://www.google.com/maps?q={$lat},{$lng}";
+    $timestamp = date('F j, Y g:i A');
 
     foreach ($contacts as $contact) {
         try {
             $mail = new PHPMailer(true);
-
-            // ── SMTP config ───────────────────────────────────
             $mail->isSMTP();
             $mail->Host       = $config['mail']['host'];
             $mail->SMTPAuth   = true;
@@ -578,15 +569,8 @@ function notifyEmergencyContacts(
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
             $mail->Port       = $config['mail']['port'];
             $mail->Timeout    = 15;
-
-            // ── Recipients ────────────────────────────────────
-            $mail->setFrom(
-                $config['mail']['username'],
-                $config['mail']['from_name']
-            );
+            $mail->setFrom($config['mail']['username'], $config['mail']['from_name']);
             $mail->addAddress($contact['email'], $contact['name']);
-
-            // ── Content ───────────────────────────────────────
             $mail->isHTML(true);
             $mail->CharSet = 'UTF-8';
             $mail->Subject = "SafeChain {$typeLabel} Alert - {$residentName} needs help";
@@ -595,39 +579,21 @@ function notifyEmergencyContacts(
 <html>
 <body style='font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1a;'>
   <div style='background:#EF4444;border-radius:12px 12px 0 0;padding:20px 24px;'>
-    <h2 style='color:#fff;margin:0;font-size:20px;'>
-      {$typeLabel} Emergency Alert
-    </h2>
+    <h2 style='color:#fff;margin:0;font-size:20px;'>{$typeLabel} Emergency Alert</h2>
   </div>
   <div style='border:1px solid #e5e5e5;border-top:none;border-radius:0 0 12px 12px;padding:24px;'>
+    <p style='margin:0 0 16px;'>Hello <strong>{$contact['name']}</strong>,</p>
     <p style='margin:0 0 16px;'>
-      Hello <strong>{$contact['name']}</strong>,
-    </p>
-    <p style='margin:0 0 16px;'>
-      <strong>{$residentName}</strong> has triggered a
-      <strong>{$typeLabel}</strong> emergency alert via their SafeChain device.
+      <strong>{$residentName}</strong> has triggered a <strong>{$typeLabel}</strong>
+      emergency alert via their SafeChain device.
     </p>
     <table style='width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px;'>
-      <tr style='background:#f9f9f9;'>
-        <td style='padding:10px 12px;font-weight:600;width:140px;'>Type</td>
-        <td style='padding:10px 12px;'>{$typeLabel}</td>
-      </tr>
-      <tr style='background:#f9f9f9;'>
-        <td style='padding:10px 12px;font-weight:600;'>Location</td>
-        <td style='padding:10px 12px;'>{$location}</td>
-      </tr>
-      <tr>
-        <td style='padding:10px 12px;font-weight:600;'>Time</td>
-        <td style='padding:10px 12px;'>{$timestamp}</td>
-      </tr>
-      <tr style='background:#f9f9f9;'>
-        <td style='padding:10px 12px;font-weight:600;'>Relationship</td>
-        <td style='padding:10px 12px;'>{$contact['relationship']}</td>
-      </tr>
+      <tr style='background:#f9f9f9;'><td style='padding:10px 12px;font-weight:600;width:140px;'>Type</td><td style='padding:10px 12px;'>{$typeLabel}</td></tr>
+      <tr><td style='padding:10px 12px;font-weight:600;'>Location</td><td style='padding:10px 12px;'>{$location}</td></tr>
+      <tr style='background:#f9f9f9;'><td style='padding:10px 12px;font-weight:600;'>Time</td><td style='padding:10px 12px;'>{$timestamp}</td></tr>
+      <tr><td style='padding:10px 12px;font-weight:600;'>Relationship</td><td style='padding:10px 12px;'>{$contact['relationship']}</td></tr>
     </table>
-    <a href='{$mapsUrl}'
-       style='display:inline-block;background:#EF4444;color:#fff;text-decoration:none;
-              padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;'>
+    <a href='{$mapsUrl}' style='display:inline-block;background:#EF4444;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;'>
       View on Google Maps
     </a>
     <p style='margin:24px 0 0;font-size:12px;color:#888;'>
@@ -637,19 +603,11 @@ function notifyEmergencyContacts(
   </div>
 </body>
 </html>";
-
-            $mail->AltBody = "{$residentName} triggered a {$typeLabel} alert. "
-                           . "Location: {$location}. Time: {$timestamp}. "
-                           . "View map: {$mapsUrl}";
-
+            $mail->AltBody = "{$residentName} triggered a {$typeLabel} alert. Location: {$location}. Time: {$timestamp}. Map: {$mapsUrl}";
             $mail->send();
-
-            error_log("[SafeChain] Email sent to {$contact['email']} ({$contact['name']}) for incident {$incidentId}");
-
+            error_log("[SafeChain] Email sent to {$contact['email']} for incident {$incidentId}");
         } catch (MailException $e) {
             error_log("[SafeChain] Email failed for {$contact['email']}: {$mail->ErrorInfo}");
         }
     }
 }
-
-mysqli_close($conn);
