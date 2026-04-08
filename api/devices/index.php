@@ -89,10 +89,9 @@ if ($method === 'GET' && $action === 'list') {
 
     // Authorized hardware (not registered)
     $authStmt = $conn->prepare("
-        SELECT bt_remote_id, batch_number, created_at
+        SELECT bt_remote_id, batch_number
         FROM authorized_hardware
         WHERE is_registered = 0
-        ORDER BY created_at DESC
     ");
     $authStmt->execute();
     $authorized = $authStmt->get_result()->fetch_all(MYSQLI_ASSOC);
