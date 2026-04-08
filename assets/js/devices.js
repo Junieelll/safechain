@@ -1094,12 +1094,7 @@ function viewDevice(raw) {
             </p>
           </div>
         </div>`,
-      primaryButton: { text: "Print QR Label", icon: "uil-print", class: "bg-blue-600 hover:bg-blue-700" },
       secondaryButton: { text: "Close" },
-      onPrimary: () => {
-        showToast("info", "QR Label generator opening...");
-        return false;
-      },
       onSecondary: () => modalManager.close("viewAuthModal"),
     });
   } else {
