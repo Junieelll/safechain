@@ -4,7 +4,7 @@
 
 const API = "api/devices/index.php";
 
-let allDevices = { nodes: [], lora: [] };
+let allDevices = { nodes: [], lora: [], authorized: [] };
 let currentView = localStorage.getItem("deviceViewMode") || "grid";
 let searchQuery = "";
 let selectedType = "AllTypes";
@@ -28,7 +28,11 @@ async function fetchDevices() {
     const json = await res.json();
     if (!json.success) throw new Error(json.message);
 
-    allDevices = { nodes: json.data.nodes, lora: json.data.lora };
+    allDevices = {
+      nodes: json.data.nodes,
+      lora: json.data.lora,
+      authorized: json.data.authorized,
+    };
     updateStats(json.data.stats);
     renderDevices();
   } catch (err) {
@@ -53,6 +57,7 @@ function updateStats(s) {
   set("statTotal", s.total);
   set("statNodes", s.total_nodes);
   set("statLora", s.total_lora);
+  set("statAuthorized", s.total_authorized);
   set("statGateways", s.active_gateways);
 }
 
@@ -64,18 +69,34 @@ function getFiltered() {
 
   let nodes = allDevices.nodes.map((d) => ({ ...d, _kind: "node" }));
   let lora = allDevices.lora.map((d) => ({ ...d, _kind: "lora" }));
+  let authorized = (allDevices.authorized || []).map((d) => ({
+    ...d,
+    device_id: d.bt_remote_id,
+    device_name: d.bt_remote_id,
+    _kind: "authorized",
+    status: "authorized",
+  }));
 
-  if (selectedType === "NodeDevice") lora = [];
+  if (selectedType === "NodeDevice") {
+    lora = [];
+    authorized = [];
+  }
   if (selectedType === "Gateway") {
     nodes = [];
+    authorized = [];
     lora = lora.filter((d) => d.device_type === "gateway");
   }
   if (selectedType === "Repeater") {
     nodes = [];
+    authorized = [];
     lora = lora.filter((d) => d.device_type === "repeater");
   }
+  if (selectedType === "Authorized") {
+    nodes = [];
+    lora = [];
+  }
 
-  const all = [...nodes, ...lora];
+  const all = [...nodes, ...lora, ...authorized];
   if (!q) return all;
 
   return all.filter((d) =>
@@ -118,6 +139,7 @@ const statusPill = (s) =>
     inactive: `<span class="text-xs font-medium text-red-500 bg-red-50 dark:bg-red-900/40 px-2 py-0.5 rounded-full">Inactive</span>`,
     maintenance: `<span class="text-xs font-medium text-yellow-600 bg-yellow-50 dark:bg-yellow-900/40 px-2 py-0.5 rounded-full">Maintenance</span>`,
     missing: `<span class="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded-full flex items-center gap-1" style="animation:missingPulse 1.4s ease-in-out infinite;box-shadow:0 0 0 0 rgba(239,68,68,0.7);letter-spacing:0.04em;"><i class="uil uil-exclamation-circle" style="font-size:12px;"></i>MISSING</span>`,
+    authorized: `<span class="text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-full">Authorized</span>`,
   })[s] || "";
 
 const batteryColor = (b) =>
@@ -268,9 +290,11 @@ function gridCard(d) {
   const isNode = d._kind === "node";
   const iconEl = isNode
     ? `<i class="uil uil-mobile-android text-2xl text-white"></i>`
-    : d.device_type === "gateway"
-      ? `<i class="uil uil-wifi-router text-2xl text-white"></i>`
-      : `<svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+    : d._kind === "authorized"
+      ? `<i class="uil uil-check-circle text-2xl text-white"></i>`
+      : d.device_type === "gateway"
+        ? `<i class="uil uil-wifi-router text-2xl text-white"></i>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
      <!-- Center dot -->
     <circle cx="12" cy="11" r="1.5"/>
     <!-- Vertical line -->
@@ -284,19 +308,25 @@ function gridCard(d) {
    </svg>`;
   const typeLabel = isNode
     ? "Node Device"
-    : d.device_type === "gateway"
-      ? "LoRa Gateway"
-      : "LoRa Repeater";
-  const col1Lbl = isNode ? "OWNER" : "LOCATION";
-  const col1Icon = isNode ? "uil-user" : "uil-map-marker";
+    : d._kind === "authorized"
+      ? "Authorized Hardware"
+      : d.device_type === "gateway"
+        ? "LoRa Gateway"
+        : "LoRa Repeater";
+  const col1Lbl = isNode ? "OWNER" : d._kind === "authorized" ? "STATUS" : "LOCATION";
+  const col1Icon = isNode ? "uil-user" : d._kind === "authorized" ? "uil-info-circle" : "uil-map-marker";
   const col1Val = isNode
     ? d.owner_name || "Unassigned"
-    : d.location_label || "—";
-  const col2Lbl = isNode ? "BATTERY" : "SIGNAL";
-  const col2Icon = isNode ? "uil-battery-bolt" : "uil-signal-alt-3";
+    : d._kind === "authorized"
+      ? "Ready for Registration"
+      : d.location_label || "—";
+  const col2Lbl = isNode ? "BATTERY" : d._kind === "authorized" ? "BATCH" : "SIGNAL";
+  const col2Icon = isNode ? "uil-battery-bolt" : d._kind === "authorized" ? "uil-package" : "uil-signal-alt-3";
   const col2Val = isNode
     ? `<span class="${batteryColor(d.battery)}">${d.battery ?? "—"}%</span>`
-    : `<span class="${signalColor(d.signal)}">${d.signal || "—"}</span>`;
+    : d._kind === "authorized"
+      ? `<span class="text-blue-500">${d.batch_number || "—"}</span>`
+      : `<span class="${signalColor(d.signal)}">${d.signal || "—"}</span>`;
   const data = enc(d);
 
   const isInactive = d.status === "inactive";
@@ -805,9 +835,11 @@ function listCard(d) {
   const isNode = d._kind === "node";
   const iconEl = isNode
     ? `<i class="uil uil-mobile-android text-2xl text-white"></i>`
-    : d.device_type === "gateway"
-      ? `<i class="uil uil-wifi-router text-2xl text-white"></i>`
-      : `<svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
+    : d._kind === "authorized"
+      ? `<i class="uil uil-check-circle text-2xl text-white"></i>`
+      : d.device_type === "gateway"
+        ? `<i class="uil uil-wifi-router text-2xl text-white"></i>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor">
      <!-- Center dot -->
     <circle cx="12" cy="11" r="1.5"/>
     <!-- Vertical line -->
@@ -821,17 +853,23 @@ function listCard(d) {
    </svg>`;
   const typeLabel = isNode
     ? "Node Device"
-    : d.device_type === "gateway"
-      ? "LoRa Gateway"
-      : "LoRa Repeater";
+    : d._kind === "authorized"
+      ? "Authorized Hardware"
+      : d.device_type === "gateway"
+        ? "LoRa Gateway"
+        : "LoRa Repeater";
   const col1Val = isNode
     ? d.owner_name || "Unassigned"
-    : d.location_label || "—";
-  const col1Lbl = isNode ? "OWNER" : "LOCATION";
+    : d._kind === "authorized"
+      ? "Ready for Registration"
+      : d.location_label || "—";
+  const col1Lbl = d._kind === "authorized" ? "STATUS" : (isNode ? "OWNER" : "LOCATION");
   const col2Val = isNode
     ? `<span class="${batteryColor(d.battery)}">${d.battery ?? "—"}%</span>`
-    : `<span class="${signalColor(d.signal)}">${d.signal || "—"}</span>`;
-  const col2Lbl = isNode ? "BATTERY" : "SIGNAL";
+    : d._kind === "authorized"
+      ? `<span class="text-blue-500">${d.batch_number || "—"}</span>`
+      : `<span class="${signalColor(d.signal)}">${d.signal || "—"}</span>`;
+  const col2Lbl = d._kind === "authorized" ? "BATCH" : (isNode ? "BATTERY" : "SIGNAL");
   const data = enc(d);
   const isInactive = d.status === "inactive";
   const actionBtn = isInactive
