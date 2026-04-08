@@ -1008,6 +1008,7 @@ function setViewMode(mode) {
 function viewDevice(raw) {
   const d = typeof raw === "string" ? JSON.parse(raw) : raw;
   const isNode = d._kind === "node";
+  const isAuth = d._kind === "authorized";
 
   if (isNode) {
     const meds =
@@ -1062,6 +1063,44 @@ function viewDevice(raw) {
         confirmDeactivate(d);
       },
       onSecondary: () => modalManager.close("viewDeviceModal"),
+    });
+  } else if (isAuth) {
+    modalManager.create({
+      id: "viewAuthModal",
+      icon: "uil-check-circle",
+      iconColor: "text-blue-600",
+      iconBg: "bg-blue-100 dark:bg-blue-900/60",
+      title: "Authorized Hardware Details",
+      subtitle: d.bt_remote_id,
+      body: `
+        <div class="space-y-4">
+          <div class="bg-blue-600 rounded-2xl p-5 text-white flex items-center gap-4">
+            <div class="bg-white/20 rounded-xl p-2.5"><i class="uil uil-bluetooth-b text-2xl"></i></div>
+            <div>
+              <p class="text-xs opacity-80">MAC ADDRESS</p>
+              <p class="text-lg font-semibold">${d.bt_remote_id}</p>
+              <p class="text-xs opacity-80">Authorized Hardware</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            ${infoBox("uil-package", "Batch Number", d.batch_number || "—")}
+            ${infoBox("uil-info-circle", "Status", "Ready for Registration")}
+            ${infoBox("uil-calendar-alt", "Authorized On", d.created_at || "—")}
+          </div>
+          <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/30">
+            <p class="text-xs text-blue-600 dark:text-blue-400 flex items-start gap-2">
+              <i class="uil uil-info-circle text-lg mt-0.5"></i>
+              This device is whitelisted in the system and ready to be assigned to a resident via the registration process.
+            </p>
+          </div>
+        </div>`,
+      primaryButton: { text: "Print QR Label", icon: "uil-print", class: "bg-blue-600 hover:bg-blue-700" },
+      secondaryButton: { text: "Close" },
+      onPrimary: () => {
+        showToast("info", "QR Label generator opening...");
+        return false;
+      },
+      onSecondary: () => modalManager.close("viewAuthModal"),
     });
   } else {
     const typeLabel =
@@ -1138,9 +1177,10 @@ function viewDevice(raw) {
     });
   }
 
-  modalManager.show(isNode ? "viewDeviceModal" : "viewLoraModal");
+  const modalId = isNode ? "viewDeviceModal" : isAuth ? "viewAuthModal" : "viewLoraModal";
+  modalManager.show(modalId);
 
-  if (!isNode && d.lat && d.lng) {
+  if (!isNode && !isAuth && d.lat && d.lng) {
     setTimeout(() => initViewLoraMap(d), 200); // wait for 300ms modal animation to finish
   }
 }
