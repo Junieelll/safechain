@@ -751,12 +751,14 @@ function renderEmergencyList() {
     <span>SOS</span>
   </div>
 `
-            : `
+            : confidence.score > 1
+              ? `
   <div class="flex items-center gap-1.5 ${confidenceStyles[confidence.color]} px-2 py-1 rounded-lg text-xs font-medium">
     <i class="uil ${confidenceIcons[confidence.color]} text-sm"></i>
     <span>${confidence.score} report${confidence.score > 1 ? "s" : ""}</span>
   </div>
-`;
+`
+              : "";
 
           return `
   <div onclick="focusIncidentOnMap('${incident.id}', ${incident.lat}, ${incident.lng}, '${incident.type}')"
