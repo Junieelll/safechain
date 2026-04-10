@@ -40,7 +40,7 @@
       </div>
 
       <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
 
         <!-- Total Devices -->
         <div
@@ -77,6 +77,19 @@
           <div id="statLora" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—
           </div>
           <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">LoRa Devices</div>
+        </div>
+
+        <!-- Authorized Devices -->
+        <div
+          class="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_0_24px_rgba(0,0,0,0.10)] relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 dark:bg-blue-900/60 rounded-full -mr-16 -mt-16">
+          </div>
+          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4 dark:bg-blue-900/30">
+            <i class="uil uil-check-circle text-2xl text-blue-600"></i>
+          </div>
+          <div id="statAuthorized" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—
+          </div>
+          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Authorized Hardware</div>
         </div>
 
         <!-- Active Gateways -->
@@ -133,6 +146,9 @@
                   <button
                     class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-700/20 transition"
                     data-value="Repeater">Repeaters Only</button>
+                  <button
+                    class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-700/20 transition"
+                    data-value="Authorized">Authorized Only</button>
                 </div>
               </div>
             </div>

@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Feb 26, 2026 at 01:47 AM
--- Server version: 11.8.3-MariaDB-log
+-- Generation Time: Apr 07, 2026 at 12:57 PM
+-- Server version: 11.8.6-MariaDB-log
 -- PHP Version: 7.2.34
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -70,6 +70,18 @@ CREATE TABLE `announcement_views` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `authorized_hardware`
+--
+
+CREATE TABLE `authorized_hardware` (
+  `bt_remote_id` varchar(50) NOT NULL,
+  `batch_number` varchar(20) DEFAULT NULL,
+  `is_registered` tinyint(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `devices`
 --
 
@@ -79,6 +91,7 @@ CREATE TABLE `devices` (
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `bt_remote_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `battery` int(11) DEFAULT 100,
+  `status` enum('active','missing','deactivated') NOT NULL DEFAULT 'active',
   `created_at` timestamp NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
@@ -90,10 +103,14 @@ CREATE TABLE `devices` (
 
 CREATE TABLE `device_tokens` (
   `id` int(11) NOT NULL,
-  `user_id` varchar(20) NOT NULL,
+  `user_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `role` varchar(50) NOT NULL DEFAULT '',
   `token` text NOT NULL,
-  `updated_at` datetime NOT NULL
+  `updated_at` datetime NOT NULL,
+  `on_duty` tinyint(1) DEFAULT 0,
+  `duty_start` time DEFAULT NULL,
+  `duty_end` time DEFAULT NULL,
+  `duty_until` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -106,6 +123,7 @@ CREATE TABLE `emergency_contacts` (
   `contact_id` int(11) NOT NULL,
   `resident_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `email` varchar(150) NOT NULL,
   `contact_number` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `relationship` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -115,20 +133,16 @@ CREATE TABLE `emergency_contacts` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `emergency_responders`
+-- Table structure for table `fcm_tokens`
 --
 
-CREATE TABLE `emergency_responders` (
+CREATE TABLE `fcm_tokens` (
   `id` int(11) NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `username` varchar(100) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `type` varchar(50) NOT NULL,
-  `contact` varchar(20) NOT NULL,
-  `station_address` varchar(255) NOT NULL,
-  `available` tinyint(1) DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `resident_id` varchar(50) NOT NULL,
+  `fcm_token` text NOT NULL,
+  `platform` varchar(10) NOT NULL DEFAULT 'android',
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -146,14 +160,36 @@ CREATE TABLE `incidents` (
   `reporter` varchar(100) NOT NULL,
   `reporter_id` varchar(20) DEFAULT NULL,
   `date_time` datetime NOT NULL,
-  `status` enum('pending','responding','resolved') NOT NULL,
-  `dispatched_to` varchar(100) DEFAULT NULL,
-  `dispatched_at` timestamp NULL DEFAULT NULL,
+  `status` enum('pending','responding','resolved','false_alarm') NOT NULL,
+  `dispatched_to` varchar(20) DEFAULT NULL,
+  `dispatched_at` datetime DEFAULT NULL,
   `dispatched_by` varchar(100) DEFAULT NULL,
   `is_archived` tinyint(1) DEFAULT 0,
   `archived_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `is_false_alarm` tinyint(1) DEFAULT 0,
+  `is_wrong_type` tinyint(1) NOT NULL DEFAULT 0,
+  `confidence_score` int(11) DEFAULT 1,
+  `corroborated_by` int(11) DEFAULT 0,
+  `needs_rescue` tinyint(1) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `incident_corroborations`
+--
+
+CREATE TABLE `incident_corroborations` (
+  `id` int(11) NOT NULL,
+  `incident_id` varchar(20) NOT NULL,
+  `resident_id` varchar(20) NOT NULL,
+  `device_id` varchar(20) NOT NULL,
+  `lat` decimal(10,8) NOT NULL,
+  `lng` decimal(11,8) NOT NULL,
+  `needs_rescue` tinyint(1) DEFAULT 0,
+  `reported_at` timestamp NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -170,6 +206,24 @@ CREATE TABLE `incident_evidence` (
   `file_path` varchar(255) NOT NULL,
   `uploaded_by` varchar(100) NOT NULL,
   `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `incident_flags`
+--
+
+CREATE TABLE `incident_flags` (
+  `flag_id` int(11) NOT NULL,
+  `incident_id` varchar(20) NOT NULL,
+  `user_id` varchar(20) NOT NULL,
+  `flagged_by` varchar(20) NOT NULL,
+  `flag_reason` text NOT NULL,
+  `flag_type` enum('false_alarm','wrong_type') NOT NULL DEFAULT 'false_alarm',
+  `created_at` datetime DEFAULT current_timestamp(),
+  `reversed_by` varchar(20) DEFAULT NULL,
+  `reversed_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -218,7 +272,8 @@ CREATE TABLE `incident_reports` (
   `recommendations` text DEFAULT NULL,
   `status` enum('draft','submitted') NOT NULL DEFAULT 'submitted',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `type_specific_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`type_specific_data`))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -233,9 +288,65 @@ CREATE TABLE `incident_timeline` (
   `title` varchar(255) NOT NULL,
   `description` text NOT NULL,
   `actor` varchar(100) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `user_id` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lora_devices`
+--
+
+CREATE TABLE `lora_devices` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `device_id` varchar(20) NOT NULL,
+  `device_type` enum('gateway','repeater') NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `location_label` varchar(255) DEFAULT NULL,
+  `lat` decimal(10,7) DEFAULT NULL,
+  `lng` decimal(10,7) DEFAULT NULL,
+  `signal` enum('Excellent','Good','Fair','Weak') DEFAULT 'Good',
+  `status` enum('active','inactive','maintenance') NOT NULL DEFAULT 'active',
+  `coverage_radius` smallint(5) UNSIGNED DEFAULT 300,
+  `firmware` varchar(20) DEFAULT NULL,
+  `frequency` varchar(20) DEFAULT '915 MHz',
+  `install_date` date DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `last_seen` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Triggers `lora_devices`
+--
+DELIMITER $$
+CREATE TRIGGER `before_insert_lora_device` BEFORE INSERT ON `lora_devices` FOR EACH ROW BEGIN
+  DECLARE next_num INT;
+
+  IF NEW.device_id IS NULL OR NEW.device_id = '' THEN
+
+    IF NEW.device_type = 'gateway' THEN
+      SELECT COUNT(*) + 1 INTO next_num
+      FROM `lora_devices`
+      WHERE `device_type` = 'gateway';
+
+      SET NEW.device_id = CONCAT('SC-GW-', LPAD(next_num, 3, '0'));
+
+    ELSEIF NEW.device_type = 'repeater' THEN
+      SELECT COUNT(*) + 1 INTO next_num
+      FROM `lora_devices`
+      WHERE `device_type` = 'repeater';
+
+      SET NEW.device_id = CONCAT('SC-RP-', LPAD(next_num, 3, '0'));
+    END IF;
+
+  END IF;
+
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -270,7 +381,37 @@ CREATE TABLE `residents` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `medical_conditions` text DEFAULT NULL,
   `profile_picture_url` varchar(255) DEFAULT NULL,
-  `avatar` text DEFAULT NULL
+  `avatar` text DEFAULT NULL,
+  `false_report_count` int(11) DEFAULT 0,
+  `status` enum('active','restricted') DEFAULT 'active'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `responder_locations`
+--
+
+CREATE TABLE `responder_locations` (
+  `user_id` varchar(20) NOT NULL,
+  `incident_id` varchar(20) NOT NULL,
+  `latitude` decimal(10,8) NOT NULL,
+  `longitude` decimal(11,8) NOT NULL,
+  `heading` decimal(6,2) DEFAULT NULL,
+  `speed` decimal(6,2) DEFAULT NULL,
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `system_settings`
+--
+
+CREATE TABLE `system_settings` (
+  `setting_key` varchar(100) NOT NULL,
+  `setting_value` text NOT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -297,7 +438,7 @@ CREATE TABLE `users` (
   `username` varchar(100) NOT NULL,
   `profile_picture` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `role` enum('admin','bpso','bhert','firefighter','resident') NOT NULL DEFAULT 'resident',
+  `role` enum('admin','bpso','bdrrm','bfp','resident') NOT NULL DEFAULT 'resident',
   `status` enum('active','suspended') DEFAULT 'active',
   `suspended_until` datetime DEFAULT NULL,
   `suspension_reason` text DEFAULT NULL,
@@ -335,6 +476,12 @@ ALTER TABLE `announcement_views`
   ADD KEY `idx_announcement_id` (`announcement_id`);
 
 --
+-- Indexes for table `authorized_hardware`
+--
+ALTER TABLE `authorized_hardware`
+  ADD PRIMARY KEY (`bt_remote_id`);
+
+--
 -- Indexes for table `devices`
 --
 ALTER TABLE `devices`
@@ -346,7 +493,8 @@ ALTER TABLE `devices`
 --
 ALTER TABLE `device_tokens`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `user_id` (`user_id`) USING BTREE;
+  ADD UNIQUE KEY `unique_token` (`token`) USING HASH,
+  ADD KEY `device_tokens_ibfk_1` (`user_id`);
 
 --
 -- Indexes for table `emergency_contacts`
@@ -356,11 +504,11 @@ ALTER TABLE `emergency_contacts`
   ADD KEY `contacts` (`resident_id`);
 
 --
--- Indexes for table `emergency_responders`
+-- Indexes for table `fcm_tokens`
 --
-ALTER TABLE `emergency_responders`
+ALTER TABLE `fcm_tokens`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `username` (`username`);
+  ADD UNIQUE KEY `unique_resident` (`resident_id`);
 
 --
 -- Indexes for table `incidents`
@@ -375,11 +523,29 @@ ALTER TABLE `incidents`
   ADD KEY `idx_active_incidents` (`is_archived`,`status`,`created_at`);
 
 --
+-- Indexes for table `incident_corroborations`
+--
+ALTER TABLE `incident_corroborations`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_incident_id` (`incident_id`),
+  ADD KEY `idx_resident_id` (`resident_id`);
+
+--
 -- Indexes for table `incident_evidence`
 --
 ALTER TABLE `incident_evidence`
   ADD PRIMARY KEY (`id`),
   ADD KEY `incident_id` (`incident_id`);
+
+--
+-- Indexes for table `incident_flags`
+--
+ALTER TABLE `incident_flags`
+  ADD PRIMARY KEY (`flag_id`),
+  ADD KEY `fk_flag_flaggedby` (`flagged_by`),
+  ADD KEY `fk_flag_incident` (`incident_id`),
+  ADD KEY `fk_flag_reversedby` (`reversed_by`),
+  ADD KEY `fk_flag_user` (`user_id`);
 
 --
 -- Indexes for table `incident_notes`
@@ -404,6 +570,16 @@ ALTER TABLE `incident_timeline`
   ADD KEY `incident_id` (`incident_id`);
 
 --
+-- Indexes for table `lora_devices`
+--
+ALTER TABLE `lora_devices`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `device_id` (`device_id`),
+  ADD KEY `idx_device_type` (`device_type`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_device_id` (`device_id`);
+
+--
 -- Indexes for table `password_resets`
 --
 ALTER TABLE `password_resets`
@@ -417,6 +593,19 @@ ALTER TABLE `residents`
   ADD PRIMARY KEY (`resident_id`),
   ADD KEY `idx_is_archived` (`is_archived`),
   ADD KEY `idx_device_lookup` (`device_id`,`is_archived`);
+
+--
+-- Indexes for table `responder_locations`
+--
+ALTER TABLE `responder_locations`
+  ADD PRIMARY KEY (`user_id`,`incident_id`),
+  ADD KEY `rl_incident` (`incident_id`);
+
+--
+-- Indexes for table `system_settings`
+--
+ALTER TABLE `system_settings`
+  ADD PRIMARY KEY (`setting_key`);
 
 --
 -- Indexes for table `token_invalidations`
@@ -474,9 +663,15 @@ ALTER TABLE `emergency_contacts`
   MODIFY `contact_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `emergency_responders`
+-- AUTO_INCREMENT for table `fcm_tokens`
 --
-ALTER TABLE `emergency_responders`
+ALTER TABLE `fcm_tokens`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `incident_corroborations`
+--
+ALTER TABLE `incident_corroborations`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -484,6 +679,12 @@ ALTER TABLE `emergency_responders`
 --
 ALTER TABLE `incident_evidence`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `incident_flags`
+--
+ALTER TABLE `incident_flags`
+  MODIFY `flag_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `incident_notes`
@@ -502,6 +703,12 @@ ALTER TABLE `incident_reports`
 --
 ALTER TABLE `incident_timeline`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `lora_devices`
+--
+ALTER TABLE `lora_devices`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
@@ -523,8 +730,7 @@ ALTER TABLE `announcement_media`
 -- Constraints for table `announcement_views`
 --
 ALTER TABLE `announcement_views`
-  ADD CONSTRAINT `announcement_views_ibfk_1` FOREIGN KEY (`announcement_id`) REFERENCES `announcements` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `announcement_views_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `announcement_views_ibfk_1` FOREIGN KEY (`announcement_id`) REFERENCES `announcements` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `devices`
@@ -533,16 +739,38 @@ ALTER TABLE `devices`
   ADD CONSTRAINT `devices` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`resident_id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `device_tokens`
+--
+ALTER TABLE `device_tokens`
+  ADD CONSTRAINT `device_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+
+--
 -- Constraints for table `emergency_contacts`
 --
 ALTER TABLE `emergency_contacts`
   ADD CONSTRAINT `contacts` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`resident_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
+-- Constraints for table `incident_corroborations`
+--
+ALTER TABLE `incident_corroborations`
+  ADD CONSTRAINT `corroborations_ibfk_1` FOREIGN KEY (`incident_id`) REFERENCES `incidents` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `corroborations_ibfk_2` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`resident_id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `incident_evidence`
 --
 ALTER TABLE `incident_evidence`
   ADD CONSTRAINT `incident_evidence_ibfk_1` FOREIGN KEY (`incident_id`) REFERENCES `incidents` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `incident_flags`
+--
+ALTER TABLE `incident_flags`
+  ADD CONSTRAINT `fk_flag_flaggedby` FOREIGN KEY (`flagged_by`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_flag_incident` FOREIGN KEY (`incident_id`) REFERENCES `incidents` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_flag_reversedby` FOREIGN KEY (`reversed_by`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_flag_user` FOREIGN KEY (`user_id`) REFERENCES `residents` (`resident_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `incident_notes`
@@ -562,6 +790,13 @@ ALTER TABLE `incident_reports`
 --
 ALTER TABLE `incident_timeline`
   ADD CONSTRAINT `incident_timeline_ibfk_1` FOREIGN KEY (`incident_id`) REFERENCES `incidents` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `responder_locations`
+--
+ALTER TABLE `responder_locations`
+  ADD CONSTRAINT `rl_incident` FOREIGN KEY (`incident_id`) REFERENCES `incidents` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `rl_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `token_invalidations`

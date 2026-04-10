@@ -87,8 +87,20 @@ if ($method === 'GET' && $action === 'list') {
     $lora = $loraStmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $loraStmt->close();
 
+    // Authorized hardware (not registered)
+    $authStmt = $conn->prepare("
+        SELECT bt_remote_id, batch_number
+        FROM authorized_hardware
+        WHERE is_registered = 0
+    ");
+    $authStmt->execute();
+    $authorized = $authStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $authStmt->close();
+
     $totalNodes = count($nodes);
     $totalLora = count($lora);
+    $totalAuthorized = count($authorized);
+
     $activeGateways = count(array_filter(
         $lora,
         fn($d) =>
@@ -98,10 +110,12 @@ if ($method === 'GET' && $action === 'list') {
     jsonSuccess([
         'nodes' => $nodes,
         'lora' => $lora,
+        'authorized' => $authorized,
         'stats' => [
-            'total' => $totalNodes + $totalLora,
+            'total' => $totalNodes + $totalLora + $totalAuthorized,
             'total_nodes' => $totalNodes,
             'total_lora' => $totalLora,
+            'total_authorized' => $totalAuthorized,
             'active_gateways' => $activeGateways,
         ],
     ]);
