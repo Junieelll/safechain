@@ -64,7 +64,7 @@
           </div>
           <div id="statNodes" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—
           </div>
-          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Node Devices</div>
+          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Safechain Devices</div>
         </div>
 
         <!-- LoRa Devices -->
@@ -76,7 +76,7 @@
           </div>
           <div id="statLora" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—
           </div>
-          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">LoRa Devices</div>
+          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Repeaters</div>
         </div>
 
         <!-- Authorized Devices -->
@@ -89,7 +89,7 @@
           </div>
           <div id="statAuthorized" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—
           </div>
-          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Authorized Hardware</div>
+          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Authorized Safechain Devices</div>
         </div>
 
         <!-- Active Gateways -->
@@ -102,7 +102,7 @@
           </div>
           <div id="statGateways" class="text-xl md:text-2xl font-semibold text-neutral-600 dark:text-neutral-400 mb-3">—
           </div>
-          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Active Gateways</div>
+          <div class="text-xs md:text-sm text-neutral-600 font-medium dark:text-neutral-400">Gateway Devices</div>
         </div>
 
       </div>

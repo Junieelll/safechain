@@ -1,4 +1,5 @@
 let incidentsData = [];
+let selectedIncidentIds = new Set();
 
 // Fetch incidents from database
 async function fetchIncidents() {
@@ -340,6 +341,10 @@ function renderTable() {
         row.style.animationDelay = `${index * 0.05}s`;
 
         row.innerHTML = `
+          <td class="px-3 md:px-4 py-3 md:py-4 w-10">
+            <input type="checkbox" class="incident-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] dark:border-neutral-500"
+              data-id="${incident.id}" ${selectedIncidentIds.has(incident.id) ? 'checked' : ''} />
+          </td>
           <td class="px-3 md:px-6 py-3 md:py-4"><span class="text-xs font-medium text-blue-600 dark:text-neutral-300">${
             incident.id
           }</span></td>
@@ -392,6 +397,8 @@ function renderTable() {
 
     tbody.style.opacity = "1";
     renderPagination(totalPages);
+    attachIncidentCheckboxListeners();
+    updateSelectAllIncidentCheckbox();
   }, 800);
 }
 
@@ -879,4 +886,138 @@ window.addEventListener("DOMContentLoaded", () => {
 
   showLoadingSkeleton();
   fetchIncidents();
+
+  // Select All checkbox for incidents
+  const selectAllIncidents = document.getElementById('selectAllIncidents');
+  if (selectAllIncidents) {
+    selectAllIncidents.addEventListener('change', (e) => {
+      const checkboxes = document.querySelectorAll('.incident-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = e.target.checked;
+        if (e.target.checked) {
+          selectedIncidentIds.add(cb.dataset.id);
+        } else {
+          selectedIncidentIds.delete(cb.dataset.id);
+        }
+      });
+      updateIncidentActionBar();
+    });
+  }
+
+  // Archive Selected button
+  const archiveSelectedBtn = document.getElementById('archiveSelectedBtn');
+  if (archiveSelectedBtn) {
+    archiveSelectedBtn.addEventListener('click', () => {
+      if (selectedIncidentIds.size === 0) return;
+      showArchiveMultipleModal();
+    });
+  }
 });
+
+// ── Multi-select logic ──────────────────────────────────────────────────
+function attachIncidentCheckboxListeners() {
+  const checkboxes = document.querySelectorAll('.incident-checkbox');
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        selectedIncidentIds.add(e.target.dataset.id);
+      } else {
+        selectedIncidentIds.delete(e.target.dataset.id);
+      }
+      updateIncidentActionBar();
+      updateSelectAllIncidentCheckbox();
+    });
+  });
+}
+
+function updateSelectAllIncidentCheckbox() {
+  const selectAll = document.getElementById('selectAllIncidents');
+  const checkboxes = document.querySelectorAll('.incident-checkbox');
+  if (!selectAll || checkboxes.length === 0) {
+    if (selectAll) selectAll.checked = false;
+    return;
+  }
+  selectAll.checked = Array.from(checkboxes).every(cb => cb.checked);
+}
+
+function updateIncidentActionBar() {
+  const actionBar = document.getElementById('incidentActionBar');
+  const countEl = document.getElementById('incidentSelectedCount');
+  if (!actionBar) return;
+
+  countEl.textContent = selectedIncidentIds.size;
+
+  if (selectedIncidentIds.size > 0) {
+    actionBar.classList.remove('hidden');
+    requestAnimationFrame(() => {
+      actionBar.style.transform = 'translate(-50%, 0)';
+      actionBar.style.opacity = '1';
+    });
+  } else {
+    actionBar.style.transform = 'translate(-50%, 100%)';
+    actionBar.style.opacity = '0';
+    setTimeout(() => {
+      actionBar.classList.add('hidden');
+    }, 300);
+  }
+}
+
+function showArchiveMultipleModal() {
+  const count = selectedIncidentIds.size;
+  const archiveBody = `
+    <p class="text-xs text-gray-600 dark:text-gray-200 text-center leading-relaxed">
+      Are you sure you want to move <span class="font-semibold" style="color: #27c291">${count} incident${count > 1 ? 's' : ''}</span> to Archive? You can restore them anytime from the archive.
+    </p>
+  `;
+
+  modalManager.create({
+    id: 'archiveMultipleModal',
+    icon: 'uil-archive',
+    iconColor: 'text-emerald-500',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900/60',
+    title: 'Archive Multiple Incidents',
+    subtitle: 'These incidents can be restored anytime.',
+    body: archiveBody,
+    primaryButton: {
+      text: 'Archive All',
+      icon: 'uil-archive',
+      class: 'bg-[#27C291] hover:bg-[#22A87B]',
+    },
+    secondaryButton: { text: 'Cancel' },
+    onPrimary: confirmArchiveMultipleIncidents,
+    onSecondary: () => modalManager.close('archiveMultipleModal'),
+  });
+
+  modalManager.show('archiveMultipleModal');
+}
+
+async function confirmArchiveMultipleIncidents() {
+  const ids = Array.from(selectedIncidentIds);
+  if (ids.length === 0) return;
+
+  try {
+    const response = await fetch('api/incidents/archive_multiple.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      selectedIncidentIds.clear();
+      updateIncidentActionBar();
+      await fetchIncidents();
+      currentPage = 1;
+      renderTable();
+      showToast('success', `${ids.length} incident(s) archived successfully!`);
+    } else {
+      showToast('error', 'Failed to archive: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Bulk archive error:', error);
+    showToast('error', 'Failed to archive incidents.');
+  }
+
+  modalManager.close('archiveMultipleModal');
+}

@@ -161,6 +161,16 @@
                       data-value="descending">
                       Name (Z-A)
                     </button>
+                    <button
+                      class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                      data-value="most_false_alarms">
+                      Most False Alarms
+                    </button>
+                    <button
+                      class="dropdown-item text-sm w-full text-left px-4 py-2.5 text-gray-700 dark:text-white/85 dark:hover:bg-emerald-700/20 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                      data-value="most_wrong_emergency">
+                      Most Wrong Emergencies
+                    </button>
                   </div>
                 </div>
               </div>
@@ -218,6 +228,10 @@
           <table class="w-full">
             <thead class="bg-[#F1F5F9] dark:bg-neutral-700">
               <tr>
+                <th class="px-3 py-4 w-10">
+                  <input type="checkbox" id="selectAllResidents"
+                    class="w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] dark:border-neutral-500" />
+                </th>
                 <th
                   class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-200 uppercase tracking-wider">
                   Resident Name
@@ -260,6 +274,20 @@
         </div>
       </div>
     </section>
+
+    <!-- Multi-select Action Bar -->
+    <div
+      id="residentActionBar"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-neutral-700 rounded-full shadow-2xl p-3 pl-5 flex items-center gap-4 hidden z-50"
+      style="transition: transform 0.3s ease, opacity 0.3s ease;">
+      <span class="text-white text-sm font-medium"><span id="residentSelectedCount">0</span> resident(s) selected</span>
+      <button
+        id="archiveSelectedResidentsBtn"
+        class="px-4 py-2.5 bg-emerald-500 text-sm text-white rounded-full hover:bg-emerald-600 flex items-center gap-2 transition-all transform hover:scale-105">
+        <i class="uil uil-archive-alt"></i>
+        Archive Selected
+      </button>
+    </div>
 
     <!-- Toast Container -->
     <div

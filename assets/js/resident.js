@@ -1,4 +1,3 @@
-// js/resident.js
 let residentsData = [];
 let filteredResidents = [];
 let currentPage = 1;
@@ -6,6 +5,7 @@ const itemsPerPage = 5;
 let searchQuery = "";
 let selectedSort = "newest";
 let selectedStatus = "all";
+let selectedResidentIds = new Set();
 
 async function fetchResidents() {
   try {
@@ -264,6 +264,12 @@ function filterAndSortResidents() {
         (b.name ?? "").localeCompare(a.name ?? ""),
       );
       break;
+    case "most_false_alarms":
+      filteredResidents.sort((a, b) => (b.falseAlarmCount ?? 0) - (a.falseAlarmCount ?? 0));
+      break;
+    case "most_wrong_emergency":
+      filteredResidents.sort((a, b) => (b.wrongEmergencyCount ?? 0) - (a.wrongEmergencyCount ?? 0));
+      break;
   }
 }
 
@@ -360,6 +366,10 @@ function renderTable() {
 
         return `
       <tr class="hover:bg-gray-50 dark:hover:bg-black/20 transition item-enter ${isRestricted ? "bg-red-50/40 dark:bg-red-950/10" : ""}" style="animation-delay: ${index * 0.05}s">
+        <td class="px-3 py-4 w-10">
+          <input type="checkbox" class="resident-checkbox w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-[#01AF78] checked:border-[#01AF78] focus:ring-2 focus:ring-emerald-100 focus:ring-offset-0 transition-all cursor-pointer bg-[length:10px_10px] bg-center bg-no-repeat checked:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgNEw0LjUgNy41TDExIDEiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] dark:border-neutral-500"
+            data-id="${resident.id}" ${selectedResidentIds.has(resident.id) ? 'checked' : ''} />
+        </td>
         <td class="px-6 py-4">
           <div class="flex items-center gap-3">
             <div class="relative w-10 h-10 ${color} rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
@@ -386,6 +396,9 @@ function renderTable() {
         )}</td>
         <td class="px-6 py-4">
           <div class="flex items-center gap-2">
+            <button onclick="viewResident('${resident.id}')" class="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors bg-[#F1F5F9] dark:hover:bg-emerald-900/20 dark:hover:text-emerald-500 dark:bg-neutral-700 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center" title="View Details">
+              <i class="uil uil-eye text-xl"></i>
+            </button>
             <button onclick="editResident('${resident.id}')" class="text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-colors bg-[#F1F5F9] dark:hover:bg-blue-900/20 dark:hover:text-blue-500 dark:bg-neutral-700 dark:text-gray-200 p-2 rounded-lg w-8 h-8 flex items-center justify-center">
               <i class="uil uil-pen text-xl"></i>
             </button>
@@ -403,6 +416,8 @@ function renderTable() {
     // Fade in
     tableBody.style.opacity = "1";
     renderPagination();
+    attachResidentCheckboxListeners();
+    updateSelectAllResidentCheckbox();
   }, 800); // Show skeleton for 800ms total
 }
 
@@ -1235,4 +1250,293 @@ window.addEventListener("DOMContentLoaded", () => {
   updateStats();
 
   showLoadingSkeleton();
+
+  // Select All checkbox for residents
+  const selectAllResidents = document.getElementById('selectAllResidents');
+  if (selectAllResidents) {
+    selectAllResidents.addEventListener('change', (e) => {
+      const checkboxes = document.querySelectorAll('.resident-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = e.target.checked;
+        if (e.target.checked) {
+          selectedResidentIds.add(cb.dataset.id);
+        } else {
+          selectedResidentIds.delete(cb.dataset.id);
+        }
+      });
+      updateResidentActionBar();
+    });
+  }
+
+  // Archive Selected button
+  const archiveSelectedResidentsBtn = document.getElementById('archiveSelectedResidentsBtn');
+  if (archiveSelectedResidentsBtn) {
+    archiveSelectedResidentsBtn.addEventListener('click', () => {
+      if (selectedResidentIds.size === 0) return;
+      showArchiveMultipleResidentsModal();
+    });
+  }
 });
+
+// ── Multi-select logic ──────────────────────────────────────────────────
+function attachResidentCheckboxListeners() {
+  const checkboxes = document.querySelectorAll('.resident-checkbox');
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        selectedResidentIds.add(e.target.dataset.id);
+      } else {
+        selectedResidentIds.delete(e.target.dataset.id);
+      }
+      updateResidentActionBar();
+      updateSelectAllResidentCheckbox();
+    });
+  });
+}
+
+function updateSelectAllResidentCheckbox() {
+  const selectAll = document.getElementById('selectAllResidents');
+  const checkboxes = document.querySelectorAll('.resident-checkbox');
+  if (!selectAll || checkboxes.length === 0) {
+    if (selectAll) selectAll.checked = false;
+    return;
+  }
+  selectAll.checked = Array.from(checkboxes).every(cb => cb.checked);
+}
+
+function updateResidentActionBar() {
+  const actionBar = document.getElementById('residentActionBar');
+  const countEl = document.getElementById('residentSelectedCount');
+  if (!actionBar) return;
+
+  countEl.textContent = selectedResidentIds.size;
+
+  if (selectedResidentIds.size > 0) {
+    actionBar.classList.remove('hidden');
+    requestAnimationFrame(() => {
+      actionBar.style.transform = 'translate(-50%, 0)';
+      actionBar.style.opacity = '1';
+    });
+  } else {
+    actionBar.style.transform = 'translate(-50%, 100%)';
+    actionBar.style.opacity = '0';
+    setTimeout(() => {
+      actionBar.classList.add('hidden');
+    }, 300);
+  }
+}
+
+function showArchiveMultipleResidentsModal() {
+  const count = selectedResidentIds.size;
+  const archiveBody = `
+    <p class="text-xs text-gray-600 dark:text-gray-200 text-center leading-relaxed">
+      Are you sure you want to move <span class="font-semibold" style="color: #27c291">${count} resident${count > 1 ? 's' : ''}</span> to Archive? You can restore them anytime from the archive.
+    </p>
+  `;
+
+  modalManager.create({
+    id: 'archiveMultipleResidentsModal',
+    icon: 'uil-archive',
+    iconColor: 'text-emerald-500',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900/60',
+    title: 'Archive Multiple Residents',
+    subtitle: 'These residents can be restored anytime.',
+    body: archiveBody,
+    primaryButton: {
+      text: 'Archive All',
+      icon: 'uil-archive',
+      class: 'bg-[#27C291] hover:bg-[#22A87B]',
+    },
+    secondaryButton: { text: 'Cancel' },
+    onPrimary: confirmArchiveMultipleResidents,
+    onSecondary: () => modalManager.close('archiveMultipleResidentsModal'),
+  });
+
+  modalManager.show('archiveMultipleResidentsModal');
+}
+
+async function confirmArchiveMultipleResidents() {
+  const ids = Array.from(selectedResidentIds);
+  if (ids.length === 0) return;
+
+  try {
+    const response = await fetch('api/residents/archive_multiple.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      selectedResidentIds.clear();
+      updateResidentActionBar();
+      await fetchResidents();
+      currentPage = 1;
+      updateStats();
+      renderTable();
+      showToast('success', `${ids.length} resident(s) archived successfully!`);
+    } else {
+      showToast('error', 'Failed to archive: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Bulk archive error:', error);
+    showToast('error', 'Failed to archive residents.');
+  }
+
+  modalManager.close('archiveMultipleResidentsModal');
+}
+
+// ── View Resident Details ───────────────────────────────────────────────
+function viewResident(id) {
+  const resident = residentsData.find(r => r.id === id);
+  if (!resident) return;
+
+  const initials = getInitials(resident.name);
+  const color = getColorForName(resident.name);
+  const bgClass = color.split(" ")[0];
+  const isRestricted = resident.status === "restricted";
+
+  const falseAlarms = resident.falseAlarmCount ?? 0;
+  const wrongEmergency = resident.wrongEmergencyCount ?? 0;
+  const totalIncidents = resident.totalIncidents ?? 0;
+
+  // Medical conditions badges
+  const medicalHtml = resident.medicalConditions && resident.medicalConditions.length > 0
+    ? resident.medicalConditions.map(c => `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800">${c}</span>`).join('')
+    : '<span class="text-xs text-gray-400 italic">None recorded</span>';
+
+  const viewBody = `
+    <div class="space-y-0">
+      <!-- Profile Header -->
+      <div class="relative rounded-2xl overflow-hidden mb-5" style="background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)">
+        <div class="absolute top-[-20px] right-[-20px] w-36 h-36 rounded-full bg-white/10"></div>
+        <div class="absolute bottom-[-30px] left-[-10px] w-28 h-28 rounded-full bg-white/10"></div>
+        <div class="relative z-10 flex flex-col items-center pt-8 pb-5 px-6">
+          <div class="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden flex items-center justify-center ${bgClass} text-white font-bold text-xl">
+            ${resident.profilePicture
+              ? `<img src="${resident.profilePicture}" class="w-full h-full object-cover" />`
+              : `<span>${initials}</span>`
+            }
+          </div>
+          <h3 class="text-white font-bold text-base mt-2 tracking-wide">${resident.name}</h3>
+          <span class="mt-1 px-3 py-0.5 bg-white/20 text-white text-xs rounded-full font-mono">${resident.id}</span>
+          ${isRestricted
+            ? '<span class="mt-2 px-3 py-1 bg-red-500/80 text-white text-[11px] rounded-full font-semibold flex items-center gap-1"><i class="uil uil-ban text-xs"></i> Restricted</span>'
+            : '<span class="mt-2 px-3 py-1 bg-white/20 text-white text-[11px] rounded-full font-semibold flex items-center gap-1"><i class="uil uil-check-circle text-xs"></i> Active</span>'
+          }
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-3 gap-3 mb-5">
+        <div class="bg-red-50 dark:bg-red-900/20 rounded-xl p-3 text-center border border-red-100 dark:border-red-900/40">
+          <p class="text-xl font-bold text-red-600 dark:text-red-400">${falseAlarms}</p>
+          <p class="text-[10px] text-red-500 dark:text-red-400 font-medium mt-0.5">False Alarms</p>
+        </div>
+        <div class="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-3 text-center border border-orange-100 dark:border-orange-900/40">
+          <p class="text-xl font-bold text-orange-600 dark:text-orange-400">${wrongEmergency}</p>
+          <p class="text-[10px] text-orange-500 dark:text-orange-400 font-medium mt-0.5">Wrong Emergency</p>
+        </div>
+        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-center border border-blue-100 dark:border-blue-900/40">
+          <p class="text-xl font-bold text-blue-600 dark:text-blue-400">${totalIncidents}</p>
+          <p class="text-[10px] text-blue-500 dark:text-blue-400 font-medium mt-0.5">Total Incidents</p>
+        </div>
+      </div>
+
+      <!-- Personal Information -->
+      <div class="space-y-3">
+        <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Personal Information</h4>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-gray-50 dark:bg-neutral-700 rounded-xl p-3">
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 font-medium mb-1">Address</p>
+            <p class="text-xs text-gray-700 dark:text-gray-200 font-medium">${resident.address || '—'}</p>
+          </div>
+          <div class="bg-gray-50 dark:bg-neutral-700 rounded-xl p-3">
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 font-medium mb-1">Contact</p>
+            <p class="text-xs text-gray-700 dark:text-gray-200 font-medium">${resident.contact || '—'}</p>
+          </div>
+          <div class="bg-gray-50 dark:bg-neutral-700 rounded-xl p-3">
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 font-medium mb-1">Registered</p>
+            <p class="text-xs text-gray-700 dark:text-gray-200 font-medium">${formatDate(resident.registeredDate)}</p>
+          </div>
+          <div class="bg-gray-50 dark:bg-neutral-700 rounded-xl p-3">
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 font-medium mb-1">False Reports</p>
+            <p class="text-xs text-gray-700 dark:text-gray-200 font-medium">${resident.falseReportCount ?? 0}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Medical Conditions -->
+      <div class="space-y-3 mt-4">
+        <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Medical Conditions</h4>
+        <div class="flex flex-wrap gap-2">
+          ${medicalHtml}
+        </div>
+      </div>
+
+      <!-- Device Information -->
+      <div class="space-y-3 mt-4">
+        <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Device Information</h4>
+        ${resident.deviceId
+          ? `<div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/40">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-emerald-100 dark:bg-emerald-800/50 rounded-lg flex items-center justify-center">
+                  <i class="uil uil-mobile-android text-emerald-600 dark:text-emerald-400 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-400 font-mono">${resident.deviceId}</p>
+                  <p class="text-[10px] text-emerald-500 dark:text-emerald-500">${resident.deviceModel || 'SafeChain Device'}</p>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                  resident.deviceStatus === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-800/50 dark:text-emerald-400'
+                  : resident.deviceStatus === 'missing' ? 'bg-red-100 text-red-700 dark:bg-red-800/50 dark:text-red-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                }">${(resident.deviceStatus || 'unknown').charAt(0).toUpperCase() + (resident.deviceStatus || 'unknown').slice(1)}</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="bg-white dark:bg-neutral-700 rounded-lg p-2.5">
+                  <p class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Battery</p>
+                  <p class="text-xs text-gray-700 dark:text-gray-200 font-medium">${resident.batteryLevel != null ? resident.batteryLevel + '%' : '—'}</p>
+                </div>
+                <div class="bg-white dark:bg-neutral-700 rounded-lg p-2.5">
+                  <p class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">BT Remote ID</p>
+                  <p class="text-xs text-gray-700 dark:text-gray-200 font-medium font-mono">${resident.btRemoteId || '—'}</p>
+                </div>
+              </div>
+            </div>`
+          : `<div class="bg-gray-50 dark:bg-neutral-700 rounded-xl p-4 text-center">
+              <i class="uil uil-mobile-android-alt text-3xl text-gray-300 dark:text-gray-600 mb-1"></i>
+              <p class="text-xs text-gray-400 dark:text-gray-500 italic">No device assigned</p>
+            </div>`
+        }
+      </div>
+    </div>
+  `;
+
+  modalManager.create({
+    id: 'viewResidentModal',
+    icon: 'uil-user-circle',
+    iconColor: 'text-emerald-500',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900/60',
+    title: 'Resident Details',
+    subtitle: 'View complete resident profile and history.',
+    body: viewBody,
+    primaryButton: {
+      text: 'Edit Profile',
+      icon: 'uil-pen',
+      class: 'bg-emerald-500 hover:bg-emerald-600',
+    },
+    secondaryButton: {
+      text: 'Close',
+    },
+    onPrimary: () => {
+      modalManager.close('viewResidentModal');
+      editResident(id);
+    },
+    onSecondary: () => modalManager.close('viewResidentModal'),
+  });
+
+  modalManager.show('viewResidentModal');
+}
+
