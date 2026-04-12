@@ -5,8 +5,8 @@ require_once __DIR__ . '/../../helpers/jwt_helper.php';
 require_once __DIR__ . '/../middleware/mobile_auth.php';
 
 ini_set('max_execution_time', 60);
-ini_set('upload_max_filesize', '50M');
-ini_set('post_max_size', '50M');
+ini_set('upload_max_filesize', '250M');
+ini_set('post_max_size', '260M');
 
 error_reporting(E_ERROR | E_PARSE);
 ini_set('display_errors', '0');
@@ -74,11 +74,28 @@ function handle_get(mysqli $conn, string $incident_id): void
 // POST — upload a file
 function handle_post(mysqli $conn, string $incident_id, array $user): void
 {
+    // If POST payload exceeded server limits, PHP drops $_FILES entirely
+    if (empty($_FILES) && empty($_POST) && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 262144000) {
+        ResponseHelper::error('File size exceeds the 250MB limit', 413);
+    }
+
     if (empty($_FILES['file'])) {
         ResponseHelper::error('No file uploaded', 400);
     }
 
     $file = $_FILES['file'];
+
+    // Check for PHP UPLOAD_ERR constants (1 = UPLOAD_ERR_INI_SIZE, 2 = UPLOAD_ERR_FORM_SIZE)
+    if ($file['error'] === UPLOAD_ERR_INI_SIZE || $file['error'] === UPLOAD_ERR_FORM_SIZE) {
+        ResponseHelper::error('File size exceeds the 250MB limit', 413);
+    } elseif ($file['error'] !== UPLOAD_ERR_OK) {
+        ResponseHelper::error('File upload failed (Error code: ' . $file['error'] . ')', 400);
+    }
+
+    // Explicitly check the byte size (250MB = 262144000 bytes)
+    if ($file['size'] > 262144000) {
+        ResponseHelper::error('File size exceeds the 250MB limit', 413);
+    }
     $file_name = basename($file['name']);
     $file_type = $file['type'];
     $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
