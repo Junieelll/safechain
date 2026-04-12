@@ -1407,7 +1407,7 @@ function viewResident(id) {
     : '<span class="text-xs text-gray-400 italic">None recorded</span>';
 
   const viewBody = `
-    <div class="space-y-0">
+    <div>
       <!-- Profile Header -->
       <div class="relative rounded-2xl overflow-hidden mb-5" style="background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)">
         <div class="absolute top-[-20px] right-[-20px] w-36 h-36 rounded-full bg-white/10"></div>
