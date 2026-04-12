@@ -821,7 +821,7 @@ function editResident(id) {
   const bgClass = color.split(" ")[0];
 
   const editBody = `
-    <div class="space-y-0">
+    <div>
 
       <!-- Profile Card Header -->
       <div class="relative rounded-2xl overflow-hidden mb-5" style="background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)">
