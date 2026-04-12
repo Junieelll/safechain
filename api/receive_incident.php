@@ -1,17 +1,17 @@
 <?php
 /**
- * SafeChain — Receive Incident API
- * Accepts POST payloads from the Python Gateway Bridge.
+ * SafeChain - Receive Incident API
+ * Receives LoRa data from Python Gateway Bridge and saves to database.
  *
  * Supported types:
  *   INCIDENT   — Emergency alert (fire / flood / crime)
  *   GPS_UPDATE — Live location update for an active incident
- *   HEARTBEAT  — Periodic device telemetry (battery %, RSSI, GPS)
+ *   HEARTBEAT  — Periodic device telemetry (battery %, RSSI)
  *
  * Place in: api/receive_incident.php
  */
 
-// ── CORS & preflight ─────────────────────────────────────────────────────────
+// ── CORS & preflight ──────────────────────────────────────────────────────────
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -31,29 +31,29 @@ require_once '../vendor/phpmailer/phpmailer/src/SMTP.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as MailException;
 
-// ── Parse body ───────────────────────────────────────────────────────────────
+// ── Parse body ────────────────────────────────────────────────────────────────
 $input = file_get_contents('php://input');
 $data  = json_decode($input, true);
 
 if (!$data) {
-    echo json_encode(['success' => false, 'message' => 'Invalid JSON body']);
+    echo json_encode(['success' => false, 'message' => 'Invalid JSON data']);
     exit;
 }
 
 // ── Route by type FIRST ───────────────────────────────────────────────────────
-// Each handler performs its own field validation and security checks.
-// Previously the required-field check and full security gate ran here for ALL
-// types, which caused HEARTBEAT requests (no 'button' field) to fail
-// immediately with "Missing field: button".
+// HEARTBEAT packets don't carry 'button', 'lat', or 'lng' at the top level.
+// Routing first prevents the shared field-validation block below from
+// returning "Missing field: button" for every heartbeat.
 $packetType = $data['type'] ?? '';
 
 if ($packetType === 'HEARTBEAT') {
     handleHeartbeat($conn, $data);
+    mysqli_close($conn);
     exit;
 }
 
-// For INCIDENT and GPS_UPDATE, validate the shared required fields now.
-$required = ['device_id', 'button', 'lat', 'lng'];
+// ── Shared field validation for INCIDENT and GPS_UPDATE ──────────────────────
+$required = ['device_id', 'button', 'lat', 'lng', 'type'];
 foreach ($required as $field) {
     if (!isset($data[$field])) {
         echo json_encode(['success' => false, 'message' => "Missing field: $field"]);
@@ -61,8 +61,24 @@ foreach ($required as $field) {
     }
 }
 
-// ── Shared device + resident lookup ─────────────────────────────────────────
-// Used by INCIDENT and GPS_UPDATE handlers.
+// ── Device + resident lookup ──────────────────────────────────────────────────
+//
+// [FIX] The original query had:
+//
+//   LEFT JOIN residents r ON d.resident_id = r.resident_id
+//   WHERE d.device_id = '$device_id'
+//     AND (r.is_archived = 0 OR r.is_archived IS NULL)   ← in WHERE
+//
+// Putting the is_archived filter in the WHERE clause silently converts the
+// LEFT JOIN into an INNER JOIN. Any device whose linked resident has
+// is_archived = 1 is excluded entirely, making the device appear
+// "not registered" even though it exists in the devices table.
+//
+// Fix: move is_archived into the JOIN ON condition. The device row is
+// always found if it exists in devices. The resident columns are NULL
+// only when the resident is archived — which is handled by the existing
+// "not linked to any resident" guard below (empty $row['resident_id']).
+//
 $device_id = mysqli_real_escape_string($conn, $data['device_id']);
 
 $result = mysqli_query($conn, "
@@ -70,20 +86,24 @@ $result = mysqli_query($conn, "
            r.resident_id, r.name, r.address, r.contact,
            r.status AS resident_status, r.false_report_count
     FROM devices d
-    LEFT JOIN residents r ON d.resident_id = r.resident_id
+    LEFT JOIN residents r
+           ON d.resident_id = r.resident_id
+          AND (r.is_archived = 0 OR r.is_archived IS NULL)
     WHERE d.device_id = '$device_id'
-      AND (r.is_archived = 0 OR r.is_archived IS NULL)
     LIMIT 1
 ");
 
 if (!$result || mysqli_num_rows($result) === 0) {
-    echo json_encode(['success' => false, 'message' => "Device '$device_id' not registered"]);
+    echo json_encode([
+        'success' => false,
+        'message' => "Device '$device_id' not registered",
+    ]);
     exit;
 }
 
 $row = mysqli_fetch_assoc($result);
 
-// ── Security gates ───────────────────────────────────────────────────────────
+// ── Security gates ────────────────────────────────────────────────────────────
 if ($row['device_status'] === 'deactivated') {
     echo json_encode(['success' => false, 'message' => "Device '$device_id' is deactivated"]);
     exit;
@@ -110,11 +130,11 @@ if ($row['resident_status'] === 'restricted') {
     exit;
 }
 
-// ── Geofence setting ─────────────────────────────────────────────────────────
+// ── Geofence setting ──────────────────────────────────────────────────────────
 $geofenceRow     = mysqli_query($conn, "SELECT setting_value FROM system_settings WHERE setting_key = 'geofence_enabled' LIMIT 1");
 $geofenceEnabled = ($geofenceRow && ($r = mysqli_fetch_assoc($geofenceRow))) ? $r['setting_value'] === '1' : false;
 
-// ── Route validated requests ─────────────────────────────────────────────────
+// ── Route validated packets ───────────────────────────────────────────────────
 if ($packetType === 'INCIDENT') {
     handleNewIncident($conn, $data, $resident, $geofenceEnabled);
 } elseif ($packetType === 'GPS_UPDATE') {
@@ -129,27 +149,23 @@ mysqli_close($conn);
 // HEARTBEAT HANDLER
 // ============================================================
 // Lightweight path — no security gates, no incident creation.
-// Purpose: keep device battery % and last_seen fresh in the DB
-// so the admin dashboard can show live device health.
+// Updates device battery % and last_seen so the admin dashboard
+// shows live device health.
 //
-// Security posture:
-//   - Device must exist in the 'devices' table (basic authenticity check).
-//   - Deactivated / missing devices still update telemetry — the admin
-//     explicitly wants to know these devices are still transmitting.
-//   - No resident linkage required (an unassigned but valid device can
-//     still report its health).
+// Deactivated and missing devices still update telemetry — the admin
+// explicitly wants to know these devices are still transmitting.
 //
-// Required fields: device_id, lat, lng, battery, rssi
-// SQL note: assumes devices table has a 'last_seen' DATETIME column and a
-//           'battery' TINYINT UNSIGNED column. Run this migration if needed:
+// Required fields: device_id, battery
+// Optional: lat, lng, rssi
+//
+// SQL note: run this migration if the columns don't exist yet:
 //   ALTER TABLE devices
 //     ADD COLUMN battery   TINYINT UNSIGNED DEFAULT NULL,
 //     ADD COLUMN last_seen DATETIME         DEFAULT NULL;
 // ============================================================
 function handleHeartbeat($conn, array $data): void
 {
-    // Field validation
-    foreach (['device_id', 'lat', 'lng', 'battery'] as $field) {
+    foreach (['device_id', 'battery'] as $field) {
         if (!isset($data[$field])) {
             echo json_encode(['success' => false, 'message' => "Heartbeat missing field: $field"]);
             return;
@@ -157,15 +173,12 @@ function handleHeartbeat($conn, array $data): void
     }
 
     $device_id = mysqli_real_escape_string($conn, $data['device_id']);
-    $lat       = floatval($data['lat']);
-    $lng       = floatval($data['lng']);
-    $battery   = intval($data['battery']);
+    $battery   = max(0, min(100, intval($data['battery'])));
     $rssi      = intval($data['rssi'] ?? 0);
+    $lat       = floatval($data['lat'] ?? 0);
+    $lng       = floatval($data['lng'] ?? 0);
 
-    // Clamp battery to valid range
-    $battery = max(0, min(100, $battery));
-
-    // Confirm the device exists (any status is allowed for telemetry)
+    // Confirm device exists (any status is allowed for telemetry)
     $check = mysqli_query($conn, "SELECT device_id, status FROM devices WHERE device_id = '$device_id' LIMIT 1");
     if (!$check || mysqli_num_rows($check) === 0) {
         echo json_encode(['success' => false, 'message' => "Heartbeat: device '$device_id' not found"]);
@@ -174,7 +187,6 @@ function handleHeartbeat($conn, array $data): void
 
     $device = mysqli_fetch_assoc($check);
 
-    // Update battery and last_seen
     $updated = mysqli_query($conn, "
         UPDATE devices
         SET battery   = $battery,
@@ -183,10 +195,7 @@ function handleHeartbeat($conn, array $data): void
     ");
 
     if (!$updated) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Heartbeat DB update failed: ' . mysqli_error($conn),
-        ]);
+        echo json_encode(['success' => false, 'message' => 'Heartbeat DB update failed: ' . mysqli_error($conn)]);
         return;
     }
 
@@ -233,7 +242,7 @@ function isInsideGulod(float $lat, float $lng): bool
 /**
  * Reverse geocode lat/lng → street, barangay, city via Nominatim
  */
-function reverseGeocode(float $lat, float $lng): string
+function reverseGeocode($lat, $lng): string
 {
     $url  = "https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng";
     $opts = ['http' => ['header' => "User-Agent: SafeChain/1.0\r\n"]];
@@ -256,37 +265,36 @@ function reverseGeocode(float $lat, float $lng): string
 // ============================================================
 // INCIDENT HANDLER
 // ============================================================
-function handleNewIncident($conn, array $data, array $resident, bool $geofenceEnabled): void
+function handleNewIncident($conn, $data, $resident, bool $geofenceEnabled = false)
 {
-    $type        = mysqli_real_escape_string($conn, $data['button'] ?? 'fire');
-    $lat         = floatval($data['lat']);
-    $lng         = floatval($data['lng']);
-    $reporter_id = mysqli_real_escape_string($conn, $resident['resident_id']);
-    $device_id   = mysqli_real_escape_string($conn, $data['device_id']);
+    global $config;
+
+    $type          = mysqli_real_escape_string($conn, $data['button'] ?? 'fire');
+    $lat           = floatval($data['lat']);
+    $lng           = floatval($data['lng']);
+    $reporter_id   = mysqli_real_escape_string($conn, $resident['resident_id']);
+    $device_id     = mysqli_real_escape_string($conn, $data['device_id']);
     $reporter_name = mysqli_real_escape_string($conn, $resident['name']);
 
     // Geofence rejection
     if ($geofenceEnabled && !isInsideGulod($lat, $lng)) {
         echo json_encode([
             'success' => false,
-            'message' => 'Incident location is outside Barangay Gulod boundary (geofence enabled)',
+            'message' => 'Incident location is outside Barangay Gulod boundary (geofence is enabled)',
             'lat' => $lat, 'lng' => $lng,
         ]);
         return;
     }
 
-    // Type validation
     $validTypes = ['fire', 'crime', 'flood'];
     if (!in_array($type, $validTypes)) {
         echo json_encode(['success' => false, 'message' => 'Invalid incident type']);
         return;
     }
 
-    // Type-specific proximity thresholds
     $proximityThresholds = ['fire' => 0.00045, 'flood' => 0.0018, 'crime' => 0.00027];
     $proximityThreshold  = $proximityThresholds[$type] ?? 0.00045;
 
-    // Type-specific time windows (minutes)
     $timeWindows = ['fire' => 15, 'flood' => 30, 'crime' => 5];
     $timeWindow  = $timeWindows[$type] ?? 15;
 
@@ -309,17 +317,15 @@ function handleNewIncident($conn, array $data, array $resident, bool $geofenceEn
 
     if ($nearbyResult && mysqli_num_rows($nearbyResult) > 0) {
 
-        // ── CORROBORATION PATH ────────────────────────────────────────────
+        // ── CORROBORATION PATH ────────────────────────────────────────────────
         $existing    = mysqli_fetch_assoc($nearbyResult);
         $incident_id = mysqli_real_escape_string($conn, $existing['id']);
 
         $alreadyResult = mysqli_query($conn, "
-            SELECT 'original' AS source
-            FROM incidents
+            SELECT 'original' AS source FROM incidents
             WHERE id = '$incident_id' AND reporter_id = '$reporter_id'
             UNION
-            SELECT 'corroboration' AS source
-            FROM incident_corroborations
+            SELECT 'corroboration' AS source FROM incident_corroborations
             WHERE incident_id = '$incident_id' AND resident_id = '$reporter_id'
             LIMIT 1
         ");
@@ -368,6 +374,8 @@ function handleNewIncident($conn, array $data, array $resident, bool $geofenceEn
                 'id' => $incident_id, 'type' => $type, 'location' => "$lat, $lng",
                 'extra' => " RESCUE NEEDED: {$resident['name']} (Device: {$data['device_id']})",
             ]);
+            error_log(sprintf('[SafeChain] RESCUE SIGNAL: %s at incident %s (%.6f, %.6f)',
+                $resident['name'], $incident_id, $lat, $lng));
         } elseif ($newConfidence === 3) {
             sendFCMToAllResponders($conn, [
                 'id' => $incident_id, 'type' => $type, 'location' => "$lat, $lng",
@@ -389,8 +397,6 @@ function handleNewIncident($conn, array $data, array $resident, bool $geofenceEn
     }
 
     // ── NEW INCIDENT PATH ─────────────────────────────────────────────────────
-
-    // Generate incident ID
     $lastResult = mysqli_query($conn, "SELECT id FROM incidents ORDER BY created_at DESC LIMIT 1");
     if ($lastResult && mysqli_num_rows($lastResult) > 0) {
         $lastIncident = mysqli_fetch_assoc($lastResult);
@@ -399,6 +405,7 @@ function handleNewIncident($conn, array $data, array $resident, bool $geofenceEn
     } else {
         $newNumber = 1001;
     }
+
     $incidentId = 'EMG-' . date('Y') . '-' . $newNumber;
 
     $geocodedAddress = reverseGeocode($lat, $lng);
@@ -427,7 +434,6 @@ function handleNewIncident($conn, array $data, array $resident, bool $geofenceEn
         return;
     }
 
-    // Initial timeline entry
     $initDesc = mysqli_real_escape_string(
         $conn,
         "Emergency reported by {$resident['name']} via device {$data['device_id']}"
@@ -441,11 +447,9 @@ function handleNewIncident($conn, array $data, array $resident, bool $geofenceEn
         'id' => $incidentId, 'type' => $type, 'location' => $geocodedAddress,
     ]);
 
-    error_log(sprintf(
-        '[SafeChain] New %s: %s by %s (%s) at (%.6f, %.6f) — %s',
+    error_log(sprintf('[SafeChain] New %s: %s by %s (%s) at (%.6f, %.6f) — %s',
         strtoupper($type), $incidentId, $resident['name'],
-        $reporter_id, $lat, $lng, $geocodedAddress
-    ));
+        $reporter_id, $lat, $lng, $geocodedAddress));
 
     notifyEmergencyContacts(
         $conn, $reporter_id, $resident['name'],
@@ -470,7 +474,7 @@ function handleNewIncident($conn, array $data, array $resident, bool $geofenceEn
 // ============================================================
 // GPS UPDATE HANDLER
 // ============================================================
-function handleGPSUpdate($conn, array $data, array $resident): void
+function handleGPSUpdate($conn, $data, $resident)
 {
     if ($resident['device_status'] === 'deactivated') {
         echo json_encode(['success' => false, 'message' => 'Device is deactivated']);
