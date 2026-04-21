@@ -240,6 +240,14 @@ async function fetchLiveIncidents() {
 
       if (isInitialLoad) isInitialLoad = false;
 
+      // ── Re-alert for incidents still pending ───────────────────────
+      // checkPendingReAlerts is defined in sidebar.js (loaded globally)
+      if (!isInitialLoad && typeof checkPendingReAlerts === "function") {
+        const allForReAlert = result.all_incidents ||
+          ["fire", "crime", "flood"].flatMap((t) => result.data[t] || []);
+        checkPendingReAlerts(allForReAlert);
+      }
+
     }
   } catch (error) {
     console.error("Failed to fetch incidents:", error);
@@ -722,11 +730,25 @@ function renderEmergencyList() {
           const hasRescue = rescue.count > 0;
           const isHighConfidence = confidence.score >= 3;
 
+          // ── Stale-pending detection (visual only) ──────────────
+          let isStalePending = false;
+          let stalePendingMinutes = 0;
+          if (incident.status === "pending" && incident.datetime) {
+            const reportedAt = new Date(incident.datetime).getTime();
+            const elapsed = Date.now() - reportedAt;
+            if (elapsed >= (typeof PENDING_ALERT_THRESHOLD_MS !== "undefined" ? PENDING_ALERT_THRESHOLD_MS : 120000)) {
+              isStalePending = true;
+              stalePendingMinutes = Math.floor(elapsed / 60000);
+            }
+          }
+
           const cardClass = hasRescue
             ? "bg-red-50 dark:bg-red-950/30 border-2 border-red-500 dark:border-red-600 shadow-lg shadow-red-100 dark:shadow-red-900/30"
-            : isHighConfidence
-              ? "bg-white dark:bg-neutral-700 border-2 border-orange-400 dark:border-orange-600"
-              : "bg-white dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-700";
+            : isStalePending
+              ? "bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-400 dark:border-amber-500 shadow-md shadow-amber-100 dark:shadow-amber-900/20"
+              : isHighConfidence
+                ? "bg-white dark:bg-neutral-700 border-2 border-orange-400 dark:border-orange-600"
+                : "bg-white dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-700";
 
           // Rescue banner — shown at the very top of the card if anyone needs rescue
           const rescueBanner = hasRescue
@@ -739,6 +761,22 @@ function renderEmergencyList() {
     </div>
     <span class="shrink-0 bg-white text-red-600 text-xs font-black px-2 py-0.5 rounded-full">
       ${rescue.count}
+    </span>
+  </div>
+`
+            : "";
+
+          // Stale-pending banner — amber warning when no one has responded yet
+          const stalePendingBanner = isStalePending && !hasRescue
+            ? `
+  <div class="flex items-center gap-2 bg-amber-500 text-white rounded-xl px-3 py-2 animate-pulse">
+    <i class="uil uil-clock text-lg shrink-0"></i>
+    <div class="flex-1 min-w-0">
+      <p class="text-xs font-bold tracking-wide uppercase">Awaiting Response</p>
+      <p class="text-xs text-amber-100">Pending for ${stalePendingMinutes} minute${stalePendingMinutes !== 1 ? "s" : ""} — no response yet</p>
+    </div>
+    <span class="shrink-0 bg-white text-amber-600 text-xs font-black px-2 py-0.5 rounded-full">
+      ${stalePendingMinutes}m
     </span>
   </div>
 `
@@ -765,6 +803,7 @@ function renderEmergencyList() {
     class="${cardClass} rounded-2xl p-4 space-y-3 text-sm cursor-pointer hover:shadow-lg transition-all duration-200">
 
     ${rescueBanner}
+    ${stalePendingBanner}
 
     <div class="flex items-start justify-between gap-2">
       <div class="inline-flex items-center gap-2 ${colorClasses[incident.color]} px-3 py-2 rounded-lg">

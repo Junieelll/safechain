@@ -296,6 +296,83 @@ let knownIncidentIds = new Set(
 );
 let isInitialLoad = true;
 
+// ── Pending Re-Alert System ──────────────────────────────────────────────
+// If an incident stays "pending" longer than PENDING_ALERT_THRESHOLD_MS,
+// the admin is re-alerted every PENDING_REALERT_INTERVAL_MS.
+const PENDING_ALERT_THRESHOLD_MS = 2 * 60 * 1000;  // 2 minutes before first re-alert
+const PENDING_REALERT_INTERVAL_MS = 60 * 1000;       // re-alert every 60 seconds
+
+// Map<incidentId, { firstSeen: timestamp, lastAlerted: timestamp }>
+let pendingAlertTracker = JSON.parse(
+  localStorage.getItem("pendingAlertTracker") || "{}",
+);
+
+function savePendingTracker() {
+  localStorage.setItem("pendingAlertTracker", JSON.stringify(pendingAlertTracker));
+}
+
+/**
+ * Check all current incidents — if any are still "pending" past the threshold,
+ * fire a re-alert (toast + sound). Called after each poll cycle.
+ */
+function checkPendingReAlerts(allIncidents) {
+  if (!allIncidents || !Array.isArray(allIncidents)) return;
+
+  const now = Date.now();
+  const activePendingIds = new Set();
+
+  allIncidents.forEach((incident) => {
+    if (incident.status !== "pending") return;
+
+    activePendingIds.add(incident.id);
+
+    // First time seeing this pending incident — record it
+    if (!pendingAlertTracker[incident.id]) {
+      pendingAlertTracker[incident.id] = {
+        firstSeen: now,
+        lastAlerted: 0,
+      };
+    }
+
+    const tracker = pendingAlertTracker[incident.id];
+    const pendingDuration = now - tracker.firstSeen;
+
+    // Has it been pending longer than the threshold?
+    if (pendingDuration >= PENDING_ALERT_THRESHOLD_MS) {
+      // Only re-alert if enough time has passed since last alert
+      if (now - tracker.lastAlerted >= PENDING_REALERT_INTERVAL_MS) {
+        tracker.lastAlerted = now;
+
+        const minutesPending = Math.floor(pendingDuration / 60000);
+        const typeName = incident.type
+          ? incident.type.replace(" Emergency", "").toLowerCase()
+          : "unknown";
+        const reporterName =
+          typeof incident.user === "object"
+            ? incident.user.name
+            : incident.reporter || "Unknown";
+
+        if (typeof showToast === "function") {
+          showToast(
+            "warning",
+            `⚠️ Pending ${minutesPending}min: ${typeName} incident by ${reporterName} still awaiting response!`,
+          );
+        }
+        playNotificationSound();
+      }
+    }
+  });
+
+  // Clean up incidents that are no longer pending (resolved, responding, etc.)
+  Object.keys(pendingAlertTracker).forEach((id) => {
+    if (!activePendingIds.has(id)) {
+      delete pendingAlertTracker[id];
+    }
+  });
+
+  savePendingTracker();
+}
+
 // ── Sound config (populated by loadSoundSettings) ────────────────────────
 let soundConfig = {
   src: "/assets/sounds/alert.mp3", // fallback default
@@ -433,6 +510,14 @@ async function checkNewIncidents() {
           }
         });
       });
+
+      // ── Re-alert for incidents still pending ───────────────────────
+      if (!isInitialLoad) {
+        const allIncidents = ["fire", "crime", "flood"].flatMap(
+          (t) => result.data[t] || [],
+        );
+        checkPendingReAlerts(allIncidents);
+      }
     }
   } catch (error) {
     console.error("Sidebar polling error:", error);
