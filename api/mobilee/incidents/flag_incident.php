@@ -110,6 +110,15 @@ if ($newCount >= 3) {
     $stmt->execute();
     $stmt->close();
     $autoRestricted = true;
+
+    // Notify the resident's phone immediately
+    require_once __DIR__ . '/../fcm/send_push.php';
+    sendPushToResident(
+        $residentId,
+        'Account Restricted',
+        'You have been restricted due to multiple false alarms. Please contact admin officials to lift the restriction.',
+        ['type' => 'security']
+    );
 }
 
 // 5. Log to incident_timeline
