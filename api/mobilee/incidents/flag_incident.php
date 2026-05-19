@@ -113,12 +113,17 @@ if ($newCount >= 3) {
 
     // Notify the resident's phone immediately
     require_once __DIR__ . '/../fcm/send_push.php';
-    sendPushToResident(
-        $residentId,
-        'Account Restricted',
-        'You have been restricted due to multiple false alarms. Please contact admin officials to lift the restriction.',
-        ['type' => 'security']
-    );
+    try {
+        sendPushToResident(
+            $residentId,
+            'Account Restricted',
+            'You have been restricted due to multiple false alarms. Please contact admin officials to lift the restriction.',
+            ['type' => 'security']
+        );
+    } catch (\Throwable $e) {
+        // Silently ignore notification failure so the process can complete
+        error_log("Failed to send push notification: " . $e->getMessage());
+    }
 }
 
 // 5. Log to incident_timeline

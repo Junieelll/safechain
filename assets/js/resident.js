@@ -1432,7 +1432,7 @@ function viewResident(id) {
       <div class="grid grid-cols-3 gap-3 mb-5">
         <div class="bg-red-50 dark:bg-red-900/20 rounded-xl p-3 text-center border border-red-100 dark:border-red-900/40">
           <p class="text-xl font-bold text-red-600 dark:text-red-400">${falseAlarms}</p>
-          <p class="text-[10px] text-red-500 dark:text-red-400 font-medium mt-0.5">False Alarms</p>
+          <p class="text-[10px] text-red-500 dark:text-red-400 font-medium mt-0.5"> Total False Reports</p>
         </div>
         <div class="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-3 text-center border border-orange-100 dark:border-orange-900/40">
           <p class="text-xl font-bold text-orange-600 dark:text-orange-400">${wrongEmergency}</p>
@@ -1461,7 +1461,7 @@ function viewResident(id) {
             <p class="text-xs text-gray-700 dark:text-gray-200 font-medium">${formatDate(resident.registeredDate)}</p>
           </div>
           <div class="bg-gray-50 dark:bg-neutral-700 rounded-xl p-3">
-            <p class="text-[10px] text-gray-400 dark:text-gray-500 font-medium mb-1">False Reports</p>
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 font-medium mb-1">Current False Reports</p>
             <p class="text-xs text-gray-700 dark:text-gray-200 font-medium">${resident.falseReportCount ?? 0}</p>
           </div>
         </div>
